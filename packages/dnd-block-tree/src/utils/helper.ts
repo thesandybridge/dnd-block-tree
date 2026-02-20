@@ -1,7 +1,7 @@
 /**
- * Extract UUID from a zone ID by removing the prefix (before-, after-, into-)
+ * Extract UUID from a zone ID by removing the prefix (before-, after-, into-, end-)
  */
-export function extractUUID(id: string, pattern = '^(before|after|into)-'): string {
+export function extractUUID(id: string, pattern = '^(before|after|into|end)-'): string {
   const regex = new RegExp(pattern)
   return id.replace(regex, '')
 }

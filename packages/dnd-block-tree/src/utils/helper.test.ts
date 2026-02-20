@@ -14,6 +14,10 @@ describe('extractUUID', () => {
     expect(extractUUID('into-789')).toBe('789')
   })
 
+  it('extracts UUID from end- prefix', () => {
+    expect(extractUUID('end-abc')).toBe('abc')
+  })
+
   it('returns original string if no matching prefix', () => {
     expect(extractUUID('no-prefix-123')).toBe('no-prefix-123')
     expect(extractUUID('123')).toBe('123')
