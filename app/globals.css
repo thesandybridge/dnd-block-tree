@@ -46,15 +46,13 @@
     --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* Map shared theme variables to shadcn variables */
-/* Light mode (default for data-mode="light") */
 :root, [data-mode="light"] {
     --radius: 0.75rem;
     --background: var(--primary-bg);
     --foreground: var(--text-bright);
-    --card: var(--secondary-bg);
+    --card: var(--primary-bg);
     --card-foreground: var(--text-bright);
-    --popover: var(--secondary-bg);
+    --popover: var(--primary-bg);
     --popover-foreground: var(--text-bright);
     --primary: var(--secondary-fg);
     --primary-foreground: var(--primary-bg);
@@ -67,28 +65,14 @@
     --destructive: var(--error);
     --input: var(--border);
     --ring: var(--secondary-fg);
-    --chart-1: var(--secondary-fg);
-    --chart-2: var(--alt);
-    --chart-3: var(--info);
-    --chart-4: var(--warning);
-    --chart-5: var(--success);
-    --sidebar: var(--secondary-bg);
-    --sidebar-foreground: var(--text-bright);
-    --sidebar-primary: var(--secondary-fg);
-    --sidebar-primary-foreground: var(--primary-bg);
-    --sidebar-accent: var(--secondary-bg);
-    --sidebar-accent-foreground: var(--text-bright);
-    --sidebar-border: var(--border);
-    --sidebar-ring: var(--secondary-fg);
 }
 
-/* Dark mode */
 [data-mode="dark"] {
     --background: var(--primary-bg);
     --foreground: var(--text-bright);
-    --card: var(--secondary-bg);
+    --card: var(--primary-bg);
     --card-foreground: var(--text-bright);
-    --popover: var(--secondary-bg);
+    --popover: var(--primary-bg);
     --popover-foreground: var(--text-bright);
     --primary: var(--secondary-fg);
     --primary-foreground: var(--primary-bg);
@@ -101,19 +85,6 @@
     --destructive: var(--error);
     --input: var(--border);
     --ring: var(--secondary-fg);
-    --chart-1: var(--secondary-fg);
-    --chart-2: var(--alt);
-    --chart-3: var(--info);
-    --chart-4: var(--warning);
-    --chart-5: var(--success);
-    --sidebar: var(--secondary-bg);
-    --sidebar-foreground: var(--text-bright);
-    --sidebar-primary: var(--secondary-fg);
-    --sidebar-primary-foreground: var(--primary-bg);
-    --sidebar-accent: var(--secondary-bg);
-    --sidebar-accent-foreground: var(--text-bright);
-    --sidebar-border: var(--border);
-    --sidebar-ring: var(--secondary-fg);
 }
 
 @layer base {
