@@ -85,13 +85,16 @@ export function reparentBlockIndex<T extends BaseBlock>(
   const dragged = byId.get(String(activeId))
   if (!dragged) return state
 
+  const isRootStart = targetZone === 'root-start'
+  const isRootEnd = targetZone === 'root-end'
+  const isEnd = targetZone.startsWith('end-') || isRootEnd
   const zoneTargetId = extractUUID(targetZone)
   const isAfter = targetZone.startsWith('after-')
-  const isInto = targetZone.startsWith('into-')
+  const isInto = targetZone.startsWith('into-') || isRootStart
   const target = byId.get(zoneTargetId)
 
   const oldParentId = dragged.parentId ?? null
-  const newParentId = isInto ? zoneTargetId : target?.parentId ?? null
+  const newParentId = isRootStart || isRootEnd ? null : (isInto || isEnd) ? zoneTargetId : target?.parentId ?? null
 
   // Prevent containers from being nested if they shouldn't be
   if (containerTypes.includes(dragged.type) && newParentId !== null) {
@@ -113,9 +116,15 @@ export function reparentBlockIndex<T extends BaseBlock>(
 
   // Insert dragged into new parent
   const newList = [...(byParent.get(newParentId) ?? [])]
-  let insertIndex = newList.length
+  let insertIndex: number
 
-  if (!isInto) {
+  if (isInto) {
+    // into-{parentId} or root-start means insert at position 0
+    insertIndex = 0
+  } else if (isEnd) {
+    // end-{parentId} or root-end means insert at the end
+    insertIndex = newList.length
+  } else {
     const idx = newList.indexOf(zoneTargetId)
     insertIndex = idx === -1 ? newList.length : isAfter ? idx + 1 : idx
   }

@@ -26,7 +26,7 @@ import type {
   DropZoneType,
 } from '../core/types'
 import { getDropZoneType, extractBlockId } from '../core/types'
-import { weightedVerticalCollision } from '../core/collision'
+import { createStickyCollision } from '../core/collision'
 import { useConfiguredSensors } from '../core/sensors'
 import { TreeRenderer } from './TreeRenderer'
 import { DragOverlay } from './DragOverlay'
@@ -182,6 +182,9 @@ export function BlockTree<
   const cachedReorderRef = useRef<{ targetId: string; reorderedBlocks: T[] } | null>(null)
   const fromPositionRef = useRef<BlockPosition | null>(null)
 
+  // Sticky collision with hysteresis to prevent flickering between adjacent zones
+  const stickyCollisionRef = useRef(createStickyCollision(20))
+
   // Force re-render
   const [, forceRender] = useReducer((x: number) => x + 1, 0)
 
@@ -204,8 +207,11 @@ export function BlockTree<
     }, 50)
   ).current
 
-  // Compute effective state
-  const effectiveIndex = stateRef.current.virtualState ?? computeNormalizedIndex(blocks)
+  // Use virtualState for preview rendering, original blocks for zones
+  const originalIndex = computeNormalizedIndex(blocks)
+  const effectiveIndex = showDropPreview && stateRef.current.virtualState
+    ? stateRef.current.virtualState
+    : originalIndex
 
   // Blocks by parent for rendering
   const blocksByParent = new Map<string | null, T[]>()
@@ -247,6 +253,9 @@ export function BlockTree<
 
     // Store initial position for move event
     fromPositionRef.current = getBlockPosition(blocks, id)
+
+    // Reset sticky collision for fresh drag
+    stickyCollisionRef.current.reset()
 
     stateRef.current.activeId = id
     stateRef.current.isDragging = true
@@ -476,7 +485,7 @@ export function BlockTree<
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={collisionDetection ?? weightedVerticalCollision}
+      collisionDetection={collisionDetection ?? stickyCollisionRef.current}
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragOver={handleDragOver}
@@ -499,6 +508,7 @@ export function BlockTree<
           indentClassName={indentClassName}
           rootClassName={className}
           canDrag={canDrag}
+          showDropPreview={showDropPreview && stateRef.current.virtualState !== null}
         />
       </div>
       <DragOverlay activeBlock={activeBlock}>

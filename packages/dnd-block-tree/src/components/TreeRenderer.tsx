@@ -21,6 +21,8 @@ export interface TreeRendererProps<T extends BaseBlock> {
   indentClassName?: string
   rootClassName?: string
   canDrag?: CanDragFn<T>
+  /** Show dragged block at preview position */
+  showDropPreview?: boolean
 }
 
 /**
@@ -66,24 +68,36 @@ export function TreeRenderer<T extends BaseBlock>({
   indentClassName = 'ml-6 border-l border-gray-200 pl-4',
   rootClassName = 'flex flex-col gap-1',
   canDrag,
+  showDropPreview = false,
 }: TreeRendererProps<T>) {
   const items = blocksByParent.get(parentId) ?? []
 
-  // Filter out the active block from visible items
-  const filteredBlocks = items.filter(block => block.id !== activeId)
-
-  // Find first visible block for the single before-zone
-  const firstVisibleBlockId = filteredBlocks[0]?.id
+  // When preview is enabled, show the block at its new position
+  // When disabled, filter it out (only appears in drag overlay)
+  const filteredBlocks = showDropPreview
+    ? items
+    : items.filter(block => block.id !== activeId)
 
   const containerClass = depth === 0 ? rootClassName : indentClassName
 
   return (
     <div className={containerClass}>
-      {filteredBlocks.map((block) => {
+      {/* Position-0 zone: always at the start, stable regardless of which block is dragged */}
+      <DropZone
+        id={parentId ? `into-${parentId}` : 'root-start'}
+        parentId={parentId}
+        onHover={onHover}
+        activeId={activeId}
+        className={dropZoneClassName}
+        activeClassName={dropZoneActiveClassName}
+      />
+
+      {filteredBlocks.map((block, index) => {
         const isContainer = containerTypes.includes(block.type)
         const isExpanded = expandedMap[block.id] !== false // Default to expanded
         const Renderer = renderers[block.type as keyof typeof renderers]
         const isDragDisabled = canDrag ? !canDrag(block) : false
+        const isLastVisible = index === filteredBlocks.length - 1
 
         if (!Renderer) {
           console.warn(`No renderer found for block type: ${block.type}`)
@@ -92,33 +106,12 @@ export function TreeRenderer<T extends BaseBlock>({
 
         return (
           <Fragment key={block.id}>
-            {/* Before-zone: only for the first visible non-active block */}
-            {block.id === firstVisibleBlockId && (
-              <DropZone
-                id={`before-${block.id}`}
-                parentId={block.parentId}
-                onHover={onHover}
-                activeId={activeId}
-                className={dropZoneClassName}
-                activeClassName={dropZoneActiveClassName}
-              />
-            )}
-
             {/* Render the block */}
             <DraggableBlock block={block} disabled={isDragDisabled}>
               {({ isDragging }) => {
                 if (isContainer) {
                   const childContent = isExpanded ? (
                     <>
-                      {/* Into-zone for dropping inside */}
-                      <DropZone
-                        id={`into-${block.id}`}
-                        parentId={block.id}
-                        onHover={onHover}
-                        activeId={activeId}
-                        className={dropZoneClassName}
-                        activeClassName={dropZoneActiveClassName}
-                      />
                       <TreeRenderer
                         blocks={blocks}
                         blocksByParent={blocksByParent}
@@ -135,6 +128,7 @@ export function TreeRenderer<T extends BaseBlock>({
                         indentClassName={indentClassName}
                         rootClassName={rootClassName}
                         canDrag={canDrag}
+                        showDropPreview={showDropPreview}
                       />
                     </>
                   ) : null
@@ -157,18 +151,30 @@ export function TreeRenderer<T extends BaseBlock>({
               }}
             </DraggableBlock>
 
-            {/* After-zone */}
-            <DropZone
-              id={`after-${block.id}`}
-              parentId={block.parentId}
-              onHover={onHover}
-              activeId={activeId}
-              className={dropZoneClassName}
-              activeClassName={dropZoneActiveClassName}
-            />
+            {/* After-zone: skip for last visible block (end-zone handles that) */}
+            {!isLastVisible && (
+              <DropZone
+                id={`after-${block.id}`}
+                parentId={block.parentId}
+                onHover={onHover}
+                activeId={activeId}
+                className={dropZoneClassName}
+                activeClassName={dropZoneActiveClassName}
+              />
+            )}
           </Fragment>
         )
       })}
+
+      {/* End zone: stable zone for the last position */}
+      <DropZone
+        id={parentId ? `end-${parentId}` : 'root-end'}
+        parentId={parentId}
+        onHover={onHover}
+        activeId={activeId}
+        className={dropZoneClassName}
+        activeClassName={dropZoneActiveClassName}
+      />
     </div>
   )
 }

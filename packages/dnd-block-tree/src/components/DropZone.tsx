@@ -37,10 +37,12 @@ function DropZoneComponent({
     if (isOver) handleInternalHover()
   }, [isOver, handleInternalHover])
 
-  // Hide zone if it belongs to the active block
-  if (active?.id && extractUUID(id) === String(active.id)) return null
-  // Also hide if activeId matches (from context)
-  if (activeId && extractUUID(id) === activeId) return null
+  // Only hide "into-" zones for the active block (can't drop a container into itself)
+  // "after-" zones are fine - dropping after yourself is just a no-op
+  const zoneBlockId = extractUUID(id)
+  const isIntoZone = id.startsWith('into-')
+  if (isIntoZone && active?.id && zoneBlockId === String(active.id)) return null
+  if (isIntoZone && activeId && zoneBlockId === activeId) return null
 
   return (
     <div

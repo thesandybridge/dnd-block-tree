@@ -39,7 +39,7 @@ export type {
 export { getDropZoneType, extractBlockId } from './core/types'
 
 // Collision detection
-export { weightedVerticalCollision, closestCenterCollision } from './core/collision'
+export { weightedVerticalCollision, closestCenterCollision, createStickyCollision } from './core/collision'
 
 // Sensors
 export { useConfiguredSensors, getSensorConfig } from './core/sensors'

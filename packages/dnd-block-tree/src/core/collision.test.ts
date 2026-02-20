@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { weightedVerticalCollision, closestCenterCollision } from './collision'
+import { weightedVerticalCollision, closestCenterCollision, createStickyCollision } from './collision'
 import type { DroppableContainer } from '@dnd-kit/core'
 
 // Helper to create mock droppable container
@@ -199,5 +199,148 @@ describe('closestCenterCollision', () => {
 
     expect(result.length).toBe(1)
     expect(result[0].id).toBe('valid')
+  })
+})
+
+describe('createStickyCollision', () => {
+  it('returns the closest container on first call', () => {
+    const sticky = createStickyCollision(15)
+    const containers = [
+      createContainer('far', { top: 100, bottom: 120, left: 0, right: 100, width: 100, height: 20 }),
+      createContainer('close', { top: 40, bottom: 60, left: 0, right: 100, width: 100, height: 20 }),
+    ]
+
+    const result = sticky({
+      droppableContainers: containers,
+      collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
+      droppableRects: new Map(),
+      active: null,
+      pointerCoordinates: null,
+    })
+
+    expect(result.length).toBe(1)
+    expect(result[0].id).toBe('close')
+  })
+
+  it('sticks to current zone when new zone is not significantly better', () => {
+    const sticky = createStickyCollision(15)
+
+    // Zone A at y=40-60, Zone B at y=70-90
+    const containers = [
+      createContainer('zoneA', { top: 40, bottom: 60, left: 0, right: 100, width: 100, height: 20 }),
+      createContainer('zoneB', { top: 70, bottom: 90, left: 0, right: 100, width: 100, height: 20 }),
+    ]
+
+    // First call: pointer near zoneA (y=55)
+    const result1 = sticky({
+      droppableContainers: containers,
+      collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
+      droppableRects: new Map(),
+      active: null,
+      pointerCoordinates: null,
+    })
+    expect(result1[0].id).toBe('zoneA')
+
+    // Second call: pointer moved slightly toward zoneB (y=62)
+    // Both zones are close, but zoneB is not 15px better, should stick to zoneA
+    const result2 = sticky({
+      droppableContainers: containers,
+      collisionRect: { top: 57, left: 0, right: 100, bottom: 67, width: 100, height: 10 },
+      droppableRects: new Map(),
+      active: null,
+      pointerCoordinates: null,
+    })
+    expect(result2[0].id).toBe('zoneA')
+  })
+
+  it('switches to new zone when it is significantly better', () => {
+    const sticky = createStickyCollision(15)
+
+    const containers = [
+      createContainer('zoneA', { top: 40, bottom: 60, left: 0, right: 100, width: 100, height: 20 }),
+      createContainer('zoneB', { top: 100, bottom: 120, left: 0, right: 100, width: 100, height: 20 }),
+    ]
+
+    // First call: pointer near zoneA
+    const result1 = sticky({
+      droppableContainers: containers,
+      collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
+      droppableRects: new Map(),
+      active: null,
+      pointerCoordinates: null,
+    })
+    expect(result1[0].id).toBe('zoneA')
+
+    // Second call: pointer moved far toward zoneB
+    const result2 = sticky({
+      droppableContainers: containers,
+      collisionRect: { top: 105, left: 0, right: 100, bottom: 115, width: 100, height: 10 },
+      droppableRects: new Map(),
+      active: null,
+      pointerCoordinates: null,
+    })
+    expect(result2[0].id).toBe('zoneB')
+  })
+
+  it('reset() clears the current zone', () => {
+    const sticky = createStickyCollision(15)
+
+    const containers = [
+      createContainer('zoneA', { top: 40, bottom: 60, left: 0, right: 100, width: 100, height: 20 }),
+      createContainer('zoneB', { top: 100, bottom: 120, left: 0, right: 100, width: 100, height: 20 }),
+    ]
+
+    // Activate zoneA
+    sticky({
+      droppableContainers: containers,
+      collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
+      droppableRects: new Map(),
+      active: null,
+      pointerCoordinates: null,
+    })
+
+    // Reset
+    sticky.reset()
+
+    // Now pointer is clearly closer to zoneB, should pick zoneB without stickiness
+    const result = sticky({
+      droppableContainers: containers,
+      collisionRect: { top: 105, left: 0, right: 100, bottom: 115, width: 100, height: 10 },
+      droppableRects: new Map(),
+      active: null,
+      pointerCoordinates: null,
+    })
+    expect(result[0].id).toBe('zoneB')
+  })
+
+  it('handles case when current zone is no longer available', () => {
+    const sticky = createStickyCollision(15)
+
+    const containersWithA = [
+      createContainer('zoneA', { top: 40, bottom: 60, left: 0, right: 100, width: 100, height: 20 }),
+    ]
+
+    // Activate zoneA
+    sticky({
+      droppableContainers: containersWithA,
+      collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
+      droppableRects: new Map(),
+      active: null,
+      pointerCoordinates: null,
+    })
+
+    // zoneA is gone, only zoneB exists
+    const containersWithB = [
+      createContainer('zoneB', { top: 70, bottom: 90, left: 0, right: 100, width: 100, height: 20 }),
+    ]
+
+    const result = sticky({
+      droppableContainers: containersWithB,
+      collisionRect: { top: 75, left: 0, right: 100, bottom: 85, width: 100, height: 10 },
+      droppableRects: new Map(),
+      active: null,
+      pointerCoordinates: null,
+    })
+    expect(result[0].id).toBe('zoneB')
   })
 })

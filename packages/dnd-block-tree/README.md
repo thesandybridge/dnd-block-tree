@@ -4,11 +4,13 @@ A headless React library for building hierarchical drag-and-drop interfaces. Bri
 
 ## Features
 
-- **Weighted Collision Detection** - Custom algorithm that scores drop zones by edge distance with bottom bias for natural drag behavior
-- **Smart Drop Zones** - Only one before-zone rendered, none around active block. Prevents visual clutter and accidental drops
+- **Sticky Collision Detection** - Custom algorithm with hysteresis to prevent flickering between adjacent drop zones
+- **Stable Drop Zones** - Position-based zones that don't shift when blocks are dragged, ensuring consistent drop targets
+- **Live Drop Preview** - Optional real-time preview showing blocks at their target position during drag
 - **8px Activation Distance** - Prevents accidental drags. Pointer must move 8px before drag starts, allowing normal clicks
 - **Snapshot-Based Computation** - State captured at drag start. All preview computations use snapshot, ensuring consistent behavior
 - **Debounced Preview** - 150ms debounced virtual state for smooth drag previews without jitter
+- **Customizable Drag Rules** - `canDrag` and `canDrop` filters for fine-grained control over drag behavior
 
 ## Installation
 
@@ -64,6 +66,9 @@ function App() {
 | `dragOverlay` | `(block: T) => ReactNode` | - | Custom drag overlay renderer |
 | `activationDistance` | `number` | `8` | Pixels to move before drag starts |
 | `previewDebounce` | `number` | `150` | Debounce delay for preview updates |
+| `showDropPreview` | `boolean` | `true` | Show live preview of block at drop position |
+| `canDrag` | `(block: T) => boolean` | - | Filter which blocks can be dragged |
+| `canDrop` | `(block, zone, target) => boolean` | - | Filter valid drop targets |
 | `className` | `string` | - | Root container class |
 | `dropZoneClassName` | `string` | - | Drop zone class |
 | `dropZoneActiveClassName` | `string` | - | Active drop zone class |
