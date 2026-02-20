@@ -8,8 +8,13 @@ import { FolderBlock } from './blocks/FolderBlock'
 import { FileBlock } from './blocks/FileBlock'
 import { DiffView } from '../DiffView'
 import { Button } from '@/components/ui/button'
-import { Folder, File, GripVertical, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { Folder, File, GripVertical, Plus, RotateCcw, Trash2, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+interface FeatureSettings {
+  showDropPreview: boolean
+  activationDistance: number
+}
 
 const INITIAL_BLOCKS: FileSystemBlock[] = [
   { id: '1', type: 'folder', name: 'src', parentId: null, order: 0 },
@@ -85,6 +90,10 @@ function SelectableBlock({ id, isSelected, onSelect, children }: SelectableBlock
 export function FileTree() {
   const [blocks, setBlocks] = useState<FileSystemBlock[]>(INITIAL_BLOCKS)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [settings, setSettings] = useState<FeatureSettings>({
+    showDropPreview: true,
+    activationDistance: 8,
+  })
   const initialBlocksRef = useRef(INITIAL_BLOCKS)
 
   const handleSelect = useCallback((id: string) => {
@@ -223,10 +232,49 @@ export function FileTree() {
             dropZoneClassName="h-0.5 rounded transition-all duration-150"
             dropZoneActiveClassName="bg-primary h-1"
             indentClassName="ml-4 pl-2 border-l border-border/30"
+            showDropPreview={settings.showDropPreview}
+            activationDistance={settings.activationDistance}
           />
         </div>
 
-        <DiffView blocks={blocks} getLabel={getBlockLabel} />
+        <div className="space-y-4">
+          {/* Feature Toggles */}
+          <div className="rounded-xl border border-border/30 bg-card/30 p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+              <Settings className="h-4 w-4" />
+              Feature Toggles
+            </div>
+
+            <label className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
+              <span className="text-sm">Live Drop Preview</span>
+              <input
+                type="checkbox"
+                checked={settings.showDropPreview}
+                onChange={(e) => setSettings(s => ({ ...s, showDropPreview: e.target.checked }))}
+                className="w-4 h-4 accent-primary"
+              />
+            </label>
+
+            <div className="p-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm">Activation Distance</span>
+                <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
+                  {settings.activationDistance}px
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={20}
+                value={settings.activationDistance}
+                onChange={(e) => setSettings(s => ({ ...s, activationDistance: Number(e.target.value) }))}
+                className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+              />
+            </div>
+          </div>
+
+          <DiffView blocks={blocks} getLabel={getBlockLabel} />
+        </div>
       </div>
     </div>
   )
