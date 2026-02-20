@@ -2,4 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    /* Light mode - neutral with subtle green hint */
+    --background: oklch(0.98 0.005 150);
+    --foreground: oklch(0.16 0.02 150);
 
+    --card: oklch(0.99 0.003 150);
+    --card-foreground: oklch(0.16 0.02 150);
+
+    --popover: oklch(0.99 0.003 150);
+    --popover-foreground: oklch(0.16 0.02 150);
+
+    --primary: oklch(0.72 0.165 75);
+    --primary-foreground: oklch(0.16 0.02 150);
+
+    --secondary: oklch(0.94 0.008 150);
+    --secondary-foreground: oklch(0.16 0.02 150);
+
+    --muted: oklch(0.94 0.008 150);
+    --muted-foreground: oklch(0.45 0.02 150);
+
+    --accent: oklch(0.94 0.008 150);
+    --accent-foreground: oklch(0.16 0.02 150);
+
+    --destructive: oklch(0.55 0.2 25);
+    --destructive-foreground: oklch(0.98 0.005 150);
+
+    --border: oklch(0.88 0.01 150);
+    --input: oklch(0.88 0.01 150);
+    --ring: oklch(0.72 0.165 75);
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    /* Dark mode - warm Gruvbox-adjacent with amber accent */
+    --background: oklch(0.145 0.005 70);
+    --foreground: oklch(0.85 0.04 85);
+
+    --card: oklch(0.175 0.008 70);
+    --card-foreground: oklch(0.85 0.04 85);
+
+    --popover: oklch(0.175 0.008 70);
+    --popover-foreground: oklch(0.85 0.04 85);
+
+    --primary: oklch(0.78 0.155 80);
+    --primary-foreground: oklch(0.145 0.005 70);
+
+    --secondary: oklch(0.22 0.008 70);
+    --secondary-foreground: oklch(0.85 0.04 85);
+
+    --muted: oklch(0.22 0.008 70);
+    --muted-foreground: oklch(0.58 0.03 70);
+
+    --accent: oklch(0.22 0.008 70);
+    --accent-foreground: oklch(0.85 0.04 85);
+
+    --destructive: oklch(0.55 0.2 25);
+    --destructive-foreground: oklch(0.98 0.005 150);
+
+    --border: oklch(0.35 0.015 70 / 20%);
+    --input: oklch(0.35 0.015 70);
+    --ring: oklch(0.78 0.155 80);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Corona glow effect for cards */
+.corona-glow {
+  box-shadow:
+    0 0 15px 2px rgba(215, 153, 33, 0.10),
+    0 0 4px 1px rgba(215, 153, 33, 0.06);
+}
+
+.corona-glow-hover {
+  transition: box-shadow 0.3s ease;
+}
+
+.corona-glow-hover:hover {
+  box-shadow:
+    0 0 20px 4px rgba(215, 153, 33, 0.15),
+    0 0 8px 2px rgba(215, 153, 33, 0.10);
+}
+
+/* Drop zone animations */
+.drop-zone {
+  transition: all 0.15s ease;
+}
+
+.drop-zone-active {
+  background: oklch(0.72 0.165 75 / 30%);
+  height: 8px !important;
+}
+
+/* Block hover effects */
+.block-item {
+  transition: all 0.15s ease;
+}
+
+.block-item:hover {
+  background: var(--muted);
+}
+
+/* Drag overlay styles */
+.drag-overlay {
+  opacity: 0.95;
+  transform: rotate(2deg);
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.15),
+    0 4px 10px rgba(0, 0, 0, 0.1);
+}

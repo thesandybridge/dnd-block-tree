@@ -1,0 +1,52 @@
+{
+  "name": "dnd-block-tree",
+  "version": "0.1.0",
+  "description": "A drag-and-drop block tree library for React",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "@dnd-kit/core": "^6.0.0",
+    "@dnd-kit/utilities": "^3.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "react": "^18",
+    "react-dom": "^18",
+    "tsup": "^8.0.0",
+    "typescript": "^5"
+  },
+  "keywords": [
+    "dnd",
+    "drag-and-drop",
+    "block",
+    "tree",
+    "react",
+    "dnd-kit"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/dnd-block-tree"
+  }
+}
