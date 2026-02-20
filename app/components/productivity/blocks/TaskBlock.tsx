@@ -13,11 +13,12 @@ export function TaskBlock({ block, isDragging, onToggle }: Props) {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card block-item corona-glow-hover',
-        isDragging && 'opacity-50'
+        'flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-card/50',
+        'block-item group',
+        isDragging && 'opacity-40 scale-[0.98]'
       )}
     >
-      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab drag-handle" />
 
       <button
         onClick={(e) => {
@@ -25,31 +26,38 @@ export function TaskBlock({ block, isDragging, onToggle }: Props) {
           onToggle?.()
         }}
         className={cn(
-          'h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors',
+          'h-5 w-5 rounded-full border-2 flex items-center justify-center',
+          'transition-all duration-200',
           block.completed
-            ? 'bg-primary border-primary'
-            : 'border-muted-foreground hover:border-primary'
+            ? 'bg-primary border-primary checkbox-complete'
+            : 'border-muted-foreground/40 hover:border-primary hover:scale-110'
         )}
       >
-        {block.completed && <Check className="h-3 w-3 text-primary-foreground" />}
+        {block.completed && (
+          <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />
+        )}
       </button>
 
       <span
         className={cn(
-          'flex-1',
-          block.completed && 'line-through text-muted-foreground'
+          'flex-1 transition-all duration-200',
+          block.completed && 'line-through text-muted-foreground/60'
         )}
       >
         {block.title}
       </span>
 
       {block.dueDate && (
-        <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
+        <span className={cn(
+          'text-xs px-2.5 py-1 rounded-full',
+          'bg-muted/80 text-muted-foreground',
+          'transition-colors duration-150'
+        )}>
           {block.dueDate}
         </span>
       )}
 
-      <span className="text-xs text-muted-foreground uppercase tracking-wider">
+      <span className="text-[10px] text-muted-foreground/50 uppercase tracking-widest font-medium opacity-0 group-hover:opacity-100 transition-opacity">
         Task
       </span>
     </div>

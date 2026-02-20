@@ -72,7 +72,10 @@ function SelectableBlock({ id, isSelected, onSelect, children }: SelectableBlock
   return (
     <div
       onClick={handleClick}
-      className={cn(isSelected && 'ring-2 ring-primary rounded-lg')}
+      className={cn(
+        'selection-ring cursor-pointer rounded-lg',
+        isSelected && 'selected'
+      )}
     >
       {children}
     </div>

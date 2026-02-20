@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
+import { ChevronRight, GripVertical } from 'lucide-react'
 import type { ContainerRendererProps } from 'dnd-block-tree'
 import type { ProductivityBlock } from '../types'
 import { cn } from '@/lib/utils'
@@ -17,38 +17,43 @@ export function SectionBlock({
   return (
     <div
       className={cn(
-        'rounded-xl border border-border/50 bg-card corona-glow-hover',
-        isDragging && 'opacity-50'
+        'rounded-xl border border-border/50 bg-card overflow-hidden',
+        'transition-all duration-200',
+        isDragging && 'opacity-40 scale-[0.98]'
       )}
     >
-      <div className="flex items-center gap-2 p-3">
+      <div className="flex items-center gap-2 p-3 folder-header group">
+        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab drag-handle" />
+
         <button
           onClick={(e) => {
             e.stopPropagation()
             onToggleExpand()
           }}
-          className="p-1 hover:bg-muted rounded"
-        >
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          className={cn(
+            'p-1 rounded-md transition-colors',
+            'hover:bg-muted/80 active:scale-95'
           )}
+        >
+          <div className={cn(
+            'transition-transform duration-200',
+            isExpanded && 'rotate-90'
+          )}>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </div>
         </button>
-
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
 
         <span className="font-semibold text-foreground flex-1">
           {block.title}
         </span>
 
-        <span className="text-xs text-muted-foreground uppercase tracking-wider">
+        <span className="text-[10px] text-muted-foreground/60 uppercase tracking-widest font-medium">
           Section
         </span>
       </div>
 
       {isExpanded && (
-        <div className="px-3 pb-3">
+        <div className="px-3 pb-3 folder-children">
           {children}
         </div>
       )}
