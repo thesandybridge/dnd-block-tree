@@ -2,7 +2,7 @@
 
 import { Fragment, type ReactNode } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import type { BaseBlock, InternalRenderers, ContainerRendererProps } from '../core/types'
+import type { BaseBlock, InternalRenderers, ContainerRendererProps, CanDragFn } from '../core/types'
 import { DropZone } from './DropZone'
 
 export interface TreeRendererProps<T extends BaseBlock> {
@@ -20,6 +20,7 @@ export interface TreeRendererProps<T extends BaseBlock> {
   dropZoneActiveClassName?: string
   indentClassName?: string
   rootClassName?: string
+  canDrag?: CanDragFn<T>
 }
 
 /**
@@ -28,12 +29,15 @@ export interface TreeRendererProps<T extends BaseBlock> {
 function DraggableBlock<T extends BaseBlock>({
   block,
   children,
+  disabled,
 }: {
   block: T
   children: (props: { isDragging: boolean }) => ReactNode
+  disabled?: boolean
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: block.id,
+    disabled,
   })
 
   return (
@@ -61,6 +65,7 @@ export function TreeRenderer<T extends BaseBlock>({
   dropZoneActiveClassName,
   indentClassName = 'ml-6 border-l border-gray-200 pl-4',
   rootClassName = 'flex flex-col gap-1',
+  canDrag,
 }: TreeRendererProps<T>) {
   const items = blocksByParent.get(parentId) ?? []
 
@@ -78,6 +83,7 @@ export function TreeRenderer<T extends BaseBlock>({
         const isContainer = containerTypes.includes(block.type)
         const isExpanded = expandedMap[block.id] !== false // Default to expanded
         const Renderer = renderers[block.type as keyof typeof renderers]
+        const isDragDisabled = canDrag ? !canDrag(block) : false
 
         if (!Renderer) {
           console.warn(`No renderer found for block type: ${block.type}`)
@@ -99,7 +105,7 @@ export function TreeRenderer<T extends BaseBlock>({
             )}
 
             {/* Render the block */}
-            <DraggableBlock block={block}>
+            <DraggableBlock block={block} disabled={isDragDisabled}>
               {({ isDragging }) => {
                 if (isContainer) {
                   const childContent = isExpanded ? (
@@ -128,6 +134,7 @@ export function TreeRenderer<T extends BaseBlock>({
                         dropZoneActiveClassName={dropZoneActiveClassName}
                         indentClassName={indentClassName}
                         rootClassName={rootClassName}
+                        canDrag={canDrag}
                       />
                     </>
                   ) : null

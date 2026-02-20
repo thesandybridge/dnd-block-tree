@@ -6,7 +6,6 @@ import {
   useReducer,
   useMemo,
   useCallback,
-  useState,
   type ReactNode,
 } from 'react'
 import type { UniqueIdentifier } from '@dnd-kit/core'
@@ -114,7 +113,6 @@ export function createBlockState<T extends BaseBlock>() {
       reducerWithContainerTypes,
       computeNormalizedIndex(initialBlocks)
     )
-    const [lastCreatedItem, setLastCreatedItem] = useState<T | null>(null)
 
     // Compute flat blocks array
     const blocks = useMemo(() => {
@@ -172,7 +170,6 @@ export function createBlockState<T extends BaseBlock>() {
         } as T
 
         dispatch({ type: 'ADD_ITEM', payload: newItem })
-        setLastCreatedItem(newItem)
         return newItem
       },
       []
@@ -200,7 +197,6 @@ export function createBlockState<T extends BaseBlock>() {
           payload: { item: newItem, parentId, index: insertIndex },
         })
 
-        setLastCreatedItem(newItem)
         return newItem
       },
       [state]

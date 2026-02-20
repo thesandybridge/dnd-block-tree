@@ -4,34 +4,54 @@ import {
   PointerSensor,
   TouchSensor,
   KeyboardSensor,
+  type PointerActivationConstraint,
 } from '@dnd-kit/core'
-
-export interface SensorConfig {
-  activationDistance?: number
-}
+import type { SensorConfig } from './types'
 
 const DEFAULT_ACTIVATION_DISTANCE = 8
 
 /**
- * Create configured sensors with activation distance constraint.
+ * Return type for getSensorConfig
+ */
+export interface SensorConfigResult {
+  pointer: { activationConstraint: PointerActivationConstraint }
+  touch: { activationConstraint: PointerActivationConstraint }
+}
+
+/**
+ * Create configured sensors with activation constraints.
  * The activation distance prevents accidental drags while still allowing clicks.
  *
  * @param config - Sensor configuration
  * @returns Configured sensors for DndContext
  */
 export function useConfiguredSensors(config: SensorConfig = {}) {
-  const { activationDistance = DEFAULT_ACTIVATION_DISTANCE } = config
+  const {
+    activationDistance = DEFAULT_ACTIVATION_DISTANCE,
+    activationDelay,
+    tolerance,
+  } = config
+
+  // Build activation constraint based on provided options
+  let activationConstraint: PointerActivationConstraint
+
+  if (activationDelay !== undefined) {
+    activationConstraint = {
+      delay: activationDelay,
+      tolerance: tolerance ?? 5,
+    }
+  } else {
+    activationConstraint = {
+      distance: activationDistance,
+    }
+  }
 
   return useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: activationDistance,
-      },
+      activationConstraint,
     }),
     useSensor(TouchSensor, {
-      activationConstraint: {
-        distance: activationDistance,
-      },
+      activationConstraint,
     }),
     useSensor(KeyboardSensor)
   )
@@ -40,17 +60,28 @@ export function useConfiguredSensors(config: SensorConfig = {}) {
 /**
  * Get sensor configuration for manual setup
  */
-export function getSensorConfig(activationDistance = DEFAULT_ACTIVATION_DISTANCE) {
+export function getSensorConfig(config: SensorConfig = {}): SensorConfigResult {
+  const {
+    activationDistance = DEFAULT_ACTIVATION_DISTANCE,
+    activationDelay,
+    tolerance,
+  } = config
+
+  let activationConstraint: PointerActivationConstraint
+
+  if (activationDelay !== undefined) {
+    activationConstraint = {
+      delay: activationDelay,
+      tolerance: tolerance ?? 5,
+    }
+  } else {
+    activationConstraint = {
+      distance: activationDistance,
+    }
+  }
+
   return {
-    pointer: {
-      activationConstraint: {
-        distance: activationDistance,
-      },
-    },
-    touch: {
-      activationConstraint: {
-        distance: activationDistance,
-      },
-    },
+    pointer: { activationConstraint },
+    touch: { activationConstraint },
   }
 }

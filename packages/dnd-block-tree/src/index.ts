@@ -14,6 +14,26 @@ export type {
   BlockStateProviderProps,
   TreeStateProviderProps,
   DropZoneType,
+  // Event types
+  BlockPosition,
+  DragStartEvent,
+  DragMoveEvent,
+  DragEndEvent,
+  BlockMoveEvent,
+  ExpandChangeEvent,
+  HoverChangeEvent,
+  // Callback types
+  BlockTreeCallbacks,
+  // Customization types
+  CanDragFn,
+  CanDropFn,
+  IdGeneratorFn,
+  SensorConfig,
+  DropZoneConfig,
+  AnimationConfig,
+  AutoExpandConfig,
+  BlockTreeCustomization,
+  InternalRenderers,
 } from './core/types'
 
 export { getDropZoneType, extractBlockId } from './core/types'
