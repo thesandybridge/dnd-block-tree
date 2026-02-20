@@ -8,7 +8,7 @@ import { SectionBlock } from './blocks/SectionBlock'
 import { TaskBlock } from './blocks/TaskBlock'
 import { NoteBlock } from './blocks/NoteBlock'
 import { DiffView } from '../DiffView'
-import { Button } from '@/components/ui/button'
+import { Button } from '@thesandybridge/ui/components'
 import { GripVertical, Plus, RotateCcw, Trash2, Settings, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -320,7 +320,7 @@ export function ProductivityTree() {
                   type="checkbox"
                   checked={settings.showDropPreview}
                   onChange={(e) => setSettings(s => ({ ...s, showDropPreview: e.target.checked }))}
-                  className="w-5 h-5 accent-primary"
+                  className="w-5 h-5"
                 />
               </label>
 
@@ -330,7 +330,7 @@ export function ProductivityTree() {
                   type="checkbox"
                   checked={settings.lockCompletedTasks}
                   onChange={(e) => setSettings(s => ({ ...s, lockCompletedTasks: e.target.checked }))}
-                  className="w-5 h-5 accent-primary"
+                  className="w-5 h-5"
                 />
               </label>
 
@@ -347,7 +347,7 @@ export function ProductivityTree() {
                   max={20}
                   value={settings.activationDistance}
                   onChange={(e) => setSettings(s => ({ ...s, activationDistance: Number(e.target.value) }))}
-                  className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+                  className="w-full"
                 />
               </div>
             </div>

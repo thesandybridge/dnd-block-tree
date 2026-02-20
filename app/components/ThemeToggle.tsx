@@ -1,38 +1,33 @@
-'use client'
+"use client";
 
-import { Moon, Sun } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
+import { useEffect, useState } from "react";
+import { useTheme } from "@/components/theme-provider";
+import { Sun, Moon } from "lucide-react";
+import { Button } from "@thesandybridge/ui/components";
 
 export function ThemeToggle() {
-  const [isDark, setIsDark] = useState(false)
+  const { mode, toggleMode } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    // Check initial theme
-    const isDarkMode = document.documentElement.classList.contains('dark')
-    setIsDark(isDarkMode)
-  }, [])
+  useEffect(() => setMounted(true), []);
 
-  const toggleTheme = () => {
-    const newDark = !isDark
-    setIsDark(newDark)
-    document.documentElement.classList.toggle('dark', newDark)
-    localStorage.setItem('theme', newDark ? 'dark' : 'light')
+  if (!mounted) {
+    return <Button variant="ghost" size="icon" className="h-9 w-9" disabled />;
   }
 
   return (
     <Button
       variant="ghost"
       size="icon"
-      onClick={toggleTheme}
       className="h-9 w-9"
+      onClick={toggleMode}
+      aria-label={`Switch to ${mode === "dark" ? "light" : "dark"} mode`}
     >
-      {isDark ? (
+      {mode === "dark" ? (
         <Sun className="h-4 w-4" />
       ) : (
         <Moon className="h-4 w-4" />
       )}
-      <span className="sr-only">Toggle theme</span>
     </Button>
-  )
+  );
 }

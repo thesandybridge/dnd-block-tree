@@ -2,10 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet'
-import { ThemeToggle } from '../components/ThemeToggle'
+import { Card, CardContent, CardHeader, CardTitle, Button, Sheet, SheetTrigger, SheetContent } from '@thesandybridge/ui/components'
+import { ThemePicker } from '../components/ThemePicker'
 import { CodeBlock } from '../components/CodeBlock'
 import { Footer } from '../components/Footer'
 import { Layers, Github, ArrowLeft, Package, Wrench, Zap, Code2, Menu } from 'lucide-react'
@@ -240,7 +238,7 @@ export default function DocsPage() {
                 <Github className="h-4 w-4" />
               </a>
             </Button>
-            <ThemeToggle />
+            <ThemePicker />
             <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="lg:hidden">

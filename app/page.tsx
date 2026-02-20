@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ThemeToggle } from './components/ThemeToggle'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@thesandybridge/ui/components'
+import { ThemePicker } from './components/ThemePicker'
 import { CodeBlock } from './components/CodeBlock'
 import { ProductivityTree } from './components/productivity/ProductivityTree'
 import { FileTree } from './components/filesystem/FileTree'
@@ -87,7 +86,7 @@ export default function Home() {
                 <Github className="h-4 w-4" />
               </a>
             </Button>
-            <ThemeToggle />
+            <ThemePicker />
           </div>
         </div>
       </header>
@@ -118,7 +117,7 @@ export default function Home() {
         <section className="px-3 sm:px-6 pb-16">
           <div className="max-w-4xl mx-auto">
             <Card className="corona-glow">
-              <CardHeader className="pb-4">
+              <CardHeader>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <CardTitle className="text-xl">Interactive Demo</CardTitle>
@@ -157,7 +156,7 @@ export default function Home() {
 
         <section className="px-6 pb-16">
           <div className="max-w-4xl mx-auto">
-            <Card>
+            <Card className="corona-glow">
               <CardHeader>
                 <CardTitle className="text-lg">Usage Example</CardTitle>
                 <CardDescription>Simple API for complex interactions</CardDescription>
@@ -174,7 +173,7 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-center mb-8">Features</h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {FEATURES.map(feature => (
-                <Card key={feature.title} className="corona-glow-hover">
+                <Card key={feature.title} className="corona-glow corona-glow-hover">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base">{feature.title}</CardTitle>
                   </CardHeader>

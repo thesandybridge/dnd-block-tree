@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { generateThemeScript } from "@thesandybridge/themes";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -26,23 +28,13 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('theme');
-                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
+        <meta name="darkreader-lock" />
+        <script dangerouslySetInnerHTML={{ __html: generateThemeScript() }} />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

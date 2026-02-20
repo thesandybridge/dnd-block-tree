@@ -1,102 +1,179 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "@thesandybridge/themes/css";
 
-@layer base {
-  :root {
-    /* Light mode - neutral with subtle green hint */
-    --background: oklch(0.98 0.005 150);
-    --foreground: oklch(0.16 0.02 150);
+@custom-variant dark (&:is([data-mode="dark"] *));
 
-    --card: oklch(0.99 0.003 150);
-    --card-foreground: oklch(0.16 0.02 150);
+@theme inline {
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+    --radius-2xl: calc(var(--radius) + 8px);
+    --radius-3xl: calc(var(--radius) + 12px);
+    --radius-4xl: calc(var(--radius) + 16px);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
 
-    --popover: oklch(0.99 0.003 150);
-    --popover-foreground: oklch(0.16 0.02 150);
-
-    --primary: oklch(0.72 0.165 75);
-    --primary-foreground: oklch(0.16 0.02 150);
-
-    --secondary: oklch(0.94 0.008 150);
-    --secondary-foreground: oklch(0.16 0.02 150);
-
-    --muted: oklch(0.94 0.008 150);
-    --muted-foreground: oklch(0.45 0.02 150);
-
-    --accent: oklch(0.94 0.008 150);
-    --accent-foreground: oklch(0.16 0.02 150);
-
-    --destructive: oklch(0.55 0.2 25);
-    --destructive-foreground: oklch(0.98 0.005 150);
-
-    --border: oklch(0.88 0.01 150);
-    --input: oklch(0.88 0.01 150);
-    --ring: oklch(0.72 0.165 75);
-
+/* Map shared theme variables to shadcn variables */
+/* Light mode (default for data-mode="light") */
+:root, [data-mode="light"] {
     --radius: 0.75rem;
-  }
+    --background: var(--primary-bg);
+    --foreground: var(--text-bright);
+    --card: var(--secondary-bg);
+    --card-foreground: var(--text-bright);
+    --popover: var(--secondary-bg);
+    --popover-foreground: var(--text-bright);
+    --primary: var(--secondary-fg);
+    --primary-foreground: var(--primary-bg);
+    --secondary: var(--secondary-bg);
+    --secondary-foreground: var(--text-bright);
+    --muted: var(--secondary-bg);
+    --muted-foreground: var(--primary-fg);
+    --accent: var(--secondary-bg);
+    --accent-foreground: var(--text-bright);
+    --destructive: var(--error);
+    --input: var(--border);
+    --ring: var(--secondary-fg);
+    --chart-1: var(--secondary-fg);
+    --chart-2: var(--alt);
+    --chart-3: var(--info);
+    --chart-4: var(--warning);
+    --chart-5: var(--success);
+    --sidebar: var(--secondary-bg);
+    --sidebar-foreground: var(--text-bright);
+    --sidebar-primary: var(--secondary-fg);
+    --sidebar-primary-foreground: var(--primary-bg);
+    --sidebar-accent: var(--secondary-bg);
+    --sidebar-accent-foreground: var(--text-bright);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--secondary-fg);
+}
 
-  .dark {
-    /* Dark mode - warm Gruvbox-adjacent with amber accent */
-    --background: oklch(0.145 0.005 70);
-    --foreground: oklch(0.85 0.04 85);
-
-    --card: oklch(0.175 0.008 70);
-    --card-foreground: oklch(0.85 0.04 85);
-
-    --popover: oklch(0.175 0.008 70);
-    --popover-foreground: oklch(0.85 0.04 85);
-
-    --primary: oklch(0.78 0.155 80);
-    --primary-foreground: oklch(0.145 0.005 70);
-
-    --secondary: oklch(0.22 0.008 70);
-    --secondary-foreground: oklch(0.85 0.04 85);
-
-    --muted: oklch(0.22 0.008 70);
-    --muted-foreground: oklch(0.58 0.03 70);
-
-    --accent: oklch(0.22 0.008 70);
-    --accent-foreground: oklch(0.85 0.04 85);
-
-    --destructive: oklch(0.55 0.2 25);
-    --destructive-foreground: oklch(0.98 0.005 150);
-
-    --border: oklch(0.35 0.015 70 / 20%);
-    --input: oklch(0.35 0.015 70);
-    --ring: oklch(0.78 0.155 80);
-  }
+/* Dark mode */
+[data-mode="dark"] {
+    --background: var(--primary-bg);
+    --foreground: var(--text-bright);
+    --card: var(--secondary-bg);
+    --card-foreground: var(--text-bright);
+    --popover: var(--secondary-bg);
+    --popover-foreground: var(--text-bright);
+    --primary: var(--secondary-fg);
+    --primary-foreground: var(--primary-bg);
+    --secondary: var(--secondary-bg);
+    --secondary-foreground: var(--text-bright);
+    --muted: var(--secondary-bg);
+    --muted-foreground: var(--primary-fg);
+    --accent: var(--secondary-bg);
+    --accent-foreground: var(--text-bright);
+    --destructive: var(--error);
+    --input: var(--border);
+    --ring: var(--secondary-fg);
+    --chart-1: var(--secondary-fg);
+    --chart-2: var(--alt);
+    --chart-3: var(--info);
+    --chart-4: var(--warning);
+    --chart-5: var(--success);
+    --sidebar: var(--secondary-bg);
+    --sidebar-foreground: var(--text-bright);
+    --sidebar-primary: var(--secondary-fg);
+    --sidebar-primary-foreground: var(--primary-bg);
+    --sidebar-accent: var(--secondary-bg);
+    --sidebar-accent-foreground: var(--text-bright);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--secondary-fg);
 }
 
 @layer base {
-  * {
-    @apply border-border;
+  *,
+  *::before,
+  *::after {
+    border-color: var(--border);
+    outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, fill 0.3s ease, stroke 0.3s ease;
+  }
+  html {
+    @apply overflow-x-hidden;
+  }
+  body {
+    @apply bg-background text-foreground overflow-x-hidden;
   }
 
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+  /* Form input styling */
+  input[type="checkbox"] {
+    @apply rounded border-2 border-muted-foreground bg-background;
+    accent-color: var(--primary);
+  }
+  input[type="checkbox"]:checked {
+    @apply bg-primary border-primary;
+  }
+
+  input[type="range"] {
+    @apply appearance-none bg-transparent cursor-pointer;
+  }
+  input[type="range"]::-webkit-slider-track {
+    @apply h-2 rounded-full;
+    background: var(--border);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    @apply appearance-none w-4 h-4 rounded-full -mt-1;
+    background: var(--primary);
+  }
+  input[type="range"]::-moz-range-track {
+    @apply h-2 rounded-full;
+    background: var(--border);
+  }
+  input[type="range"]::-moz-range-thumb {
+    @apply w-4 h-4 rounded-full border-0;
+    background: var(--primary);
   }
 }
 
-/* Corona glow effect for cards */
+/* Corona glow — uses theme accent color */
 .corona-glow {
   box-shadow:
-    0 0 0 1px oklch(0.78 0.155 80 / 8%),
-    0 0 20px 2px oklch(0.78 0.155 80 / 8%),
-    0 0 6px 1px oklch(0.78 0.155 80 / 5%);
+    0 0 15px 2px rgba(var(--secondary-fg-rgb), 0.10),
+    0 0 4px 1px rgba(var(--secondary-fg-rgb), 0.06);
 }
 
 .corona-glow-hover {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: box-shadow 0.3s ease;
 }
-
 .corona-glow-hover:hover {
   box-shadow:
-    0 0 0 1px oklch(0.78 0.155 80 / 12%),
-    0 0 24px 4px oklch(0.78 0.155 80 / 12%),
-    0 0 10px 2px oklch(0.78 0.155 80 / 8%);
-  transform: translateY(-1px);
+    0 0 15px 2px rgba(var(--secondary-fg-rgb), 0.10),
+    0 0 4px 1px rgba(var(--secondary-fg-rgb), 0.06);
 }
 
 /* Block item styles */
@@ -106,7 +183,7 @@
 }
 
 .block-item:hover {
-  background: oklch(from var(--muted) l c h / 60%);
+  background: var(--muted);
 }
 
 .block-item:active {
@@ -142,7 +219,7 @@
   box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.2),
     0 8px 16px rgba(0, 0, 0, 0.15),
-    0 0 0 1px oklch(0.78 0.155 80 / 30%);
+    0 0 0 1px rgba(var(--secondary-fg-rgb), 0.30);
   animation: drag-lift 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -164,8 +241,8 @@
 }
 
 .drop-zone-indicator.active {
-  background: oklch(0.78 0.155 80 / 25%);
-  box-shadow: 0 0 8px 2px oklch(0.78 0.155 80 / 20%);
+  background: rgba(var(--secondary-fg-rgb), 0.25);
+  box-shadow: 0 0 8px 2px rgba(var(--secondary-fg-rgb), 0.20);
 }
 
 /* Checkbox animation */
@@ -203,7 +280,7 @@
 .selection-ring.selected {
   box-shadow:
     0 0 0 2px var(--primary),
-    0 0 0 4px oklch(0.78 0.155 80 / 20%);
+    0 0 0 4px rgba(var(--secondary-fg-rgb), 0.20);
 }
 
 /* Badge hover */
@@ -212,7 +289,7 @@
 }
 
 .badge-interactive:hover {
-  background: oklch(from var(--muted) calc(l - 0.05) c h);
+  background: var(--muted);
 }
 
 /* Smooth scrollbar */
@@ -226,12 +303,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.5 0 0 / 20%);
+  background: rgba(128, 128, 128, 0.2);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0 0 / 35%);
+  background: rgba(128, 128, 128, 0.35);
 }
 
 /* Focus visible */
@@ -254,7 +331,7 @@
 /* Responsive tree indentation - use padding only, no margin to prevent overflow */
 .tree-indent {
   padding-left: 0.75rem;
-  border-left: 1px solid oklch(0.5 0 0 / 20%);
+  border-left: 1px solid var(--border);
 }
 
 @media (min-width: 640px) {
@@ -265,7 +342,7 @@
 
 .tree-indent-compact {
   padding-left: 0.5rem;
-  border-left: 1px solid oklch(0.5 0 0 / 15%);
+  border-left: 1px solid var(--border);
 }
 
 @media (min-width: 640px) {
@@ -290,7 +367,6 @@
 /* Ensure all tree children constrain width properly */
 .tree-indent,
 .tree-indent-compact {
-  /* Don't use width: 100% with margin - it causes overflow */
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;

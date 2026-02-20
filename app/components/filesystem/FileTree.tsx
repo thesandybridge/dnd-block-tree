@@ -7,7 +7,7 @@ import { CONTAINER_TYPES } from './types'
 import { FolderBlock } from './blocks/FolderBlock'
 import { FileBlock } from './blocks/FileBlock'
 import { DiffView } from '../DiffView'
-import { Button } from '@/components/ui/button'
+import { Button } from '@thesandybridge/ui/components'
 import { Folder, File, GripVertical, Plus, RotateCcw, Trash2, Settings, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useIsMobile } from '@/hooks/use-mobile'
@@ -272,7 +272,7 @@ export function FileTree() {
                   type="checkbox"
                   checked={settings.showDropPreview}
                   onChange={(e) => setSettings(s => ({ ...s, showDropPreview: e.target.checked }))}
-                  className="w-5 h-5 accent-primary"
+                  className="w-5 h-5"
                 />
               </label>
 
@@ -289,7 +289,7 @@ export function FileTree() {
                   max={20}
                   value={settings.activationDistance}
                   onChange={(e) => setSettings(s => ({ ...s, activationDistance: Number(e.target.value) }))}
-                  className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+                  className="w-full"
                 />
               </div>
             </div>
