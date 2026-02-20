@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { weightedVerticalCollision, closestCenterCollision, createStickyCollision } from './collision'
-import type { DroppableContainer } from '@dnd-kit/core'
+import type { DroppableContainer, Active, ClientRect } from '@dnd-kit/core'
+
+const nullActive = null as unknown as Active
+const nullRect = null as unknown as ClientRect
 
 // Helper to create mock droppable container
 function createContainer(
@@ -20,9 +23,9 @@ describe('weightedVerticalCollision', () => {
   it('returns empty array when collisionRect is null', () => {
     const result = weightedVerticalCollision({
       droppableContainers: [],
-      collisionRect: null,
+      collisionRect: nullRect,
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -39,7 +42,7 @@ describe('weightedVerticalCollision', () => {
       droppableContainers: containers,
       collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -76,7 +79,7 @@ describe('weightedVerticalCollision', () => {
       droppableContainers: containers2,
       collisionRect: { top: 45, left: 0, right: 100, bottom: 55, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -97,7 +100,7 @@ describe('weightedVerticalCollision', () => {
       droppableContainers: [validContainer, invalidContainer],
       collisionRect: { top: 10, left: 0, right: 100, bottom: 20, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -118,7 +121,7 @@ describe('weightedVerticalCollision', () => {
       droppableContainers: [container],
       collisionRect: { top: 145, left: 0, right: 100, bottom: 155, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -130,9 +133,9 @@ describe('closestCenterCollision', () => {
   it('returns empty array when collisionRect is null', () => {
     const result = closestCenterCollision({
       droppableContainers: [],
-      collisionRect: null,
+      collisionRect: nullRect,
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -149,7 +152,7 @@ describe('closestCenterCollision', () => {
       droppableContainers: containers,
       collisionRect: { top: 45, left: 45, right: 55, bottom: 55, width: 10, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -170,7 +173,7 @@ describe('closestCenterCollision', () => {
       droppableContainers: containers,
       collisionRect: { top: 45, left: 95, right: 105, bottom: 55, width: 10, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -193,7 +196,7 @@ describe('closestCenterCollision', () => {
       droppableContainers: [validContainer, invalidContainer],
       collisionRect: { top: 5, left: 5, right: 15, bottom: 15, width: 10, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -214,7 +217,7 @@ describe('createStickyCollision', () => {
       droppableContainers: containers,
       collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -236,7 +239,7 @@ describe('createStickyCollision', () => {
       droppableContainers: containers,
       collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
     expect(result1[0].id).toBe('zoneA')
@@ -247,7 +250,7 @@ describe('createStickyCollision', () => {
       droppableContainers: containers,
       collisionRect: { top: 57, left: 0, right: 100, bottom: 67, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
     expect(result2[0].id).toBe('zoneA')
@@ -266,7 +269,7 @@ describe('createStickyCollision', () => {
       droppableContainers: containers,
       collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
     expect(result1[0].id).toBe('zoneA')
@@ -276,7 +279,7 @@ describe('createStickyCollision', () => {
       droppableContainers: containers,
       collisionRect: { top: 105, left: 0, right: 100, bottom: 115, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
     expect(result2[0].id).toBe('zoneB')
@@ -295,7 +298,7 @@ describe('createStickyCollision', () => {
       droppableContainers: containers,
       collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -307,7 +310,7 @@ describe('createStickyCollision', () => {
       droppableContainers: containers,
       collisionRect: { top: 105, left: 0, right: 100, bottom: 115, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
     expect(result[0].id).toBe('zoneB')
@@ -325,7 +328,7 @@ describe('createStickyCollision', () => {
       droppableContainers: containersWithA,
       collisionRect: { top: 50, left: 0, right: 100, bottom: 60, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
 
@@ -338,7 +341,7 @@ describe('createStickyCollision', () => {
       droppableContainers: containersWithB,
       collisionRect: { top: 75, left: 0, right: 100, bottom: 85, width: 100, height: 10 },
       droppableRects: new Map(),
-      active: null,
+      active: nullActive,
       pointerCoordinates: null,
     })
     expect(result[0].id).toBe('zoneB')
