@@ -36,22 +36,22 @@ export function FileBlock({ block, isDragging }: Props) {
   return (
     <div
       className={cn(
-        'flex items-center gap-2 p-2 rounded-md',
+        'flex items-center gap-2 p-2 rounded-md w-full min-w-0 max-w-full',
         'block-item group',
         'transition-all duration-150',
         isDragging && 'opacity-40 scale-[0.98]'
       )}
     >
-      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab drag-handle" />
+      <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground cursor-grab drag-handle" />
 
-      <Icon className={cn('h-4 w-4 transition-colors', color)} />
+      <Icon className={cn('h-4 w-4 shrink-0 transition-colors', color)} />
 
-      <span className="flex-1 text-sm text-foreground truncate">
+      <span className="flex-1 min-w-0 text-sm text-foreground truncate">
         {block.name}
       </span>
 
       {block.size && (
-        <span className="text-[11px] text-muted-foreground/60 tabular-nums">
+        <span className="hidden sm:inline text-[11px] text-muted-foreground/60 tabular-nums shrink-0">
           {block.size}
         </span>
       )}

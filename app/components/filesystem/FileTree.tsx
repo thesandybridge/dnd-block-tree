@@ -8,8 +8,9 @@ import { FolderBlock } from './blocks/FolderBlock'
 import { FileBlock } from './blocks/FileBlock'
 import { DiffView } from '../DiffView'
 import { Button } from '@/components/ui/button'
-import { Folder, File, GripVertical, Plus, RotateCcw, Trash2, Settings } from 'lucide-react'
+import { Folder, File, GripVertical, Plus, RotateCcw, Trash2, Settings, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 interface FeatureSettings {
   showDropPreview: boolean
@@ -78,7 +79,7 @@ function SelectableBlock({ id, isSelected, onSelect, children }: SelectableBlock
     <div
       onClick={handleClick}
       className={cn(
-        'selection-ring cursor-pointer rounded-lg',
+        'selection-ring cursor-pointer rounded-lg w-full min-w-0 max-w-full',
         isSelected && 'selected'
       )}
     >
@@ -94,6 +95,8 @@ export function FileTree() {
     showDropPreview: true,
     activationDistance: 8,
   })
+  const [settingsExpanded, setSettingsExpanded] = useState(false)
+  const isMobile = useIsMobile()
   const initialBlocksRef = useRef(INITIAL_BLOCKS)
 
   const handleSelect = useCallback((id: string) => {
@@ -189,7 +192,7 @@ export function FileTree() {
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full min-w-0 overflow-hidden">
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1 p-1 bg-muted rounded-lg">
           <Button variant="ghost" size="sm" onClick={addFolder} className="gap-1">
@@ -220,18 +223,18 @@ export function FileTree() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr,300px] gap-4">
-        <div onClick={handleClearSelection}>
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr),300px] gap-4 w-full min-w-0">
+        <div onClick={handleClearSelection} className="min-w-0 w-full max-w-full overflow-x-hidden">
           <BlockTree
             blocks={blocks}
             renderers={renderers}
             containerTypes={CONTAINER_TYPES}
             onChange={setBlocks}
             dragOverlay={renderDragOverlay}
-            className="flex flex-col gap-1"
+            className="flex flex-col gap-1 w-full"
             dropZoneClassName="h-0.5 rounded transition-all duration-150"
             dropZoneActiveClassName="bg-primary h-1"
-            indentClassName="ml-4 pl-2 border-l border-border/30"
+            indentClassName="tree-indent-compact"
             showDropPreview={settings.showDropPreview}
             activationDistance={settings.activationDistance}
           />
@@ -239,37 +242,56 @@ export function FileTree() {
 
         <div className="space-y-4">
           {/* Feature Toggles */}
-          <div className="rounded-xl border border-border/30 bg-card/30 p-4 space-y-3">
-            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-              <Settings className="h-4 w-4" />
-              Feature Toggles
-            </div>
-
-            <label className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
-              <span className="text-sm">Live Drop Preview</span>
-              <input
-                type="checkbox"
-                checked={settings.showDropPreview}
-                onChange={(e) => setSettings(s => ({ ...s, showDropPreview: e.target.checked }))}
-                className="w-4 h-4 accent-primary"
-              />
-            </label>
-
-            <div className="p-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm">Activation Distance</span>
-                <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
-                  {settings.activationDistance}px
-                </span>
+          <div className="rounded-xl border border-border/30 bg-card/30 overflow-hidden">
+            <button
+              onClick={() => setSettingsExpanded(!settingsExpanded)}
+              className={cn(
+                "flex items-center justify-between w-full p-4 text-left",
+                "lg:cursor-default",
+                isMobile && "hover:bg-muted/30"
+              )}
+            >
+              <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                <Settings className="h-4 w-4" />
+                Feature Toggles
               </div>
-              <input
-                type="range"
-                min={0}
-                max={20}
-                value={settings.activationDistance}
-                onChange={(e) => setSettings(s => ({ ...s, activationDistance: Number(e.target.value) }))}
-                className="w-full h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
-              />
+              <ChevronDown className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform lg:hidden",
+                settingsExpanded && "rotate-180"
+              )} />
+            </button>
+
+            <div className={cn(
+              "px-4 pb-4 space-y-3",
+              isMobile && !settingsExpanded && "hidden",
+              "lg:block"
+            )}>
+              <label className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
+                <span className="text-sm">Live Drop Preview</span>
+                <input
+                  type="checkbox"
+                  checked={settings.showDropPreview}
+                  onChange={(e) => setSettings(s => ({ ...s, showDropPreview: e.target.checked }))}
+                  className="w-5 h-5 accent-primary"
+                />
+              </label>
+
+              <div className="p-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm">Activation Distance</span>
+                  <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
+                    {settings.activationDistance}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={20}
+                  value={settings.activationDistance}
+                  onChange={(e) => setSettings(s => ({ ...s, activationDistance: Number(e.target.value) }))}
+                  className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
+                />
+              </div>
             </div>
           </div>
 

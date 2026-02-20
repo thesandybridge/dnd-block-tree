@@ -508,7 +508,7 @@ export function BlockTree<
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className={className}>
+      <div className={className} style={{ minWidth: 0 }}>
         <TreeRenderer
           blocks={blocks}
           blocksByParent={blocksByParent}

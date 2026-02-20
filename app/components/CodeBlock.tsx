@@ -40,16 +40,19 @@ const customTheme = {
 
 export function CodeBlock({ code, language = 'tsx' }: CodeBlockProps) {
   return (
-    <SyntaxHighlighter
-      language={language}
-      style={customTheme}
-      customStyle={{
-        margin: 0,
-        background: 'var(--muted)',
-        borderRadius: '0.5rem',
-      }}
-    >
-      {code}
-    </SyntaxHighlighter>
+    <div className="overflow-x-auto">
+      <SyntaxHighlighter
+        language={language}
+        style={customTheme}
+        customStyle={{
+          margin: 0,
+          background: 'var(--muted)',
+          borderRadius: '0.5rem',
+          minWidth: 'max-content',
+        }}
+      >
+        {code}
+      </SyntaxHighlighter>
+    </div>
   )
 }

@@ -72,10 +72,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="h-5 w-5 text-primary" />
-            <span className="font-mono font-semibold text-lg">dnd-block-tree</span>
+            <span className="font-mono font-semibold text-base sm:text-lg">dnd-block-tree</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" asChild>
@@ -115,16 +115,16 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="px-6 pb-16">
+        <section className="px-3 sm:px-6 pb-16">
           <div className="max-w-4xl mx-auto">
             <Card className="corona-glow">
               <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <CardTitle className="text-xl">Interactive Demo</CardTitle>
                     <CardDescription>Try dragging blocks to reorder them</CardDescription>
                   </div>
-                  <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                  <div className="flex gap-1 p-1 bg-muted rounded-lg self-start sm:self-auto">
                     <Button
                       variant={activeTab === 'productivity' ? 'default' : 'ghost'}
                       size="sm"
@@ -132,7 +132,8 @@ export default function Home() {
                       className="gap-2"
                     >
                       <Layers className="h-4 w-4" />
-                      Productivity
+                      <span className="hidden sm:inline">Productivity</span>
+                      <span className="sm:hidden">Tasks</span>
                     </Button>
                     <Button
                       variant={activeTab === 'filesystem' ? 'default' : 'ghost'}
@@ -141,7 +142,8 @@ export default function Home() {
                       className="gap-2"
                     >
                       <FolderTree className="h-4 w-4" />
-                      File System
+                      <span className="hidden sm:inline">File System</span>
+                      <span className="sm:hidden">Files</span>
                     </Button>
                   </div>
                 </div>

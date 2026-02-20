@@ -19,17 +19,17 @@ export function FolderBlock({
   return (
     <div
       className={cn(
-        'rounded-lg border border-border/30 bg-card/50 overflow-hidden',
+        'rounded-lg border border-border/30 bg-card/50 w-full min-w-0 max-w-full',
         'transition-all duration-200',
         isDragging && 'opacity-40 scale-[0.98]'
       )}
     >
       <div className={cn(
-        'flex items-center gap-2 p-2 folder-header group',
+        'flex items-center gap-2 p-2 folder-header group min-w-0',
         'transition-colors duration-150',
         'hover:bg-muted/40'
       )}>
-        <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab drag-handle" />
+        <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground cursor-grab drag-handle" />
 
         <button
           onClick={(e) => {
@@ -37,7 +37,7 @@ export function FolderBlock({
             onToggleExpand()
           }}
           className={cn(
-            'p-0.5 rounded transition-colors',
+            'p-0.5 shrink-0 rounded transition-colors',
             'hover:bg-muted/80 active:scale-95'
           )}
         >
@@ -50,17 +50,17 @@ export function FolderBlock({
         </button>
 
         <Icon className={cn(
-          'h-4 w-4 transition-colors duration-200',
+          'h-4 w-4 shrink-0 transition-colors duration-200',
           isExpanded ? 'text-primary' : 'text-primary/70'
         )} />
 
-        <span className="font-medium text-foreground text-sm flex-1">
+        <span className="font-medium text-foreground text-sm flex-1 min-w-0 truncate">
           {block.name}
         </span>
       </div>
 
       {isExpanded && (
-        <div className="px-2 pb-2 folder-children">
+        <div className="px-2 pb-2 folder-children w-full min-w-0 max-w-full">
           {children}
         </div>
       )}

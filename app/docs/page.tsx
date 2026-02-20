@@ -1,12 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Sheet, SheetTrigger, SheetContent } from '@/components/ui/sheet'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { CodeBlock } from '../components/CodeBlock'
 import { Footer } from '../components/Footer'
-import { Layers, Github, ArrowLeft, Package, Wrench, Zap, Code2 } from 'lucide-react'
+import { Layers, Github, ArrowLeft, Package, Wrench, Zap, Code2, Menu } from 'lucide-react'
 
 const INSTALL_CODE = `npm install dnd-block-tree @dnd-kit/core @dnd-kit/utilities`
 
@@ -210,24 +212,26 @@ const SECTIONS: DocSection[] = [
 ]
 
 export default function DocsPage() {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b border-border/50 sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2 sm:gap-4">
             <Link href="/">
-              <Button variant="ghost" size="sm" className="gap-2">
+              <Button variant="ghost" size="sm" className="gap-2 px-2 sm:px-3">
                 <ArrowLeft className="h-4 w-4" />
-                Back
+                <span className="hidden sm:inline">Back</span>
               </Button>
             </Link>
             <div className="flex items-center gap-2">
               <Layers className="h-5 w-5 text-primary" />
-              <span className="font-mono font-semibold text-lg">Documentation</span>
+              <span className="font-mono font-semibold text-base sm:text-lg">Docs</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" asChild>
+            <Button variant="ghost" size="icon" asChild className="hidden sm:flex">
               <a
                 href="https://github.com/thesandybridge/dnd-block-tree"
                 target="_blank"
@@ -237,6 +241,29 @@ export default function DocsPage() {
               </a>
             </Button>
             <ThemeToggle />
+            <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="lg:hidden">
+                  <Menu className="h-5 w-5" />
+                  <span className="sr-only">Open navigation</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-64 pt-12 px-4">
+                <nav className="space-y-1">
+                  {SECTIONS.map(section => (
+                    <a
+                      key={section.id}
+                      href={`#${section.id}`}
+                      onClick={() => setMobileNavOpen(false)}
+                      className="flex items-center gap-2 px-3 py-3 text-sm rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                      {section.icon}
+                      {section.title}
+                    </a>
+                  ))}
+                </nav>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>

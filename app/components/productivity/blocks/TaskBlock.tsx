@@ -13,12 +13,12 @@ export function TaskBlock({ block, isDragging, onToggle }: Props) {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-card/50',
-        'block-item group',
+        'flex items-center gap-2 p-2 rounded-lg border border-border/30 bg-card/50',
+        'block-item group w-full min-w-0 max-w-full',
         isDragging && 'opacity-40 scale-[0.98]'
       )}
     >
-      <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab drag-handle" />
+      <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground cursor-grab drag-handle" />
 
       <button
         onClick={(e) => {
@@ -26,7 +26,7 @@ export function TaskBlock({ block, isDragging, onToggle }: Props) {
           onToggle?.()
         }}
         className={cn(
-          'h-5 w-5 rounded-full border-2 flex items-center justify-center',
+          'h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center',
           'transition-all duration-200',
           block.completed
             ? 'bg-primary border-primary checkbox-complete'
@@ -40,7 +40,7 @@ export function TaskBlock({ block, isDragging, onToggle }: Props) {
 
       <span
         className={cn(
-          'flex-1 transition-all duration-200',
+          'flex-1 min-w-0 truncate transition-all duration-200',
           block.completed && 'line-through text-muted-foreground/60'
         )}
       >
@@ -49,7 +49,7 @@ export function TaskBlock({ block, isDragging, onToggle }: Props) {
 
       {block.dueDate && (
         <span className={cn(
-          'text-xs px-2.5 py-1 rounded-full',
+          'hidden sm:inline-block text-xs px-2.5 py-1 rounded-full shrink-0',
           'bg-muted/80 text-muted-foreground',
           'transition-colors duration-150'
         )}>
@@ -57,7 +57,7 @@ export function TaskBlock({ block, isDragging, onToggle }: Props) {
         </span>
       )}
 
-      <span className="text-[10px] text-muted-foreground/50 uppercase tracking-widest font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+      <span className="hidden xs:inline text-[10px] text-muted-foreground/50 uppercase tracking-widest font-medium shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         Task
       </span>
     </div>

@@ -33,25 +33,33 @@ export function useConfiguredSensors(config: SensorConfig = {}) {
   } = config
 
   // Build activation constraint based on provided options
-  let activationConstraint: PointerActivationConstraint
+  let pointerConstraint: PointerActivationConstraint
+  let touchConstraint: PointerActivationConstraint
 
   if (activationDelay !== undefined) {
-    activationConstraint = {
+    pointerConstraint = {
       delay: activationDelay,
       tolerance: tolerance ?? 5,
     }
+    touchConstraint = pointerConstraint
   } else {
-    activationConstraint = {
+    // For pointer (mouse), use distance-based activation
+    pointerConstraint = {
       distance: activationDistance,
+    }
+    // For touch, use delay-based activation to not interfere with scrolling
+    touchConstraint = {
+      delay: 200,
+      tolerance: 5,
     }
   }
 
   return useSensors(
     useSensor(PointerSensor, {
-      activationConstraint,
+      activationConstraint: pointerConstraint,
     }),
     useSensor(TouchSensor, {
-      activationConstraint,
+      activationConstraint: touchConstraint,
     }),
     useSensor(KeyboardSensor)
   )

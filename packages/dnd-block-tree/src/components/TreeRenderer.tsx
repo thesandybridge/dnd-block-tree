@@ -45,7 +45,12 @@ function DraggableBlock<T extends BaseBlock>({
   })
 
   return (
-    <div ref={setNodeRef} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={{ touchAction: 'none', minWidth: 0 }}
+    >
       {children({ isDragging })}
     </div>
   )
@@ -85,7 +90,7 @@ export function TreeRenderer<T extends BaseBlock>({
   const containerClass = depth === 0 ? rootClassName : indentClassName
 
   return (
-    <div className={containerClass}>
+    <div className={containerClass} style={{ minWidth: 0 }}>
       {/* Position-0 zone: always at the start, stable regardless of which block is dragged */}
       <DropZone
         id={parentId ? `into-${parentId}` : 'root-start'}
@@ -120,7 +125,7 @@ export function TreeRenderer<T extends BaseBlock>({
           <Fragment key={block.id}>
             {/* Ghost preview before this block */}
             {ghostBeforeThis && GhostRenderer && (
-              <div className="opacity-50 pointer-events-none">
+              <div className="opacity-50 pointer-events-none" style={{ minWidth: 0 }}>
                 {GhostRenderer({
                   block: draggedBlock as T & { type: typeof draggedBlock.type },
                   isDragging: true,
@@ -194,7 +199,7 @@ export function TreeRenderer<T extends BaseBlock>({
       {showGhostHere && previewPosition!.index >= filteredBlocks.length && draggedBlock && (() => {
         const GhostRenderer = renderers[draggedBlock.type as keyof typeof renderers]
         return GhostRenderer ? (
-          <div className="opacity-50 pointer-events-none">
+          <div className="opacity-50 pointer-events-none" style={{ minWidth: 0 }}>
             {GhostRenderer({
               block: draggedBlock as T & { type: typeof draggedBlock.type },
               isDragging: true,
