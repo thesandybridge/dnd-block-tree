@@ -1,14 +1,24 @@
 # dnd-block-tree
 
+[![npm version](https://img.shields.io/npm/v/dnd-block-tree.svg)](https://www.npmjs.com/package/dnd-block-tree)
+[![npm downloads](https://img.shields.io/npm/dm/dnd-block-tree.svg)](https://www.npmjs.com/package/dnd-block-tree)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/dnd-block-tree)](https://bundlephobia.com/package/dnd-block-tree)
+[![CI](https://github.com/thesandybridge/dnd-block-tree/actions/workflows/ci.yml/badge.svg)](https://github.com/thesandybridge/dnd-block-tree/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://dnd-block-tree.vercel.app)
+
 A headless React library for building hierarchical drag-and-drop interfaces. Bring your own components, we handle the complexity.
 
 ## Features
 
-- **Weighted Collision Detection** - Custom algorithm that scores drop zones by edge distance with bottom bias for natural drag behavior
-- **Smart Drop Zones** - Only one before-zone rendered, none around active block. Prevents visual clutter and accidental drops
+- **Stable Drop Zones** - Zones render based on original block positions, not preview state, ensuring consistent drop targets during drag
+- **Ghost Preview** - Semi-transparent preview shows where blocks will land without affecting zone positions
+- **Depth-Aware Collision** - Smart algorithm prefers nested zones when cursor is at indented levels, with hysteresis to prevent flickering
 - **8px Activation Distance** - Prevents accidental drags. Pointer must move 8px before drag starts, allowing normal clicks
 - **Snapshot-Based Computation** - State captured at drag start. All preview computations use snapshot, ensuring consistent behavior
 - **Debounced Preview** - 150ms debounced virtual state for smooth drag previews without jitter
+- **Customizable Drag Rules** - `canDrag` and `canDrop` filters for fine-grained control over drag behavior
 
 ## Installation
 
@@ -64,6 +74,9 @@ function App() {
 | `dragOverlay` | `(block: T) => ReactNode` | - | Custom drag overlay renderer |
 | `activationDistance` | `number` | `8` | Pixels to move before drag starts |
 | `previewDebounce` | `number` | `150` | Debounce delay for preview updates |
+| `showDropPreview` | `boolean` | `true` | Show ghost preview at drop position |
+| `canDrag` | `(block: T) => boolean` | - | Filter which blocks can be dragged |
+| `canDrop` | `(block, zone, target) => boolean` | - | Filter valid drop targets |
 | `className` | `string` | - | Root container class |
 | `dropZoneClassName` | `string` | - | Drop zone class |
 | `dropZoneActiveClassName` | `string` | - | Active drop zone class |
