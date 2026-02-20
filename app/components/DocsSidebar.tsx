@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Package, Code2, Zap, Wrench, FileText } from 'lucide-react'
@@ -47,7 +47,6 @@ export function DocsSidebar() {
   const isDocsPage = pathname === '/docs'
   const isChangelog = pathname === '/docs/changelog'
   const [activeId, setActiveId] = useState<string>('installation')
-  const headingTops = useRef<Map<string, number>>(new Map())
 
   useEffect(() => {
     if (!isDocsPage) return
