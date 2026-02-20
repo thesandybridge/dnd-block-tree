@@ -1,0 +1,260 @@
+<h2 id="installation">Installation</h2>
+
+Install the package along with its peer dependencies:
+
+```bash
+npm install dnd-block-tree @dnd-kit/core @dnd-kit/utilities
+```
+
+Requires React 18+ and dnd-kit/core 6+
+
+<h2 id="basic-usage">Basic Usage</h2>
+
+Define your block type, create renderers, and render the tree:
+
+```tsx
+import { BlockTree, type BaseBlock, type BlockRenderers } from 'dnd-block-tree'
+import { useState } from 'react'
+
+// Define your block type
+interface MyBlock extends BaseBlock {
+  type: 'section' | 'task' | 'note'
+  title: string
+}
+
+// Create renderers for each type
+const renderers: BlockRenderers<MyBlock, ['section']> = {
+  section: ({ block, children, isExpanded, onToggleExpand }) => (
+    <div className="border rounded p-2">
+      <button onClick={onToggleExpand}>
+        {isExpanded ? '▼' : '▶'} {block.title}
+      </button>
+      {isExpanded && <div className="ml-4">{children}</div>}
+    </div>
+  ),
+  task: ({ block }) => <div className="p-2">{block.title}</div>,
+  note: ({ block }) => <div className="p-2 italic">{block.title}</div>,
+}
+
+function App() {
+  const [blocks, setBlocks] = useState<MyBlock[]>([
+    { id: '1', type: 'section', title: 'Tasks', parentId: null, order: 0 },
+    { id: '2', type: 'task', title: 'Do something', parentId: '1', order: 0 },
+  ])
+
+  return (
+    <BlockTree
+      blocks={blocks}
+      renderers={renderers}
+      containerTypes={['section']}
+      onChange={setBlocks}
+    />
+  )
+}
+```
+
+<CalloutCard title="Key Concepts">
+
+**BaseBlock** - All blocks must have `id`, `type`, `parentId`, and `order`.
+
+**containerTypes** - Block types that can have children. These receive extra props like `children` and `isExpanded`.
+
+**renderers** - A map of block type to render function. TypeScript ensures correct props for containers vs leaves.
+
+</CalloutCard>
+
+<h2 id="callbacks">Callbacks & Events</h2>
+
+Hook into the drag-and-drop lifecycle for real-time sync, analytics, or custom behavior:
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  renderers={renderers}
+  containerTypes={['section']}
+  onChange={setBlocks}
+  // Drag lifecycle callbacks
+  onDragStart={(e) => {
+    console.log('Started dragging:', e.block)
+    // Return false to prevent drag
+  }}
+  onDragMove={(e) => {
+    console.log('Dragging over:', e.overZone)
+  }}
+  onDragEnd={(e) => {
+    console.log('Dropped at:', e.targetZone)
+    if (!e.cancelled) {
+      // Sync with server, analytics, etc.
+    }
+  }}
+  onDragCancel={(e) => {
+    console.log('Drag cancelled')
+  }}
+  // Block movement callback
+  onBlockMove={(e) => {
+    console.log('Block moved from:', e.from, 'to:', e.to)
+    // Great for real-time sync
+  }}
+  // UI state callbacks
+  onExpandChange={(e) => {
+    console.log('Container expanded:', e.expanded)
+  }}
+  onHoverChange={(e) => {
+    console.log('Hovering zone:', e.zoneType)
+  }}
+/>
+```
+
+<CardGrid>
+  <MiniCard title="onDragStart">
+    Called when drag begins. Return <code>false</code> to prevent.
+  </MiniCard>
+  <MiniCard title="onDragMove">
+    Called during drag (debounced). Includes coordinates and hover zone.
+  </MiniCard>
+  <MiniCard title="onBlockMove">
+    Called after successful drop with from/to positions. Great for server sync.
+  </MiniCard>
+  <MiniCard title="onHoverChange">
+    Called when hovering different drop zones. Useful for custom indicators.
+  </MiniCard>
+</CardGrid>
+
+<h2 id="customization">Customization</h2>
+
+Control drag behavior, drop rules, sensors, and visual feedback:
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  renderers={renderers}
+  containerTypes={['section']}
+  onChange={setBlocks}
+  // Filter which blocks can be dragged
+  canDrag={(block) => !block.locked}
+  // Filter valid drop targets
+  canDrop={(draggedBlock, targetZone, targetBlock) => {
+    // Prevent dropping sections into tasks
+    if (draggedBlock.type === 'section' && targetBlock?.type === 'task') {
+      return false
+    }
+    return true
+  }}
+  // Custom collision detection algorithm
+  collisionDetection={customCollisionFn}
+  // Sensor configuration
+  sensors={{
+    activationDistance: 10,  // Pixels before drag starts
+    activationDelay: 200,    // OR use delay instead
+    tolerance: 5,            // Movement tolerance during delay
+  }}
+  // Initial expand state
+  initialExpanded="all"  // 'all' | 'none' | string[]
+  // Live preview during drag (default: true)
+  showDropPreview={true}
+/>
+```
+
+<CalloutCard title="Customization Options">
+
+**canDrag** — Filter which blocks can be dragged. Receives the block, returns boolean.
+
+**canDrop** — Filter valid drop targets. Receives dragged block, zone ID, and target block.
+
+**collisionDetection** — Custom collision algorithm. Default uses depth-aware detection with hysteresis that prefers nested zones at indented cursor positions.
+
+**showDropPreview** — Show a ghost preview where the block will land. Uses stable zones that don't shift during drag.
+
+</CalloutCard>
+
+<h2 id="types">Type Definitions</h2>
+
+Full TypeScript support with comprehensive type definitions:
+
+```typescript
+// Base block interface - extend for your types
+interface BaseBlock {
+  id: string
+  type: string
+  parentId: string | null
+  order: number
+}
+
+// Event types
+interface DragStartEvent<T> {
+  block: T
+  blockId: string
+}
+
+interface DragMoveEvent<T> {
+  block: T
+  blockId: string
+  overZone: string | null
+  coordinates: { x: number; y: number }
+}
+
+interface DragEndEvent<T> {
+  block: T
+  blockId: string
+  targetZone: string | null
+  cancelled: boolean
+}
+
+interface BlockMoveEvent<T> {
+  block: T
+  from: { parentId: string | null; index: number }
+  to: { parentId: string | null; index: number }
+  blocks: T[]  // All blocks after the move
+}
+
+// Renderer props
+interface BlockRendererProps<T> {
+  block: T
+  isDragging?: boolean
+  depth: number
+}
+
+interface ContainerRendererProps<T> extends BlockRendererProps<T> {
+  children: ReactNode
+  isExpanded: boolean
+  onToggleExpand: () => void
+}
+```
+
+<h2 id="exports">All Exports</h2>
+
+Everything exported from the package for building custom implementations:
+
+```typescript
+// Components
+export { BlockTree } from './components/BlockTree'
+export { TreeRenderer } from './components/TreeRenderer'
+export { DropZone } from './components/DropZone'
+export { DragOverlay } from './components/DragOverlay'
+
+// Hooks (for building custom implementations)
+export { createBlockState } from './hooks/useBlockState'
+export { createTreeState } from './hooks/useTreeState'
+
+// Collision detection
+export { weightedVerticalCollision, closestCenterCollision } from './core/collision'
+
+// Sensors
+export { useConfiguredSensors, getSensorConfig } from './core/sensors'
+
+// Utilities
+export {
+  cloneMap,
+  cloneParentMap,
+  computeNormalizedIndex,
+  buildOrderedBlocks,
+  reparentBlockIndex,
+  getDescendantIds,
+  deleteBlockAndDescendants,
+} from './utils/blocks'
+
+export { extractUUID, debounce, generateId } from './utils/helper'
+
+// Types (see Types section for details)
+export type { BaseBlock, BlockRenderers, ... } from './core/types'
+```
