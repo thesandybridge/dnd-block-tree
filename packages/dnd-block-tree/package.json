@@ -1,7 +1,8 @@
 {
   "name": "dnd-block-tree",
-  "version": "0.1.0",
-  "description": "A drag-and-drop block tree library for React",
+  "version": "0.1.1",
+  "description": "A headless React library for building hierarchical drag-and-drop interfaces",
+  "author": "sandybridge",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -13,12 +14,14 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
     "@dnd-kit/core": "^6.0.0",
@@ -42,11 +45,17 @@
     "block",
     "tree",
     "react",
-    "dnd-kit"
+    "dnd-kit",
+    "headless",
+    "hierarchical"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/dnd-block-tree"
-  }
+    "url": "git+https://github.com/thesandybridge/dnd-block-tree.git"
+  },
+  "bugs": {
+    "url": "https://github.com/thesandybridge/dnd-block-tree/issues"
+  },
+  "homepage": "https://github.com/thesandybridge/dnd-block-tree#readme"
 }
