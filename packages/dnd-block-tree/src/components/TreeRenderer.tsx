@@ -21,8 +21,10 @@ export interface TreeRendererProps<T extends BaseBlock> {
   indentClassName?: string
   rootClassName?: string
   canDrag?: CanDragFn<T>
-  /** Show dragged block at preview position */
-  showDropPreview?: boolean
+  /** Preview position info - where to show the ghost */
+  previewPosition?: { parentId: string | null; index: number } | null
+  /** The dragged block for rendering preview ghost */
+  draggedBlock?: T | null
 }
 
 /**
@@ -68,15 +70,17 @@ export function TreeRenderer<T extends BaseBlock>({
   indentClassName = 'ml-6 border-l border-gray-200 pl-4',
   rootClassName = 'flex flex-col gap-1',
   canDrag,
-  showDropPreview = false,
+  previewPosition,
+  draggedBlock,
 }: TreeRendererProps<T>) {
   const items = blocksByParent.get(parentId) ?? []
 
-  // When preview is enabled, show the block at its new position
-  // When disabled, filter it out (only appears in drag overlay)
-  const filteredBlocks = showDropPreview
-    ? items
-    : items.filter(block => block.id !== activeId)
+  // Always filter out the dragged block - it appears in drag overlay
+  // Zones stay stable because we use original order
+  const filteredBlocks = items.filter(block => block.id !== activeId)
+
+  // Check if preview ghost should appear in this container
+  const showGhostHere = previewPosition?.parentId === parentId && draggedBlock
 
   const containerClass = depth === 0 ? rootClassName : indentClassName
 
@@ -97,15 +101,34 @@ export function TreeRenderer<T extends BaseBlock>({
         const isExpanded = expandedMap[block.id] !== false // Default to expanded
         const Renderer = renderers[block.type as keyof typeof renderers]
         const isDragDisabled = canDrag ? !canDrag(block) : false
-        const isLastVisible = index === filteredBlocks.length - 1
+
+        // Check if ghost should appear BEFORE this block
+        const ghostBeforeThis = showGhostHere && previewPosition!.index === index
+
+        // Use original items to determine if this is the last block (for stable zones)
+        const originalIndex = items.findIndex(b => b.id === block.id)
+        const isLastInOriginal = originalIndex === items.length - 1
 
         if (!Renderer) {
           console.warn(`No renderer found for block type: ${block.type}`)
           return null
         }
 
+        const GhostRenderer = draggedBlock ? renderers[draggedBlock.type as keyof typeof renderers] : null
+
         return (
           <Fragment key={block.id}>
+            {/* Ghost preview before this block */}
+            {ghostBeforeThis && GhostRenderer && (
+              <div className="opacity-50 pointer-events-none">
+                {GhostRenderer({
+                  block: draggedBlock as T & { type: typeof draggedBlock.type },
+                  isDragging: true,
+                  depth,
+                })}
+              </div>
+            )}
+
             {/* Render the block */}
             <DraggableBlock block={block} disabled={isDragDisabled}>
               {({ isDragging }) => {
@@ -128,7 +151,8 @@ export function TreeRenderer<T extends BaseBlock>({
                         indentClassName={indentClassName}
                         rootClassName={rootClassName}
                         canDrag={canDrag}
-                        showDropPreview={showDropPreview}
+                        previewPosition={previewPosition}
+                        draggedBlock={draggedBlock}
                       />
                     </>
                   ) : null
@@ -151,8 +175,8 @@ export function TreeRenderer<T extends BaseBlock>({
               }}
             </DraggableBlock>
 
-            {/* After-zone: skip for last visible block (end-zone handles that) */}
-            {!isLastVisible && (
+            {/* After-zone for non-last blocks (end-zone handles last position) */}
+            {!isLastInOriginal && (
               <DropZone
                 id={`after-${block.id}`}
                 parentId={block.parentId}
@@ -166,7 +190,21 @@ export function TreeRenderer<T extends BaseBlock>({
         )
       })}
 
-      {/* End zone: stable zone for the last position */}
+      {/* Ghost at end of container if index equals length */}
+      {showGhostHere && previewPosition!.index >= filteredBlocks.length && draggedBlock && (() => {
+        const GhostRenderer = renderers[draggedBlock.type as keyof typeof renderers]
+        return GhostRenderer ? (
+          <div className="opacity-50 pointer-events-none">
+            {GhostRenderer({
+              block: draggedBlock as T & { type: typeof draggedBlock.type },
+              isDragging: true,
+              depth,
+            })}
+          </div>
+        ) : null
+      })()}
+
+      {/* End zone: for dropping at the last position in a container */}
       <DropZone
         id={parentId ? `end-${parentId}` : 'root-end'}
         parentId={parentId}

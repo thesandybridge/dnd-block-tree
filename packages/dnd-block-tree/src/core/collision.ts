@@ -26,15 +26,27 @@ function computeCollisionScores(
       const isBelowCenter = pointerY > rect.top + rect.height / 2
       const bias = isBelowCenter ? -5 : 0
 
-      // Check horizontal containment - add penalty if pointer is outside zone's X bounds
+      // Horizontal scoring: prefer zones that match pointer's indentation level
       const isWithinX = pointerX >= rect.left && pointerX <= rect.right
-      const horizontalPenalty = isWithinX ? 0 : 50
+
+      let horizontalScore = 0
+      if (isWithinX) {
+        // BONUS for zones whose left edge is further right (more indented)
+        // This makes inner/nested zones win over outer zones when pointer is inside both
+        horizontalScore = -rect.left * 0.1
+      } else {
+        // Penalty based on horizontal distance, capped at 50
+        const distanceToZone = pointerX < rect.left
+          ? rect.left - pointerX
+          : pointerX - rect.right
+        horizontalScore = Math.min(distanceToZone, 50)
+      }
 
       return {
         id: container.id,
         data: {
           droppableContainer: container,
-          value: edgeDistance + bias + horizontalPenalty,
+          value: edgeDistance + bias + horizontalScore,
         },
       } as CollisionDescriptor
     })

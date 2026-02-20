@@ -207,25 +207,41 @@ export function BlockTree<
     }, 50)
   ).current
 
-  // Use virtualState for preview rendering, original blocks for zones
+  // Use original blocks for zones (stable during drag)
   const originalIndex = computeNormalizedIndex(blocks)
-  const effectiveIndex = showDropPreview && stateRef.current.virtualState
-    ? stateRef.current.virtualState
-    : originalIndex
 
-  // Blocks by parent for rendering
+  // Blocks by parent for rendering - always use original for stable zones
   const blocksByParent = new Map<string | null, T[]>()
-  for (const [parentId, ids] of effectiveIndex.byParent.entries()) {
+  for (const [parentId, ids] of originalIndex.byParent.entries()) {
     blocksByParent.set(
       parentId,
-      ids.map(id => effectiveIndex.byId.get(id)!).filter(Boolean)
+      ids.map(id => originalIndex.byId.get(id)!).filter(Boolean)
     )
   }
 
-  // Active block
+  // Compute preview position from virtualState
+  const previewPosition = useMemo(() => {
+    if (!showDropPreview || !stateRef.current.virtualState || !stateRef.current.activeId) {
+      return null
+    }
+    const virtualIndex = stateRef.current.virtualState
+    const activeId = stateRef.current.activeId
+    const block = virtualIndex.byId.get(activeId)
+    if (!block) return null
+
+    const parentId = block.parentId ?? null
+    const siblings = virtualIndex.byParent.get(parentId) ?? []
+    const index = siblings.indexOf(activeId)
+    return { parentId, index }
+  }, [showDropPreview, stateRef.current.virtualState, stateRef.current.activeId])
+
+  // Active block (from original, for drag overlay)
   const activeBlock = stateRef.current.activeId
-    ? effectiveIndex.byId.get(stateRef.current.activeId) ?? null
+    ? originalIndex.byId.get(stateRef.current.activeId) ?? null
     : null
+
+  // Dragged block for preview ghost
+  const draggedBlock = activeBlock
 
   // Handle drag start
   const handleDragStart = useCallback((event: DndKitDragStartEvent) => {
@@ -508,7 +524,8 @@ export function BlockTree<
           indentClassName={indentClassName}
           rootClassName={className}
           canDrag={canDrag}
-          showDropPreview={showDropPreview && stateRef.current.virtualState !== null}
+          previewPosition={previewPosition}
+          draggedBlock={draggedBlock}
         />
       </div>
       <DragOverlay activeBlock={activeBlock}>

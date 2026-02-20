@@ -389,16 +389,13 @@ export default function DocsPage() {
                   <div>
                     <strong className="text-foreground">collisionDetection</strong>
                     <span className="text-muted-foreground ml-2">
-                      Custom collision algorithm. Library exports{' '}
-                      <code className="text-xs bg-muted px-1 rounded">weightedVerticalCollision</code>{' '}
-                      (default) and{' '}
-                      <code className="text-xs bg-muted px-1 rounded">closestCenterCollision</code>.
+                      Custom collision algorithm. Default uses depth-aware detection with hysteresis that prefers nested zones at indented cursor positions.
                     </span>
                   </div>
                   <div>
                     <strong className="text-foreground">showDropPreview</strong>
                     <span className="text-muted-foreground ml-2">
-                      Enable/disable live preview showing block in new position during drag.
+                      Show a ghost preview where the block will land. Uses stable zones that don&apos;t shift during drag.
                     </span>
                   </div>
                 </CardContent>

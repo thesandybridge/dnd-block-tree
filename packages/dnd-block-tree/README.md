@@ -4,9 +4,9 @@ A headless React library for building hierarchical drag-and-drop interfaces. Bri
 
 ## Features
 
-- **Sticky Collision Detection** - Custom algorithm with hysteresis to prevent flickering between adjacent drop zones
-- **Stable Drop Zones** - Position-based zones that don't shift when blocks are dragged, ensuring consistent drop targets
-- **Live Drop Preview** - Optional real-time preview showing blocks at their target position during drag
+- **Stable Drop Zones** - Zones render based on original block positions, not preview state, ensuring consistent drop targets during drag
+- **Ghost Preview** - Semi-transparent preview shows where blocks will land without affecting zone positions
+- **Depth-Aware Collision** - Smart algorithm prefers nested zones when cursor is at indented levels, with hysteresis to prevent flickering
 - **8px Activation Distance** - Prevents accidental drags. Pointer must move 8px before drag starts, allowing normal clicks
 - **Snapshot-Based Computation** - State captured at drag start. All preview computations use snapshot, ensuring consistent behavior
 - **Debounced Preview** - 150ms debounced virtual state for smooth drag previews without jitter
