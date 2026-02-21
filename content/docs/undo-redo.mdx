@@ -1,0 +1,105 @@
+## Undo/Redo
+
+The `useBlockHistory` hook provides undo/redo support for block state changes. It wraps your block array with a history stack, giving you `undo()`, `redo()`, and state awareness out of the box.
+
+### API
+
+```typescript
+import { useBlockHistory } from 'dnd-block-tree'
+
+interface UseBlockHistoryOptions {
+  maxSteps?: number  // Default: 50
+}
+
+interface UseBlockHistoryResult<T extends BaseBlock> {
+  blocks: T[]
+  set: (blocks: T[]) => void  // Push current state to undo stack
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
+}
+
+function useBlockHistory<T extends BaseBlock>(
+  initialBlocks: T[],
+  options?: UseBlockHistoryOptions
+): UseBlockHistoryResult<T>
+```
+
+### Usage
+
+```tsx
+import { BlockTree, useBlockHistory, type BaseBlock, type BlockRenderers } from 'dnd-block-tree'
+
+interface MyBlock extends BaseBlock {
+  type: 'section' | 'task'
+  title: string
+}
+
+const renderers: BlockRenderers<MyBlock, ['section']> = {
+  section: ({ block, children, isExpanded, onToggleExpand }) => (
+    <div className="border rounded p-2">
+      <button onClick={onToggleExpand}>
+        {isExpanded ? '▼' : '▶'} {block.title}
+      </button>
+      {isExpanded && <div className="ml-4">{children}</div>}
+    </div>
+  ),
+  task: ({ block }) => <div className="p-2">{block.title}</div>,
+}
+
+const initialBlocks: MyBlock[] = [
+  { id: '1', type: 'section', title: 'Tasks', parentId: null, order: 0 },
+  { id: '2', type: 'task', title: 'Build the app', parentId: '1', order: 0 },
+  { id: '3', type: 'task', title: 'Write tests', parentId: '1', order: 1 },
+]
+
+function App() {
+  const { blocks, set, undo, redo, canUndo, canRedo } = useBlockHistory(initialBlocks, {
+    maxSteps: 100,
+  })
+
+  return (
+    <div>
+      <div className="flex gap-2 mb-4">
+        <button onClick={undo} disabled={!canUndo}>
+          Undo
+        </button>
+        <button onClick={redo} disabled={!canRedo}>
+          Redo
+        </button>
+      </div>
+
+      <BlockTree
+        blocks={blocks}
+        renderers={renderers}
+        containerTypes={['section']}
+        onChange={set}
+      />
+    </div>
+  )
+}
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `maxSteps` | `number` | `50` | Maximum number of states kept in the undo stack. Oldest entries are discarded when exceeded. |
+
+### Return Value
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `blocks` | `T[]` | The current block array |
+| `set` | `(blocks: T[]) => void` | Push current state to undo stack and replace with new state |
+| `undo` | `() => void` | Revert to the previous state |
+| `redo` | `() => void` | Re-apply the next undone state |
+| `canUndo` | `boolean` | `true` if there are states to undo |
+| `canRedo` | `boolean` | `true` if there are states to redo |
+
+<CalloutCard title="Tip">
+
+Every call to `set()` pushes the current state onto the undo stack. Pass `set` directly as BlockTree's `onChange` prop -- each drag-and-drop move becomes a single undoable step.
+
+</CalloutCard>

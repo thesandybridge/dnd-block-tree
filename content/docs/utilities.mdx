@@ -1,0 +1,192 @@
+## Utilities
+
+All exported utility functions for tree operations, ID handling, fractional indexing, and more.
+
+### Tree Operations
+
+#### computeNormalizedIndex
+
+Build a `BlockIndex` from a flat block array for O(1) lookups.
+
+```typescript
+function computeNormalizedIndex<T extends BaseBlock>(
+  blocks: T[],
+  orderingStrategy?: OrderingStrategy
+): BlockIndex<T>
+```
+
+#### buildOrderedBlocks
+
+Convert a `BlockIndex` back to an ordered flat array.
+
+```typescript
+function buildOrderedBlocks<T extends BaseBlock>(
+  index: BlockIndex<T>,
+  containerTypes?: readonly string[],
+  orderingStrategy?: OrderingStrategy
+): T[]
+```
+
+#### reparentBlockIndex
+
+Move a single block to a new position in the index.
+
+```typescript
+function reparentBlockIndex<T extends BaseBlock>(
+  state: BlockIndex<T>,
+  activeId: UniqueIdentifier,
+  targetZone: string,
+  containerTypes?: readonly string[],
+  orderingStrategy?: OrderingStrategy,
+  maxDepth?: number
+): BlockIndex<T>
+```
+
+#### reparentMultipleBlocks
+
+Move multiple blocks to a new position, preserving their relative order.
+
+```typescript
+function reparentMultipleBlocks<T extends BaseBlock>(
+  state: BlockIndex<T>,
+  blockIds: string[],
+  targetZone: string,
+  containerTypes?: readonly string[],
+  orderingStrategy?: OrderingStrategy,
+  maxDepth?: number
+): BlockIndex<T>
+```
+
+#### getDescendantIds
+
+Get all descendant IDs of a block (recursive).
+
+```typescript
+function getDescendantIds<T extends BaseBlock>(
+  state: BlockIndex<T>,
+  parentId: string
+): Set<string>
+```
+
+#### deleteBlockAndDescendants
+
+Remove a block and all its descendants from the index.
+
+```typescript
+function deleteBlockAndDescendants<T extends BaseBlock>(
+  state: BlockIndex<T>,
+  id: string
+): BlockIndex<T>
+```
+
+#### getBlockDepth
+
+Get the nesting depth of a block (root level = 1).
+
+```typescript
+function getBlockDepth<T extends BaseBlock>(
+  index: BlockIndex<T>,
+  blockId: string
+): number
+```
+
+#### getSubtreeDepth
+
+Get the depth of a block's subtree (leaf = 1).
+
+```typescript
+function getSubtreeDepth<T extends BaseBlock>(
+  index: BlockIndex<T>,
+  blockId: string
+): number
+```
+
+### Map Utilities
+
+#### cloneMap / cloneParentMap
+
+Efficiently clone `Map` structures used in `BlockIndex`.
+
+```typescript
+function cloneMap<K, V>(map: Map<K, V>): Map<K, V>
+function cloneParentMap(map: Map<string | null, string[]>): Map<string | null, string[]>
+```
+
+### ID & Zone Helpers
+
+#### extractUUID
+
+Extract the block ID from a zone ID string (removes the prefix like `"before-"`, `"into-"`, etc.).
+
+```typescript
+function extractUUID(id: string, pattern?: string): string
+```
+
+#### generateId
+
+Generate a unique ID (timestamp + random).
+
+```typescript
+function generateId(): string
+```
+
+#### triggerHaptic
+
+Trigger device vibration. No-ops if the vibration API is unavailable.
+
+```typescript
+function triggerHaptic(durationMs?: number): void  // Default: 10ms
+```
+
+#### debounce
+
+Create a debounced function with a `cancel()` method.
+
+```typescript
+function debounce<Args extends unknown[]>(
+  fn: (...args: Args) => void,
+  delay: number
+): ((...args: Args) => void) & { cancel: () => void }
+```
+
+### Serialization
+
+See [Serialization](/docs/serialization) for details.
+
+```typescript
+function flatToNested<T extends BaseBlock>(blocks: T[]): NestedBlock<T>[]
+function nestedToFlat<T extends BaseBlock>(nested: NestedBlock<T>[]): T[]
+```
+
+### Fractional Indexing
+
+See [Fractional Indexing](/docs/fractional-indexing) for details.
+
+```typescript
+function generateKeyBetween(lo: string | null, hi: string | null): string
+function generateNKeysBetween(lo: string | null, hi: string | null, n: number): string[]
+function generateInitialKeys(n: number): string[]
+function initFractionalOrder<T>(blocks: T[]): T[]
+function compareFractionalKeys(a: string, b: string): number
+```
+
+### Collision Detection
+
+See [Collision Detection](/docs/collision-detection) for details.
+
+```typescript
+const weightedVerticalCollision: CollisionDetection
+const closestCenterCollision: CollisionDetection
+function createStickyCollision(threshold?: number): CollisionDetection & { reset: () => void }
+```
+
+### Hooks
+
+See individual feature pages for detailed usage.
+
+```typescript
+function useBlockHistory<T>(initial: T[], options?): UseBlockHistoryResult<T>
+function useLayoutAnimation(ref, options?): void
+function useVirtualTree(options): UseVirtualTreeResult
+function useConfiguredSensors(config?: SensorConfig): Sensor[]
+```

@@ -1,0 +1,85 @@
+## Fractional Indexing
+
+CRDT-compatible ordering using lexicographic string keys instead of integer indices.
+
+### Overview
+
+By default, `dnd-block-tree` uses integer ordering (0, 1, 2, ...) and reindexes all siblings after every move. Fractional indexing uses lexicographically sortable string keys that allow insertion between any two items without reindexing siblings -- ideal for real-time collaboration and CRDTs.
+
+With integer ordering, inserting a block between positions 2 and 3 requires reindexing every sibling from position 3 onward. With fractional indexing, a new key is generated between the two neighbors and only the moved block is updated.
+
+### Enabling
+
+Set `orderingStrategy="fractional"` on `BlockTree`. Use `initFractionalOrder` to migrate existing integer-ordered blocks to fractional keys.
+
+```tsx
+import { BlockTree, initFractionalOrder } from 'dnd-block-tree'
+
+const [blocks, setBlocks] = useState(() => initFractionalOrder(initialBlocks))
+
+<BlockTree
+  blocks={blocks}
+  orderingStrategy="fractional"
+  onChange={setBlocks}
+  renderers={renderers}
+  containerTypes={['section']}
+/>
+```
+
+### Utility Functions
+
+| Export | Signature | Description |
+|--------|-----------|-------------|
+| `generateKeyBetween` | `(lo: string \| null, hi: string \| null) => string` | Generate a key between two existing keys |
+| `generateNKeysBetween` | `(lo: string \| null, hi: string \| null, n: number) => string[]` | Generate N evenly distributed keys between two bounds |
+| `generateInitialKeys` | `(n: number) => string[]` | Generate N initial keys from scratch |
+| `initFractionalOrder` | `<T>(blocks: T[]) => T[]` | Migrate integer-ordered blocks to fractional keys |
+| `compareFractionalKeys` | `(a: string, b: string) => number` | Compare two fractional keys for sorting |
+
+```typescript
+import {
+  generateKeyBetween,
+  generateNKeysBetween,
+  generateInitialKeys,
+  initFractionalOrder,
+  compareFractionalKeys,
+} from 'dnd-block-tree'
+
+// Generate a key between two existing keys
+const mid = generateKeyBetween('a', 'c') // => "b"
+
+// Generate 3 evenly spaced keys between bounds
+const keys = generateNKeysBetween('a', 'z', 3) // => ["f", "n", "u"] (approximately)
+
+// Generate 5 initial keys for a new list
+const initial = generateInitialKeys(5) // => ["a", "b", "c", "d", "e"]
+
+// Sort blocks by fractional key
+blocks.sort((a, b) => compareFractionalKeys(a.order, b.order))
+```
+
+### How It Works
+
+- **Alphabet**: `0-9a-z` (base 36), providing 36 characters for key generation
+- **Lexicographic order**: keys are compared character-by-character, so `"a" < "b" < "c"`
+- **Insertion**: inserting between `"a"` and `"c"` produces `"b"`; between `"a"` and `"b"` produces `"am"` (extending depth)
+- **Growth**: O(log n) key depth growth for N insertions at the same position
+- **No reindexing**: only the moved block's `order` field changes -- siblings are untouched
+
+### CRDT Use Case
+
+Fractional indexing is inherently conflict-free for concurrent edits. Two users can insert blocks at different positions simultaneously without conflicts, because each generates an independent key based on its neighbors. There is no shared counter or index to synchronize.
+
+This makes fractional indexing a natural fit for real-time collaborative tree editing. Pair it with a CRDT framework (e.g., Yjs, Automerge) to synchronize block content, and let fractional keys handle ordering without merge conflicts.
+
+```tsx
+// User A inserts between "a" and "c" → gets "b"
+// User B inserts between "c" and "e" → gets "d"
+// Both operations apply cleanly: ["a", "b", "c", "d", "e"]
+```
+
+<CalloutCard title="When to Use Fractional Indexing">
+
+Use `orderingStrategy="fractional"` when your tree is collaboratively edited or synced across clients. For single-user applications, integer ordering is simpler and works fine.
+
+</CalloutCard>

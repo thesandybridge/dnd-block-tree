@@ -1,0 +1,300 @@
+## Type Reference
+
+All types exported from `dnd-block-tree`. Import any type directly:
+
+```typescript
+import type { BaseBlock, BlockRenderers, BlockIndex } from 'dnd-block-tree'
+```
+
+### Core Types
+
+#### BaseBlock
+
+The base interface all blocks must extend. Every block needs an `id`, `type`, `parentId`, and `order`.
+
+```typescript
+interface BaseBlock {
+  id: string
+  type: string
+  parentId: string | null  // null = root level
+  order: number | string   // number for integer, string for fractional
+}
+```
+
+#### BlockIndex
+
+Normalized index for O(1) lookups by ID and parent. Used internally and by utility functions.
+
+```typescript
+interface BlockIndex<T extends BaseBlock = BaseBlock> {
+  byId: Map<string, T>
+  byParent: Map<string | null, string[]>
+}
+```
+
+#### BlockPosition
+
+A block's location in the hierarchy.
+
+```typescript
+interface BlockPosition {
+  parentId: string | null
+  index: number
+}
+```
+
+#### NestedBlock
+
+Tree representation used by [serialization](/docs/serialization) utilities. Omits `parentId` and `order` since they're encoded by the tree structure.
+
+```typescript
+type NestedBlock<T extends BaseBlock> = Omit<T, 'parentId' | 'order'> & {
+  children: NestedBlock<T>[]
+}
+```
+
+### Renderer Types
+
+#### BlockRendererProps
+
+Props passed to leaf (non-container) block renderers.
+
+```typescript
+interface BlockRendererProps<T extends BaseBlock = BaseBlock> {
+  block: T
+  children?: ReactNode
+  isDragging?: boolean
+  isOver?: boolean
+  depth: number
+}
+```
+
+#### ContainerRendererProps
+
+Props passed to container block renderers. Extends `BlockRendererProps` with expand/collapse controls.
+
+```typescript
+interface ContainerRendererProps<T extends BaseBlock = BaseBlock>
+  extends BlockRendererProps<T> {
+  children: ReactNode
+  isExpanded: boolean
+  onToggleExpand: () => void
+}
+```
+
+#### RendererPropsFor
+
+Conditional type that resolves to `ContainerRendererProps` or `BlockRendererProps` based on whether the block type is in `containerTypes`.
+
+```typescript
+type RendererPropsFor<
+  T extends BaseBlock,
+  K extends T['type'],
+  C extends readonly string[]
+> = K extends C[number]
+  ? ContainerRendererProps<Extract<T, { type: K }>>
+  : BlockRendererProps<Extract<T, { type: K }>>
+```
+
+#### BlockRenderers
+
+Strongly-typed map of block type to render function.
+
+```typescript
+type BlockRenderers<
+  T extends BaseBlock = BaseBlock,
+  C extends readonly string[] = readonly string[]
+> = {
+  [K in T['type']]: (props: RendererPropsFor<T, K, C>) => ReactNode
+}
+```
+
+### Event Types
+
+#### DragStartEvent
+
+```typescript
+interface DragStartEvent<T extends BaseBlock = BaseBlock> {
+  block: T
+  blockId: string
+}
+```
+
+#### DragMoveEvent
+
+```typescript
+interface DragMoveEvent<T extends BaseBlock = BaseBlock> {
+  block: T
+  blockId: string
+  overZone: string | null
+  coordinates: { x: number; y: number }
+}
+```
+
+#### DragEndEvent
+
+```typescript
+interface DragEndEvent<T extends BaseBlock = BaseBlock> {
+  block: T
+  blockId: string
+  targetZone: string | null
+  cancelled: boolean
+}
+```
+
+#### BlockMoveEvent
+
+```typescript
+interface BlockMoveEvent<T extends BaseBlock = BaseBlock> {
+  block: T
+  from: BlockPosition
+  to: BlockPosition
+  blocks: T[]
+  movedIds: string[]
+}
+```
+
+#### MoveOperation
+
+```typescript
+interface MoveOperation<T extends BaseBlock = BaseBlock> {
+  block: T
+  from: BlockPosition
+  targetZone: string
+}
+```
+
+#### ExpandChangeEvent
+
+```typescript
+interface ExpandChangeEvent<T extends BaseBlock = BaseBlock> {
+  block: T
+  blockId: string
+  expanded: boolean
+}
+```
+
+#### HoverChangeEvent
+
+```typescript
+interface HoverChangeEvent<T extends BaseBlock = BaseBlock> {
+  zoneId: string | null
+  zoneType: DropZoneType | null
+  targetBlock: T | null
+}
+```
+
+#### BlockAddEvent
+
+```typescript
+interface BlockAddEvent<T extends BaseBlock = BaseBlock> {
+  block: T
+  parentId: string | null
+  index: number
+}
+```
+
+#### BlockDeleteEvent
+
+```typescript
+interface BlockDeleteEvent<T extends BaseBlock = BaseBlock> {
+  block: T
+  deletedIds: string[]
+  parentId: string | null
+}
+```
+
+### Config Types
+
+#### SensorConfig
+
+```typescript
+interface SensorConfig {
+  activationDistance?: number   // Default: 8
+  activationDelay?: number
+  tolerance?: number           // Default: 5
+  longPressDelay?: number      // Default: 200
+  hapticFeedback?: boolean     // Default: false
+}
+```
+
+#### AnimationConfig
+
+```typescript
+interface AnimationConfig {
+  expandDuration?: number        // ms
+  dragOverlayDuration?: number   // ms
+  easing?: string                // Default: 'ease'
+}
+```
+
+#### AutoExpandConfig
+
+```typescript
+interface AutoExpandConfig {
+  enabled?: boolean
+  delay?: number
+  collapseOnLeave?: boolean
+}
+```
+
+#### DropZoneConfig
+
+```typescript
+interface DropZoneConfig {
+  height?: number
+  gap?: number
+  showInEmptyContainers?: boolean
+}
+```
+
+#### BlockTreeCustomization
+
+Aggregates all customization options into a single interface.
+
+```typescript
+interface BlockTreeCustomization<T extends BaseBlock = BaseBlock> {
+  canDrag?: CanDragFn<T>
+  canDrop?: CanDropFn<T>
+  collisionDetection?: CollisionDetection
+  sensors?: SensorConfig
+  dropZones?: DropZoneConfig
+  animation?: AnimationConfig
+  autoExpand?: AutoExpandConfig
+  idGenerator?: IdGeneratorFn
+  initialExpanded?: string[] | 'all' | 'none'
+  orderingStrategy?: OrderingStrategy
+  maxDepth?: number
+}
+```
+
+### Utility Types
+
+#### OrderingStrategy
+
+```typescript
+type OrderingStrategy = 'integer' | 'fractional'
+```
+
+#### DropZoneType
+
+```typescript
+type DropZoneType = 'before' | 'after' | 'into'
+```
+
+#### CanDragFn / CanDropFn
+
+```typescript
+type CanDragFn<T extends BaseBlock> = (block: T) => boolean
+type CanDropFn<T extends BaseBlock> = (
+  draggedBlock: T,
+  targetZone: string,
+  targetBlock: T | null
+) => boolean
+```
+
+#### IdGeneratorFn
+
+```typescript
+type IdGeneratorFn = () => string
+```

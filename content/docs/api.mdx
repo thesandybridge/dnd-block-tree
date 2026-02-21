@@ -1,0 +1,134 @@
+## BlockTree Props
+
+The `BlockTree` component accepts the following props. Required props are marked with *.
+
+### Core Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `blocks` * | `T[]` | -- | Array of blocks conforming to `BaseBlock` |
+| `renderers` * | `BlockRenderers<T, C>` | -- | Map of block type to render function |
+| `containerTypes` | `C` (readonly string[]) | `[]` | Block types that can have children |
+| `onChange` | `(blocks: T[]) => void` | -- | Called with updated blocks after a move |
+
+### Drag Behavior
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `canDrag` | `(block: T) => boolean` | -- | Filter which blocks are draggable |
+| `canDrop` | `(dragged: T, zone: string, target: T \| null) => boolean` | -- | Filter valid drop targets |
+| `collisionDetection` | `CollisionDetection` | `weightedVerticalCollision` | Custom collision algorithm |
+| `showDropPreview` | `boolean` | `true` | Show ghost preview of drop position |
+| `activationDistance` | `number` | `8` | Pixels of movement before drag starts |
+| `previewDebounce` | `number` | `150` | Debounce delay (ms) for preview updates |
+
+### Sensors
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `sensors` | `SensorConfig` | -- | Sensor activation configuration |
+
+```typescript
+interface SensorConfig {
+  activationDistance?: number  // Pointer drag threshold (default: 8px)
+  activationDelay?: number    // Delay-based activation (ms)
+  tolerance?: number          // Movement tolerance during delay (default: 5px)
+  longPressDelay?: number     // Touch long-press delay (default: 200ms)
+  hapticFeedback?: boolean    // Vibrate on drag start (default: false)
+}
+```
+
+### Ordering
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `orderingStrategy` | `'integer' \| 'fractional'` | `'integer'` | How sibling order is computed |
+| `maxDepth` | `number` | -- | Maximum nesting depth (1 = root only) |
+| `idGenerator` | `() => string` | `generateId` | Custom ID generator for new blocks |
+
+### Expand/Collapse
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `initialExpanded` | `string[] \| 'all' \| 'none'` | `'none'` | Initial expand state of containers |
+| `autoExpand` | `AutoExpandConfig` | -- | Auto-expand containers during drag |
+
+```typescript
+interface AutoExpandConfig {
+  enabled?: boolean          // Enable auto-expand on hover
+  delay?: number             // Delay before expanding (ms)
+  collapseOnLeave?: boolean  // Collapse when drag leaves
+}
+```
+
+### Keyboard Navigation
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `keyboardNavigation` | `boolean` | `false` | Enable keyboard navigation |
+
+See [Keyboard Navigation](/docs/keyboard-navigation) for key bindings and accessibility details.
+
+### Multi-Select
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `multiSelect` | `boolean` | `false` | Enable multi-select mode |
+| `selectedIds` | `Set<string>` | -- | Controlled selection state |
+| `onSelectionChange` | `(ids: Set<string>) => void` | -- | Selection change handler |
+
+See [Multi-Select](/docs/multi-select) for selection modes and drag behavior.
+
+### Virtual Scrolling
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `virtualize` | `{ itemHeight: number; overscan?: number }` | -- | Enable virtual scrolling |
+
+See [Virtual Scrolling](/docs/virtual-scrolling) for requirements and limitations.
+
+### Animation
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `animation` | `AnimationConfig` | -- | Animation timing configuration |
+
+```typescript
+interface AnimationConfig {
+  expandDuration?: number      // Expand/collapse duration (ms)
+  dragOverlayDuration?: number // Drag overlay animation (ms)
+  easing?: string              // CSS timing function (default: 'ease')
+}
+```
+
+### Drag Overlay
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `dragOverlay` | `(block: T) => ReactNode` | -- | Custom drag overlay renderer |
+
+### Styling
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `className` | `string` | `'flex flex-col gap-1'` | Root container class |
+| `dropZoneClassName` | `string` | `'h-1 rounded transition-colors'` | Drop zone class |
+| `dropZoneActiveClassName` | `string` | `'bg-blue-500'` | Active drop zone class |
+| `indentClassName` | `string` | `'ml-6 border-l border-gray-200 pl-4'` | Nested indent class |
+
+### Callbacks
+
+All callback props are documented in [Callbacks & Events](/docs/callbacks).
+
+| Prop | Type |
+|------|------|
+| `onDragStart` | `(event: DragStartEvent<T>) => boolean \| void` |
+| `onDragMove` | `(event: DragMoveEvent<T>) => void` |
+| `onDragEnd` | `(event: DragEndEvent<T>) => void` |
+| `onDragCancel` | `(event: DragEndEvent<T>) => void` |
+| `onBeforeMove` | `(op: MoveOperation<T>) => MoveOperation<T> \| false \| void` |
+| `onBlockMove` | `(event: BlockMoveEvent<T>) => void` |
+| `onExpandChange` | `(event: ExpandChangeEvent<T>) => void` |
+| `onHoverChange` | `(event: HoverChangeEvent<T>) => void` |
+| `onBlockAdd` | `(event: BlockAddEvent<T>) => void` |
+| `onBlockDelete` | `(event: BlockDeleteEvent<T>) => void` |

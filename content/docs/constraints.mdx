@@ -1,0 +1,91 @@
+## Depth & Middleware
+
+Control nesting depth with `maxDepth` and intercept moves with `onBeforeMove` middleware. These can be used independently or combined for fine-grained control over what moves are allowed.
+
+### maxDepth
+
+Limits the maximum nesting depth of the tree. Depth 1 means root level only (no nesting), depth 2 allows one level of nesting, and so on.
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  renderers={renderers}
+  containerTypes={['section']}
+  onChange={setBlocks}
+  maxDepth={3}
+/>
+```
+
+The constraint uses the formula `parentDepth + subtreeDepth <= maxDepth`. If a block has children, the entire subtree depth is considered when checking whether a drop is valid. For example, dragging a section that contains a nested child (subtree depth of 2) into a depth-2 parent would require `maxDepth` of at least 4.
+
+### onBeforeMove Middleware
+
+Runs before every move is committed. You can use it in three modes:
+
+- Return `void` (or `undefined`): **allow** the move
+- Return `false`: **cancel** the move
+- Return a modified `MoveOperation`: **transform** the move
+
+```typescript
+onBeforeMove?: (operation: MoveOperation<T>) => MoveOperation<T> | false | void
+
+interface MoveOperation<T extends BaseBlock> {
+  block: T
+  from: BlockPosition
+  targetZone: string
+}
+```
+
+**Cancelling moves** -- prevent sections from being nested inside other containers:
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  renderers={renderers}
+  containerTypes={['section']}
+  onChange={setBlocks}
+  onBeforeMove={(op) => {
+    if (op.block.type === 'section' && op.targetZone.startsWith('into-')) {
+      return false
+    }
+  }}
+/>
+```
+
+**Allowing all moves** -- returning `void` is the default behavior, equivalent to no middleware:
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  renderers={renderers}
+  containerTypes={['section']}
+  onChange={setBlocks}
+  onBeforeMove={(op) => {
+    // No return = allow the move as-is
+  }}
+/>
+```
+
+### Combining Constraints
+
+Use both `maxDepth` and `onBeforeMove` together for layered validation. The `maxDepth` check runs first; if the depth is valid, `onBeforeMove` runs next.
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  renderers={renderers}
+  containerTypes={['section', 'group']}
+  onChange={setBlocks}
+  maxDepth={3}
+  onBeforeMove={(op) => {
+    // Even within depth limits, prevent groups from nesting inside sections
+    if (op.block.type === 'group' && op.targetZone.startsWith('into-')) {
+      const targetId = op.targetZone.replace('into-', '')
+      const target = blocks.find((b) => b.id === targetId)
+      if (target?.type === 'section') {
+        return false
+      }
+    }
+  }}
+/>
+```

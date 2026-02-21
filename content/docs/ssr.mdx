@@ -1,0 +1,107 @@
+## SSR Compatibility
+
+`BlockTreeSSR` provides hydration-safe rendering for server-side rendering environments like Next.js App Router.
+
+### The Problem
+
+`BlockTree` uses browser APIs (DOM measurements, event listeners, pointer tracking) that aren't available during server rendering. Rendering it directly in a server component or during SSR causes hydration mismatches because the server output won't match the client output.
+
+### BlockTreeSSR
+
+A wrapper component that renders a `fallback` on the server and during initial hydration, then mounts the full `BlockTree` after the client hydrates.
+
+```typescript
+import { BlockTreeSSR } from 'dnd-block-tree'
+
+interface BlockTreeSSRProps<T, C> extends BlockTreeProps<T, C> {
+  fallback?: ReactNode  // Content shown during SSR/hydration (default: null)
+}
+```
+
+### Next.js App Router Example
+
+```tsx
+import { BlockTreeSSR, type BaseBlock, type BlockRenderers } from 'dnd-block-tree'
+
+interface DocBlock extends BaseBlock {
+  type: 'heading' | 'paragraph'
+  title: string
+}
+
+const renderers: BlockRenderers<DocBlock, ['heading']> = {
+  heading: ({ block, children, isExpanded, onToggleExpand }) => (
+    <div className="border-b pb-2 mb-2">
+      <button onClick={onToggleExpand} className="font-bold text-lg">
+        {isExpanded ? '▼' : '▶'} {block.title}
+      </button>
+      {isExpanded && <div className="ml-4 mt-2">{children}</div>}
+    </div>
+  ),
+  paragraph: ({ block }) => (
+    <p className="py-1 text-gray-700">{block.title}</p>
+  ),
+}
+
+// This component can be used in a Next.js App Router page
+export default function DocsPage({ blocks }: { blocks: DocBlock[] }) {
+  const [state, setState] = useState(blocks)
+
+  return (
+    <BlockTreeSSR
+      blocks={state}
+      renderers={renderers}
+      containerTypes={['heading']}
+      onChange={setState}
+      fallback={
+        <div className="flex flex-col gap-2">
+          {blocks.map((block) => (
+            <div key={block.id} className="p-2 bg-gray-50 rounded animate-pulse">
+              {block.title}
+            </div>
+          ))}
+        </div>
+      }
+    />
+  )
+}
+```
+
+### How It Works
+
+1. **Server render**: renders the `fallback` content (or `null` if no fallback is provided)
+2. **Initial hydration**: continues rendering `fallback` to match the server output and avoid hydration mismatches
+3. **Client mounted**: detects client-side mount via `useEffect`, then swaps in the full `BlockTree` with drag-and-drop support
+
+### Fallback Strategies
+
+The `fallback` prop accepts any `ReactNode`. Common patterns:
+
+- **Loading skeleton**: animated placeholder blocks that match the tree layout
+- **Static list**: render block titles as plain elements without interactivity
+- **null** (default): render nothing until the client mounts
+
+```tsx
+// Simple skeleton fallback
+<BlockTreeSSR
+  fallback={<div className="h-64 bg-gray-100 rounded animate-pulse" />}
+  {...treeProps}
+/>
+
+// Static list fallback
+<BlockTreeSSR
+  fallback={
+    <ul className="space-y-1">
+      {blocks.filter(b => !b.parentId).map(b => (
+        <li key={b.id} className="p-2">{b.title}</li>
+      ))}
+    </ul>
+  }
+  {...treeProps}
+/>
+```
+
+<CalloutCard title="Drop-in Replacement">
+
+`BlockTreeSSR` accepts all the same props as `BlockTree` plus `fallback`. No other changes needed -- just swap the import.
+
+</CalloutCard>

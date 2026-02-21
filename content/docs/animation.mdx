@@ -1,0 +1,86 @@
+## Animation
+
+Smooth expand/collapse transitions and FLIP-based reorder animations.
+
+### AnimationConfig
+
+Configure animation timing on `BlockTree`:
+
+```tsx
+<BlockTree
+  animation={{
+    expandDuration: 200,       // Expand/collapse duration (ms)
+    dragOverlayDuration: 150,  // Drag overlay animation (ms)
+    easing: 'ease',            // CSS timing function
+  }}
+/>
+```
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `expandDuration` | `number` | — | Expand/collapse animation duration in ms |
+| `dragOverlayDuration` | `number` | — | Drag overlay animation duration in ms |
+| `easing` | `string` | `'ease'` | CSS timing function |
+
+### useLayoutAnimation
+
+FLIP-based layout animation hook for smooth reorder transitions. Captures block positions before render and applies CSS transform transitions after render.
+
+```typescript
+import { useLayoutAnimation } from 'dnd-block-tree'
+
+interface UseLayoutAnimationOptions {
+  duration?: number   // Default: 200ms
+  easing?: string     // Default: 'ease'
+  selector?: string   // Default: '[data-block-id]'
+}
+
+function useLayoutAnimation(
+  containerRef: React.RefObject<HTMLElement | null>,
+  options?: UseLayoutAnimationOptions
+): void
+```
+
+### Usage Example
+
+Create a ref for the container element, pass it to a wrapper `div` around `BlockTree`, and call `useLayoutAnimation` with the ref. `BlockTree` automatically adds `data-block-id` attributes to each rendered block, which the hook uses to track element positions.
+
+```tsx
+import { useRef } from 'react'
+import { BlockTree, useLayoutAnimation } from 'dnd-block-tree'
+
+function AnimatedTree({ blocks, onChange, renderers, containerTypes }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useLayoutAnimation(containerRef, {
+    duration: 200,
+    easing: 'ease',
+  })
+
+  return (
+    <div ref={containerRef}>
+      <BlockTree
+        blocks={blocks}
+        onChange={onChange}
+        renderers={renderers}
+        containerTypes={containerTypes}
+      />
+    </div>
+  )
+}
+```
+
+### How FLIP Works
+
+1. **First**: captures element positions before the DOM update
+2. **Last**: reads new positions after render
+3. **Invert**: applies CSS transform to move elements from new position back to old position
+4. **Play**: animates the transform to zero, so elements slide smoothly into their new position
+
+The hook uses `useLayoutEffect` to capture positions before paint and `requestAnimationFrame` to apply the inverse transforms, ensuring a single-frame visual transition with no flicker.
+
+<CalloutCard title="Automatic data-block-id">
+
+`BlockTree` automatically adds `data-block-id` attributes to each rendered block element. The `useLayoutAnimation` hook uses these attributes (via the `selector` option) to track which elements moved between renders. You do not need to add these attributes yourself.
+
+</CalloutCard>

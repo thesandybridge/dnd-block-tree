@@ -1,0 +1,97 @@
+## Serialization
+
+Convert between flat block arrays and nested tree structures.
+
+`dnd-block-tree` uses a flat array of blocks internally, where each block references its parent via `parentId`. The serialization utilities let you convert between this flat representation and a nested tree structure for JSON export, API responses, or external rendering.
+
+### flatToNested
+
+Converts a flat `BaseBlock[]` array into a nested tree structure. Each block's children are gathered and sorted by `order`, then nested recursively.
+
+```typescript
+import { flatToNested, type NestedBlock } from 'dnd-block-tree'
+
+function flatToNested<T extends BaseBlock>(blocks: T[]): NestedBlock<T>[]
+```
+
+The `NestedBlock` type omits `parentId` and `order` since the tree structure encodes that information implicitly:
+
+```typescript
+type NestedBlock<T extends BaseBlock> = Omit<T, 'parentId' | 'order'> & {
+  children: NestedBlock<T>[]
+}
+```
+
+### nestedToFlat
+
+Converts a nested tree back to a flat array. Assigns `parentId` and integer `order` values during a depth-first walk.
+
+```typescript
+import { nestedToFlat } from 'dnd-block-tree'
+
+function nestedToFlat<T extends BaseBlock>(nested: NestedBlock<T>[]): T[]
+```
+
+### Roundtrip Example
+
+```tsx
+import { flatToNested, nestedToFlat, type BaseBlock } from 'dnd-block-tree'
+
+interface MyBlock extends BaseBlock {
+  type: 'section' | 'task'
+  title: string
+}
+
+// Start with flat blocks
+const flat: MyBlock[] = [
+  { id: '1', type: 'section', title: 'Project', parentId: null, order: 0 },
+  { id: '2', type: 'task', title: 'Design', parentId: '1', order: 0 },
+  { id: '3', type: 'task', title: 'Build', parentId: '1', order: 1 },
+  { id: '4', type: 'section', title: 'Notes', parentId: null, order: 1 },
+]
+
+// Convert to nested tree
+const nested = flatToNested(flat)
+```
+
+The nested output looks like:
+
+```json
+[
+  {
+    "id": "1",
+    "type": "section",
+    "title": "Project",
+    "children": [
+      { "id": "2", "type": "task", "title": "Design", "children": [] },
+      { "id": "3", "type": "task", "title": "Build", "children": [] }
+    ]
+  },
+  {
+    "id": "4",
+    "type": "section",
+    "title": "Notes",
+    "children": []
+  }
+]
+```
+
+Convert back to flat:
+
+```tsx
+const flatAgain = nestedToFlat(nested)
+// Returns the original flat array with parentId and order restored
+```
+
+### Use Cases
+
+- **JSON export**: serialize the tree to a clean nested format for storage or API responses
+- **Import**: accept nested JSON input and convert to the flat format `BlockTree` expects
+- **Rendering outside BlockTree**: use the nested structure to render a read-only tree view without drag-and-drop
+- **Clipboard**: copy a subtree as nested JSON, then paste and convert back to flat blocks
+
+<CalloutCard title="Lossless Roundtrip">
+
+`nestedToFlat(flatToNested(blocks))` produces the same logical tree as the input. The `parentId` and `order` fields are reconstructed from the nesting structure. Custom fields on your blocks are preserved through the roundtrip.
+
+</CalloutCard>

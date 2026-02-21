@@ -1,0 +1,64 @@
+## Multi-Select
+
+Enable with `multiSelect={true}`. Supports Cmd/Ctrl+Click toggle, Shift+Click range selection, and batch drag-and-drop.
+
+### Selection Modes
+
+| Interaction | Behavior |
+|-------------|----------|
+| Click | Select single block (clears others) |
+| Cmd/Ctrl+Click | Toggle single block without clearing |
+| Shift+Click | Range select from last clicked to current |
+| Drag unselected | Clears selection, drags single block |
+| Drag selected | Moves all selected blocks (preserves relative order) |
+
+### Usage
+
+**Uncontrolled** -- the tree manages selection state internally:
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  renderers={renderers}
+  containerTypes={['section']}
+  onChange={setBlocks}
+  multiSelect={true}
+/>
+```
+
+**Controlled** -- you own the selection state:
+
+```tsx
+import { useState } from 'react'
+
+function App() {
+  const [blocks, setBlocks] = useState(initialBlocks)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  return (
+    <BlockTree
+      blocks={blocks}
+      renderers={renderers}
+      containerTypes={['section']}
+      onChange={setBlocks}
+      multiSelect={true}
+      selectedIds={selectedIds}
+      onSelectionChange={setSelectedIds}
+    />
+  )
+}
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `multiSelect` | `boolean` | `false` | Enable multi-select mode |
+| `selectedIds` | `Set<string>` | -- | Controlled selection state |
+| `onSelectionChange` | `(ids: Set<string>) => void` | -- | Called when selection changes |
+
+### Drag Behavior
+
+When multiple blocks are selected and you drag one of them, all selected blocks move together. Their relative order is preserved in the final position. The drag overlay shows a count badge when more than one block is selected, indicating how many blocks are being moved.
+
+If you start a drag on an **unselected** block, the current selection is cleared and only the dragged block moves.

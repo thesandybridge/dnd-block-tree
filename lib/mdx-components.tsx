@@ -61,6 +61,7 @@ export const docsMDXComponents: MDXComponents = {
     <h2 className="text-2xl font-bold mb-4 flex items-center gap-2" {...props} />
   ),
   h3: (props) => <h3 className="text-lg font-semibold mb-2 mt-6" {...props} />,
+  h4: (props) => <h4 className="text-base font-semibold mb-2 mt-4" {...props} />,
   p: (props) => <p className="text-muted-foreground mb-4" {...props} />,
   pre: Pre,
   strong: (props) => <strong className="text-foreground" {...props} />,
@@ -78,4 +79,27 @@ export const docsMDXComponents: MDXComponents = {
       </a>
     )
   },
+  table: (props) => (
+    <div className="my-6 w-full overflow-x-auto">
+      <table className="w-full text-sm border-collapse" {...props} />
+    </div>
+  ),
+  thead: (props) => <thead className="border-b border-border" {...props} />,
+  th: (props) => (
+    <th className="text-left py-2 px-3 font-semibold text-foreground bg-muted/50" {...props} />
+  ),
+  td: (props) => (
+    <td className="py-2 px-3 border-b border-border/50 text-muted-foreground" {...props} />
+  ),
+  tr: (props) => <tr className="border-b border-border/30" {...props} />,
+  ul: (props) => <ul className="list-disc list-inside space-y-1 mb-4 text-muted-foreground" {...props} />,
+  ol: (props) => <ol className="list-decimal list-inside space-y-1 mb-4 text-muted-foreground" {...props} />,
+  li: (props) => <li className="text-muted-foreground" {...props} />,
+  code: (props) => (
+    <code className="bg-muted rounded px-1.5 py-0.5 text-sm font-mono text-foreground" {...props} />
+  ),
+  hr: (props) => <hr className="my-8 border-border/50" {...props} />,
+  blockquote: (props) => (
+    <blockquote className="border-l-2 border-primary/50 pl-4 my-4 text-muted-foreground italic" {...props} />
+  ),
 }

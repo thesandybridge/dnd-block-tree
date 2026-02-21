@@ -1,0 +1,77 @@
+## Collision Detection
+
+Custom algorithms that determine which drop zone the pointer is closest to during drag.
+
+### Built-in Algorithms
+
+#### weightedVerticalCollision (Default)
+
+Scores drop zones by distance to nearest edge with bottom bias. Prevents flickering at zone boundaries.
+
+```typescript
+import { weightedVerticalCollision } from 'dnd-block-tree'
+```
+
+How it works:
+
+- Calculates distance from pointer to nearest edge (top or bottom) of each zone
+- Applies -5px bias to zones below the pointer midpoint
+- Includes horizontal scoring (prefers zones within pointer X-range)
+- Returns single winner (lowest score)
+
+#### closestCenterCollision
+
+Simple Euclidean distance from pointer to zone center. Useful as a baseline or fallback.
+
+```typescript
+import { closestCenterCollision } from 'dnd-block-tree'
+```
+
+#### createStickyCollision
+
+Creates a collision detector with hysteresis -- the active zone doesn't change unless a new zone scores significantly better than the current one.
+
+```typescript
+import { createStickyCollision } from 'dnd-block-tree'
+
+const stickyCollision = createStickyCollision(15) // threshold in pixels
+
+<BlockTree collisionDetection={stickyCollision} />
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `threshold` | `number` | `15` | Minimum score improvement (in pixels) needed to switch zones |
+
+The returned object also has a `reset()` method to clear state between drags:
+
+```typescript
+const stickyCollision = createStickyCollision(15)
+
+// Reset sticky state when a drag ends
+stickyCollision.reset()
+```
+
+### Custom Collision Detection
+
+You can provide your own collision detection function. It receives the same arguments as `@dnd-kit`'s `CollisionDetection` type:
+
+```tsx
+import type { CollisionDetection } from '@dnd-kit/core'
+
+const myCollision: CollisionDetection = (args) => {
+  // args.droppableRects - Map of zone ID to DOMRect
+  // args.droppableContainers - Array of droppable containers
+  // args.pointerCoordinates - Current pointer position
+  // Return array of Collision objects sorted by priority
+  return [{ id: bestZoneId }]
+}
+
+<BlockTree collisionDetection={myCollision} />
+```
+
+<CalloutCard title="Choosing a Collision Algorithm">
+
+The default `weightedVerticalCollision` is optimized for vertical tree layouts. Use `createStickyCollision` if you experience flickering at zone boundaries.
+
+</CalloutCard>

@@ -1,0 +1,85 @@
+## Virtual Scrolling
+
+Render large trees efficiently by only rendering visible items.
+
+### Enabling
+
+Pass the `virtualize` prop to `BlockTree`:
+
+```tsx
+<BlockTree
+  virtualize={{
+    itemHeight: 48,   // Required: fixed pixel height per item
+    overscan: 5,      // Extra items rendered above/below viewport (default: 5)
+  }}
+/>
+```
+
+### Props
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `itemHeight` | `number` | — | **Required.** Fixed pixel height of each item |
+| `overscan` | `number` | `5` | Extra items rendered outside the visible viewport |
+
+### useVirtualTree Hook
+
+For custom implementations, use the hook directly:
+
+```typescript
+import { useVirtualTree } from 'dnd-block-tree'
+
+interface UseVirtualTreeOptions {
+  containerRef: React.RefObject<HTMLElement | null>
+  itemCount: number
+  itemHeight: number
+  overscan?: number   // Default: 5
+}
+
+interface UseVirtualTreeResult {
+  visibleRange: { start: number; end: number }
+  totalHeight: number
+  offsetY: number
+}
+```
+
+```tsx
+function CustomVirtualTree({ blocks }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const { visibleRange, totalHeight, offsetY } = useVirtualTree({
+    containerRef,
+    itemCount: blocks.length,
+    itemHeight: 48,
+    overscan: 5,
+  })
+
+  const visibleBlocks = blocks.slice(visibleRange.start, visibleRange.end)
+
+  return (
+    <div ref={containerRef} style={{ height: 600, overflow: 'auto' }}>
+      <div style={{ height: totalHeight, position: 'relative' }}>
+        <div style={{ transform: `translateY(${offsetY}px)` }}>
+          {visibleBlocks.map(block => (
+            <div key={block.id} style={{ height: 48 }}>
+              {block.content}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+### Limitations
+
+- Requires **fixed item height** -- all items must have the same pixel height
+- Container must have `overflow: auto` and a fixed height
+- Works best with flat or shallow trees
+
+<CalloutCard title="When to Virtualize">
+
+Virtual scrolling is most beneficial for trees with hundreds or thousands of items. For smaller trees (under 100 items), the overhead of virtualization may not be worth it.
+
+</CalloutCard>

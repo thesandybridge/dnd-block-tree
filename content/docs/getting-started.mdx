@@ -1,0 +1,90 @@
+## Installation & Setup
+
+### Install
+
+Install dnd-block-tree along with its peer dependencies:
+
+```bash
+npm install dnd-block-tree @dnd-kit/core @dnd-kit/utilities
+```
+
+Requires **React 18+** and **@dnd-kit/core 6+**.
+
+### Peer Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `react` | >= 18.0 | Core React |
+| `react-dom` | >= 18.0 | DOM rendering |
+| `@dnd-kit/core` | >= 6.0 | Drag-and-drop engine |
+| `@dnd-kit/utilities` | >= 3.0 | DnD utility functions |
+
+### Quick Start
+
+```tsx
+import { BlockTree, type BaseBlock, type BlockRenderers } from 'dnd-block-tree'
+import { useState } from 'react'
+
+// 1. Define your block type extending BaseBlock
+interface MyBlock extends BaseBlock {
+  type: 'section' | 'task' | 'note'
+  title: string
+}
+
+// 2. Create renderers for each block type
+const renderers: BlockRenderers<MyBlock, ['section']> = {
+  // Container types get extra props: children, isExpanded, onToggleExpand
+  section: ({ block, children, isExpanded, onToggleExpand }) => (
+    <div className="border rounded p-2">
+      <button onClick={onToggleExpand}>
+        {isExpanded ? '▼' : '▶'} {block.title}
+      </button>
+      {isExpanded && <div className="ml-4">{children}</div>}
+    </div>
+  ),
+  // Leaf types get standard props: block, isDragging, depth
+  task: ({ block }) => (
+    <div className="p-2 bg-white border rounded">{block.title}</div>
+  ),
+  note: ({ block }) => (
+    <div className="p-2 italic text-gray-500">{block.title}</div>
+  ),
+}
+
+// 3. Render the tree
+function App() {
+  const [blocks, setBlocks] = useState<MyBlock[]>([
+    { id: '1', type: 'section', title: 'My Tasks', parentId: null, order: 0 },
+    { id: '2', type: 'task', title: 'Build the app', parentId: '1', order: 0 },
+    { id: '3', type: 'task', title: 'Write tests', parentId: '1', order: 1 },
+    { id: '4', type: 'note', title: 'Remember to deploy', parentId: null, order: 1 },
+  ])
+
+  return (
+    <BlockTree
+      blocks={blocks}
+      renderers={renderers}
+      containerTypes={['section']}
+      onChange={setBlocks}
+    />
+  )
+}
+```
+
+<CalloutCard title="Key Concepts">
+
+**BaseBlock** -- All blocks must have `id`, `type`, `parentId` (null for root), and `order`. Extend this with your own fields.
+
+**containerTypes** -- An array of block type strings that can have children. These renderers receive `children`, `isExpanded`, and `onToggleExpand` props.
+
+**renderers** -- A map of `type → render function`. TypeScript enforces that every block type has a renderer, and container types get the correct props.
+
+**onChange** -- Called with the full updated block array after every drag-and-drop operation.
+
+</CalloutCard>
+
+### Next Steps
+
+- [BlockTree Props](/docs/api) -- full prop reference
+- [Callbacks & Events](/docs/callbacks) -- hook into drag lifecycle
+- [Type Reference](/docs/types) -- all exported types

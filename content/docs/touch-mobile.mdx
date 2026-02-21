@@ -1,0 +1,75 @@
+## Touch & Mobile
+
+Built-in touch support with long-press activation, haptic feedback, and mobile-optimized sensors.
+
+### Default Behavior
+
+Touch drag uses delay-based activation (200ms long press) to avoid interfering with scrolling. Pointer drag uses distance-based activation (8px movement threshold). These defaults work well for most use cases -- users can scroll normally on touch devices, and a deliberate long press initiates drag.
+
+### Configuration
+
+Customize sensor behavior via the `sensors` prop:
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  renderers={renderers}
+  containerTypes={['section']}
+  onChange={setBlocks}
+  sensors={{
+    longPressDelay: 300,     // Custom long-press duration (default: 200ms)
+    hapticFeedback: true,    // Vibrate on drag start
+    activationDistance: 10,  // Pointer threshold (default: 8px)
+    tolerance: 5,            // Movement tolerance during delay
+  }}
+/>
+```
+
+### Sensor Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `longPressDelay` | `number` | `200` | Touch activation delay in milliseconds |
+| `hapticFeedback` | `boolean` | `false` | Trigger device vibration on drag start |
+| `activationDistance` | `number` | `8` | Pointer movement threshold in pixels |
+| `activationDelay` | `number` | -- | Use delay-based pointer activation instead of distance |
+| `tolerance` | `number` | `5` | Allowed movement in pixels during delay-based activation |
+
+### triggerHaptic
+
+Programmatic haptic feedback utility. Safe to call anywhere -- it no-ops silently if the Vibration API is unavailable (desktop browsers, unsupported devices).
+
+```typescript
+import { triggerHaptic } from 'dnd-block-tree'
+
+triggerHaptic()      // Default: 10ms vibration
+triggerHaptic(50)    // Custom 50ms duration
+```
+
+Use this in callbacks for additional tactile feedback:
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  renderers={renderers}
+  containerTypes={['section']}
+  onChange={setBlocks}
+  onBlockMove={(event) => {
+    triggerHaptic(20)
+    console.log(`Moved ${event.block.id} to ${event.newParentId}`)
+  }}
+/>
+```
+
+### Handling Scroll Containers
+
+If your `BlockTree` is inside a scrollable container, the long-press delay prevents accidental drags during scroll. If you need a longer or shorter delay, adjust `longPressDelay`:
+
+- **Shorter delay** (100-150ms): faster drag initiation, but easier to accidentally trigger while scrolling
+- **Longer delay** (300-500ms): more forgiving for scroll gestures, but requires more deliberate press-and-hold
+
+<CalloutCard title="Touch & Scroll">
+
+Touch sensors automatically differentiate between scrolling and dragging. The long-press delay ensures users can scroll normally without accidentally triggering drags.
+
+</CalloutCard>

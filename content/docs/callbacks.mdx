@@ -1,0 +1,231 @@
+## Callbacks & Events
+
+Hook into the drag-and-drop lifecycle for real-time sync, analytics, validation, or custom behavior. All callbacks receive strongly-typed event objects.
+
+### Drag Lifecycle
+
+#### onDragStart
+
+Called when a drag begins. Return `false` to prevent the drag.
+
+```typescript
+onDragStart?: (event: DragStartEvent<T>) => boolean | void
+
+interface DragStartEvent<T extends BaseBlock> {
+  block: T
+  blockId: string
+}
+```
+
+```tsx
+<BlockTree
+  onDragStart={(e) => {
+    if (e.block.locked) return false // prevent drag
+    console.log('Dragging:', e.block.title)
+  }}
+/>
+```
+
+#### onDragMove
+
+Called during drag movement (debounced). Includes pointer coordinates and the current hover zone.
+
+```typescript
+onDragMove?: (event: DragMoveEvent<T>) => void
+
+interface DragMoveEvent<T extends BaseBlock> {
+  block: T
+  blockId: string
+  overZone: string | null
+  coordinates: { x: number; y: number }
+}
+```
+
+#### onDragEnd
+
+Called when a drag ends, whether successful or cancelled.
+
+```typescript
+onDragEnd?: (event: DragEndEvent<T>) => void
+
+interface DragEndEvent<T extends BaseBlock> {
+  block: T
+  blockId: string
+  targetZone: string | null
+  cancelled: boolean
+}
+```
+
+```tsx
+<BlockTree
+  onDragEnd={(e) => {
+    if (!e.cancelled) {
+      analytics.track('block_moved', { blockId: e.blockId })
+    }
+  }}
+/>
+```
+
+#### onDragCancel
+
+Called specifically when a drag is cancelled (escape key, pointer release outside valid zone).
+
+```typescript
+onDragCancel?: (event: DragEndEvent<T>) => void
+```
+
+### Move Callbacks
+
+#### onBeforeMove
+
+Middleware that runs before a move is committed. Return the operation to allow, a modified operation to transform, or `false` to cancel.
+
+```typescript
+onBeforeMove?: (operation: MoveOperation<T>) => MoveOperation<T> | false | void
+
+interface MoveOperation<T extends BaseBlock> {
+  block: T
+  from: BlockPosition
+  targetZone: string
+}
+```
+
+```tsx
+<BlockTree
+  onBeforeMove={(op) => {
+    // Cancel: prevent sections from being nested
+    if (op.block.type === 'section' && op.targetZone.startsWith('into-')) {
+      return false
+    }
+    // Transform: redirect to different zone
+    // Allow: return void or the operation unchanged
+  }}
+/>
+```
+
+See [Depth & Middleware](/docs/constraints) for more examples.
+
+#### onBlockMove
+
+Called after a move is committed with the final positions and updated block array.
+
+```typescript
+onBlockMove?: (event: BlockMoveEvent<T>) => void
+
+interface BlockMoveEvent<T extends BaseBlock> {
+  block: T
+  from: BlockPosition
+  to: BlockPosition
+  blocks: T[]        // Full block array after the move
+  movedIds: string[] // All moved block IDs (multi-select aware)
+}
+
+interface BlockPosition {
+  parentId: string | null
+  index: number
+}
+```
+
+```tsx
+<BlockTree
+  onBlockMove={(e) => {
+    // Sync to server
+    api.updateBlockPositions(e.blocks)
+  }}
+/>
+```
+
+### UI State Callbacks
+
+#### onExpandChange
+
+Called when a container's expand/collapse state changes.
+
+```typescript
+onExpandChange?: (event: ExpandChangeEvent<T>) => void
+
+interface ExpandChangeEvent<T extends BaseBlock> {
+  block: T
+  blockId: string
+  expanded: boolean
+}
+```
+
+#### onHoverChange
+
+Called when the active drop zone changes during drag. Useful for custom hover indicators.
+
+```typescript
+onHoverChange?: (event: HoverChangeEvent<T>) => void
+
+interface HoverChangeEvent<T extends BaseBlock> {
+  zoneId: string | null
+  zoneType: DropZoneType | null  // 'before' | 'after' | 'into'
+  targetBlock: T | null
+}
+```
+
+### Block CRUD Callbacks
+
+#### onBlockAdd
+
+Called after a block is added to the tree.
+
+```typescript
+onBlockAdd?: (event: BlockAddEvent<T>) => void
+
+interface BlockAddEvent<T extends BaseBlock> {
+  block: T
+  parentId: string | null
+  index: number
+}
+```
+
+#### onBlockDelete
+
+Called after a block and its descendants are deleted.
+
+```typescript
+onBlockDelete?: (event: BlockDeleteEvent<T>) => void
+
+interface BlockDeleteEvent<T extends BaseBlock> {
+  block: T
+  deletedIds: string[]    // Includes all descendant IDs
+  parentId: string | null
+}
+```
+
+### All Callbacks at a Glance
+
+<CardGrid>
+  <MiniCard title="onDragStart">
+    Drag begins. Return `false` to prevent.
+  </MiniCard>
+  <MiniCard title="onDragMove">
+    During drag (debounced). Coordinates + hover zone.
+  </MiniCard>
+  <MiniCard title="onDragEnd">
+    Drag ended (success or cancel).
+  </MiniCard>
+  <MiniCard title="onDragCancel">
+    Drag cancelled specifically.
+  </MiniCard>
+  <MiniCard title="onBeforeMove">
+    Middleware: cancel, transform, or allow moves.
+  </MiniCard>
+  <MiniCard title="onBlockMove">
+    After move committed. Great for server sync.
+  </MiniCard>
+  <MiniCard title="onExpandChange">
+    Container expanded or collapsed.
+  </MiniCard>
+  <MiniCard title="onHoverChange">
+    Active drop zone changed during drag.
+  </MiniCard>
+  <MiniCard title="onBlockAdd">
+    Block added to tree.
+  </MiniCard>
+  <MiniCard title="onBlockDelete">
+    Block and descendants deleted.
+  </MiniCard>
+</CardGrid>

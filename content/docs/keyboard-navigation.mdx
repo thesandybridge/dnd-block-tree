@@ -1,0 +1,43 @@
+## Keyboard Navigation
+
+Enable with `keyboardNavigation={true}`. This adds ARIA tree roles and full keyboard control, making the block tree accessible and navigable without a mouse.
+
+### Key Bindings
+
+| Key | Action |
+|-----|--------|
+| `ArrowUp` | Move focus to previous item |
+| `ArrowDown` | Move focus to next item |
+| `ArrowLeft` | Collapse container, or move to parent |
+| `ArrowRight` | Expand container, or move to first child |
+| `Enter` / `Space` | Toggle expand/collapse |
+| `Home` | Focus first item |
+| `End` | Focus last item |
+
+### Usage
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  renderers={renderers}
+  containerTypes={['section']}
+  onChange={setBlocks}
+  keyboardNavigation={true}
+/>
+```
+
+### Accessibility
+
+When `keyboardNavigation` is enabled, the following ARIA attributes are applied automatically:
+
+- Root element gets `role="tree"`
+- Block items get `role="treeitem"`
+- Containers get `aria-expanded` reflecting their open/closed state
+- Focus management is handled automatically -- tabbing into the tree focuses the first item, and subsequent navigation uses arrow keys
+- `aria-level` is set based on nesting depth
+
+<CalloutCard title="Accessibility">
+
+Keyboard navigation adds proper ARIA tree roles automatically. No extra configuration is needed -- just set `keyboardNavigation={true}` and the tree is fully accessible.
+
+</CalloutCard>
