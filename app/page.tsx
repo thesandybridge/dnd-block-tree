@@ -7,7 +7,8 @@ import { CodeBlock } from './components/CodeBlock'
 import { ProductivityTree } from './components/productivity/ProductivityTree'
 import { FileTree } from './components/filesystem/FileTree'
 import { Footer } from './components/Footer'
-import { Layers, FolderTree, Github } from 'lucide-react'
+import { Layers, FolderTree, Github, BookOpen } from 'lucide-react'
+import Link from 'next/link'
 
 type DemoTab = 'productivity' | 'filesystem'
 
@@ -77,6 +78,12 @@ export default function Home() {
             <span className="font-mono font-semibold text-base sm:text-lg">dnd-block-tree</span>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/docs" className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">Docs</span>
+              </Link>
+            </Button>
             <Button variant="ghost" size="icon" asChild>
               <a
                 href="https://github.com/thesandybridge/dnd-block-tree"
@@ -101,6 +108,14 @@ export default function Home() {
               A headless React library for building hierarchical drag-and-drop interfaces. Bring
               your own components, we handle the complexity.
             </p>
+            <div className="flex gap-3 justify-center mb-8">
+              <Button asChild>
+                <Link href="/docs">Read the Docs</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/docs/getting-started">Get Started</Link>
+              </Button>
+            </div>
             <div className="flex flex-wrap gap-3 justify-center">
               {BADGES.map(badge => (
                 <span
