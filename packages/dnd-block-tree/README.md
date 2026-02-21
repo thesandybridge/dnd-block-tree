@@ -83,12 +83,15 @@ function App() {
 | `showDropPreview` | `boolean` | `true` | Show live preview of block at drop position |
 | `canDrag` | `(block: T) => boolean` | - | Filter which blocks can be dragged |
 | `canDrop` | `(block, zone, target) => boolean` | - | Filter valid drop targets |
+| `collisionDetection` | `CollisionDetection` | sticky | Custom collision detection algorithm (from `@dnd-kit/core`) |
+| `sensors` | `SensorConfig` | - | Sensor configuration (`{ activationDistance, activationDelay, tolerance }`) |
 | `maxDepth` | `number` | - | Maximum nesting depth (1 = flat, 2 = one level, etc.) |
 | `keyboardNavigation` | `boolean` | `false` | Enable keyboard navigation with arrow keys |
 | `multiSelect` | `boolean` | `false` | Enable multi-select with Cmd/Ctrl+Click and Shift+Click |
 | `selectedIds` | `Set<string>` | - | Externally-controlled selected IDs (for multi-select) |
 | `onSelectionChange` | `(ids: Set<string>) => void` | - | Called when selection changes |
 | `orderingStrategy` | `'integer' \| 'fractional'` | `'integer'` | Sibling ordering strategy |
+| `initialExpanded` | `string[] \| 'all' \| 'none'` | `'all'` | Initially expanded container IDs |
 | `className` | `string` | - | Root container class |
 | `dropZoneClassName` | `string` | - | Drop zone class |
 | `dropZoneActiveClassName` | `string` | - | Active drop zone class |
@@ -108,6 +111,105 @@ function App() {
 | `onBlockDelete` | `(event: BlockDeleteEvent<T>) => void` | Called after a block is deleted |
 | `onExpandChange` | `(event: ExpandChangeEvent<T>) => void` | Called when expand/collapse changes |
 | `onHoverChange` | `(event: HoverChangeEvent<T>) => void` | Called when hover zone changes |
+
+### Event Types
+
+All event types are exported and generic over your block type `T`.
+
+#### DragStartEvent
+
+```typescript
+interface DragStartEvent<T> {
+  block: T
+  blockId: string
+}
+```
+
+#### DragMoveEvent
+
+```typescript
+interface DragMoveEvent<T> {
+  block: T
+  blockId: string
+  overZone: string | null       // Current hover zone ID
+  coordinates: { x: number; y: number }
+}
+```
+
+#### DragEndEvent
+
+```typescript
+interface DragEndEvent<T> {
+  block: T
+  blockId: string
+  targetZone: string | null     // Zone where block was dropped
+  cancelled: boolean
+}
+```
+
+#### BlockMoveEvent
+
+```typescript
+interface BlockMoveEvent<T> {
+  block: T
+  from: BlockPosition           // { parentId, index }
+  to: BlockPosition
+  blocks: T[]                   // Full block array after the move
+  movedIds: string[]            // All moved block IDs (for multi-select)
+}
+```
+
+#### MoveOperation
+
+Passed to the `onBeforeMove` middleware:
+
+```typescript
+interface MoveOperation<T> {
+  block: T
+  from: BlockPosition
+  targetZone: string            // Drop zone ID (e.g. "after-uuid", "into-uuid")
+}
+```
+
+#### BlockAddEvent
+
+```typescript
+interface BlockAddEvent<T> {
+  block: T
+  parentId: string | null
+  index: number
+}
+```
+
+#### BlockDeleteEvent
+
+```typescript
+interface BlockDeleteEvent<T> {
+  block: T
+  deletedIds: string[]          // Block + all descendant IDs
+  parentId: string | null
+}
+```
+
+#### ExpandChangeEvent
+
+```typescript
+interface ExpandChangeEvent<T> {
+  block: T
+  blockId: string
+  expanded: boolean
+}
+```
+
+#### HoverChangeEvent
+
+```typescript
+interface HoverChangeEvent<T> {
+  zoneId: string | null
+  zoneType: 'before' | 'after' | 'into' | null
+  targetBlock: T | null
+}
+```
 
 ### Types
 
@@ -222,6 +324,87 @@ Limit nesting depth to prevent deeply nested trees:
 - `maxDepth={2}` - blocks can nest one level inside containers
 - When a move would exceed the limit, the drop zone is rejected and the move is a no-op
 
+## Move Middleware (`onBeforeMove`)
+
+The `onBeforeMove` callback intercepts moves before they are committed. You can use it to validate, transform, or cancel moves:
+
+```tsx
+<BlockTree
+  blocks={blocks}
+  onChange={setBlocks}
+  onBeforeMove={(operation) => {
+    // Cancel: return false to prevent the move
+    if (operation.block.type === 'locked') {
+      return false
+    }
+
+    // Transform: change the target zone
+    if (operation.targetZone.startsWith('into-') && someCondition) {
+      return { ...operation, targetZone: `after-${extractBlockId(operation.targetZone)}` }
+    }
+
+    // Allow: return void/undefined to proceed as-is
+  }}
+/>
+```
+
+The middleware receives a `MoveOperation` with the block, its original position (`from`), and the target drop zone. Returning:
+- `false` cancels the move entirely
+- A modified `MoveOperation` transforms the move (e.g. redirect to a different zone)
+- `void` / `undefined` allows the move as-is
+
+## Fractional Indexing
+
+By default, siblings are reindexed `0, 1, 2, ...` on every move. For collaborative or CRDT-compatible scenarios, use fractional indexing:
+
+```tsx
+import { BlockTree, initFractionalOrder } from 'dnd-block-tree'
+
+// Convert existing blocks to fractional ordering
+const [blocks, setBlocks] = useState(() => initFractionalOrder(initialBlocks))
+
+<BlockTree
+  blocks={blocks}
+  onChange={setBlocks}
+  orderingStrategy="fractional"
+/>
+```
+
+With fractional ordering, only the moved block receives a new `order` value (a lexicographically sortable string key). Siblings are never reindexed, making it safe for concurrent edits.
+
+Related utilities:
+
+```typescript
+import {
+  generateKeyBetween,     // Generate a key between two existing keys
+  generateNKeysBetween,   // Generate N keys between two existing keys
+  generateInitialKeys,    // Generate N evenly-spaced initial keys
+  initFractionalOrder,    // Convert integer-ordered blocks to fractional
+  compareFractionalKeys,  // Compare two fractional keys
+} from 'dnd-block-tree'
+```
+
+## Collision Detection
+
+The library ships with three collision detection strategies:
+
+```typescript
+import {
+  weightedVerticalCollision,  // Default: edge-distance based, depth-aware
+  closestCenterCollision,     // Simple closest-center algorithm
+  createStickyCollision,      // Wraps any strategy with hysteresis to prevent flickering
+} from 'dnd-block-tree'
+
+// Use a custom collision strategy
+<BlockTree collisionDetection={closestCenterCollision} ... />
+
+// Or use the sticky wrapper with a custom threshold (px)
+const collision = createStickyCollision(20)
+<BlockTree collisionDetection={collision} ... />
+```
+
+You can also pass any `CollisionDetection` function from `@dnd-kit/core`.
+
 ## Type Safety
 
 The library provides automatic type inference for container vs non-container renderers:
@@ -245,20 +428,37 @@ const renderers: BlockRenderers<MyBlock, typeof CONTAINER_TYPES> = {
 
 ## Utilities
 
-The library exports several utility functions:
+The library exports utility functions for tree manipulation, ID generation, and zone parsing:
 
 ```typescript
 import {
-  computeNormalizedIndex,   // Convert flat array to normalized index
-  buildOrderedBlocks,       // Convert index back to ordered array
-  reparentBlockIndex,       // Move a block to a new position
-  reparentMultipleBlocks,   // Move multiple blocks preserving relative order
-  getDescendantIds,         // Get all descendant IDs of a block
-  getBlockDepth,            // Compute depth of a block in the tree
-  getSubtreeDepth,          // Compute max depth of a subtree
-  generateId,               // Generate unique block IDs
-  generateKeyBetween,       // Generate a fractional key between two keys
-  initFractionalOrder,      // Convert integer-ordered blocks to fractional
+  // Tree operations
+  computeNormalizedIndex,     // Convert flat array to { byId, byParent } index
+  buildOrderedBlocks,         // Convert index back to ordered flat array
+  reparentBlockIndex,         // Move a single block to a new position
+  reparentMultipleBlocks,     // Move multiple blocks preserving relative order
+  getDescendantIds,           // Get all descendant IDs of a block (Set)
+  deleteBlockAndDescendants,  // Remove a block and all its descendants from index
+  getBlockDepth,              // Compute depth of a block (root = 1)
+  getSubtreeDepth,            // Max depth of a subtree (leaf = 1)
+
+  // ID / zone helpers
+  generateId,                 // Generate unique block IDs
+  extractUUID,                // Extract block ID from zone ID string
+  getDropZoneType,            // Parse zone type: 'before' | 'after' | 'into'
+  extractBlockId,             // Extract block ID from zone ID (alias)
+
+  // Fractional indexing
+  generateKeyBetween,         // Generate a fractional key between two keys
+  generateNKeysBetween,       // Generate N keys between two existing keys
+  generateInitialKeys,        // Generate N evenly-spaced initial keys
+  initFractionalOrder,        // Convert integer-ordered blocks to fractional
+  compareFractionalKeys,      // Compare two fractional keys
+
+  // Collision detection
+  weightedVerticalCollision,  // Edge-distance collision, depth-aware
+  closestCenterCollision,     // Simple closest-center collision
+  createStickyCollision,      // Hysteresis wrapper to prevent flickering
 } from 'dnd-block-tree'
 ```
 
