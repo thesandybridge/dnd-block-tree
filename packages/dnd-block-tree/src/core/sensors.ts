@@ -49,7 +49,7 @@ export function useConfiguredSensors(config: SensorConfig = {}) {
     }
     // For touch, use delay-based activation to not interfere with scrolling
     touchConstraint = {
-      delay: 200,
+      delay: config.longPressDelay ?? 200,
       tolerance: 5,
     }
   }

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0
+
+### Features
+
+- **Serialization helpers** — New `flatToNested()` and `nestedToFlat()` utility functions for converting between flat block arrays and nested tree structures. New `NestedBlock<T>` type exported.
+- **Touch/mobile enhancements** — `SensorConfig` now supports `longPressDelay` (override the default 200ms touch activation) and `hapticFeedback` (trigger `navigator.vibrate()` on drag start). New `triggerHaptic()` utility exported.
+- **SSR compatibility** — New `BlockTreeSSR` component provides hydration-safe rendering for Next.js App Router and other SSR environments. Renders an optional `fallback` on the server, mounts the full `BlockTree` after hydration.
+- **Animation/transition support** — `AnimationConfig.expandDuration` now controls CSS transitions on expand/collapse of container children. New `useLayoutAnimation` hook provides FLIP-based reorder animations as a standalone composable.
+- **Virtual scrolling** — New `virtualize` prop on `BlockTree` enables windowed rendering for large trees (1000+ blocks). Fixed item height with configurable overscan. New `useVirtualTree` hook exported for custom implementations.
+
 ## 0.4.0
 
 ### Features

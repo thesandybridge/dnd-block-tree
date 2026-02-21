@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useReducer, useMemo, useEffect, type ReactNode, type KeyboardEvent } from 'react'
+import { useCallback, useRef, useReducer, useMemo, useEffect, useState, type ReactNode, type KeyboardEvent } from 'react'
 import {
   DndContext,
   DragStartEvent as DndKitDragStartEvent,
@@ -39,7 +39,7 @@ import {
   getBlockDepth,
   getSubtreeDepth,
 } from '../utils/blocks'
-import { debounce } from '../utils/helper'
+import { debounce, triggerHaptic } from '../utils/helper'
 
 export interface BlockTreeProps<
   T extends BaseBlock,
@@ -77,6 +77,13 @@ export interface BlockTreeProps<
   selectedIds?: Set<string>
   /** Called when selection changes (for multi-select) */
   onSelectionChange?: (selectedIds: Set<string>) => void
+  /** Enable virtual scrolling for large trees (fixed item height only) */
+  virtualize?: {
+    /** Fixed height of each item in pixels */
+    itemHeight: number
+    /** Number of extra items to render outside the visible range (default: 5) */
+    overscan?: number
+  }
 }
 
 interface InternalState<T extends BaseBlock> {
@@ -185,6 +192,7 @@ export function BlockTree<
   canDrop,
   collisionDetection,
   sensors: sensorConfig,
+  animation,
   initialExpanded,
   orderingStrategy = 'integer',
   maxDepth,
@@ -192,11 +200,13 @@ export function BlockTree<
   multiSelect = false,
   selectedIds: externalSelectedIds,
   onSelectionChange,
+  virtualize,
 }: BlockTreeProps<T, C>) {
   const sensors = useConfiguredSensors({
     activationDistance: sensorConfig?.activationDistance ?? activationDistance,
     activationDelay: sensorConfig?.activationDelay,
     tolerance: sensorConfig?.tolerance,
+    longPressDelay: sensorConfig?.longPressDelay,
   })
 
   // Compute initial expanded state
@@ -473,12 +483,17 @@ export function BlockTree<
       }
     }
 
+    // Trigger haptic feedback if configured
+    if (sensorConfig?.hapticFeedback) {
+      triggerHaptic()
+    }
+
     stateRef.current.activeId = id
     stateRef.current.isDragging = true
     initialBlocksRef.current = [...blocks]
     cachedReorderRef.current = null
     forceRender()
-  }, [blocks, canDrag, onDragStart, multiSelect, selectedIds, setSelectedIds, visibleBlockIds])
+  }, [blocks, canDrag, onDragStart, multiSelect, selectedIds, setSelectedIds, visibleBlockIds, sensorConfig?.hapticFeedback])
 
   // Handle drag move
   const handleDragMove = useCallback((event: DndKitDragMoveEvent) => {
@@ -758,6 +773,70 @@ export function BlockTree<
   // Keep ref in sync for keyboard handler
   toggleExpandRef.current = handleToggleExpand
 
+  // --- Virtual scrolling ---
+  const virtualContainerRef = useRef<HTMLDivElement>(null)
+  const [virtualScroll, setVirtualScroll] = useState({ scrollTop: 0, clientHeight: 0 })
+
+  useEffect(() => {
+    if (!virtualize) return
+    const el = virtualContainerRef.current
+    if (!el) return
+
+    setVirtualScroll({ scrollTop: el.scrollTop, clientHeight: el.clientHeight })
+
+    const onScroll = () => {
+      setVirtualScroll({ scrollTop: el.scrollTop, clientHeight: el.clientHeight })
+    }
+    el.addEventListener('scroll', onScroll, { passive: true })
+    return () => el.removeEventListener('scroll', onScroll)
+  }, [virtualize])
+
+  const virtualResult = useMemo(() => {
+    if (!virtualize) return null
+
+    const { itemHeight, overscan = 5 } = virtualize
+    const { scrollTop, clientHeight } = virtualScroll
+    const totalHeight = visibleBlockIds.length * itemHeight
+    const startRaw = Math.floor(scrollTop / itemHeight)
+    const visibleCount = Math.ceil(clientHeight / itemHeight)
+    const start = Math.max(0, startRaw - overscan)
+    const end = Math.min(visibleBlockIds.length - 1, startRaw + visibleCount + overscan)
+    const offsetY = start * itemHeight
+
+    const visibleSet = new Set<string>()
+    for (let i = start; i <= end; i++) {
+      visibleSet.add(visibleBlockIds[i])
+    }
+
+    return { totalHeight, offsetY, visibleSet }
+  }, [virtualize, virtualScroll, visibleBlockIds])
+
+  const treeContent = (
+    <TreeRenderer
+      blocks={blocks}
+      blocksByParent={blocksByParent}
+      parentId={null}
+      activeId={stateRef.current.activeId}
+      expandedMap={stateRef.current.expandedMap}
+      renderers={renderers as InternalRenderers<T>}
+      containerTypes={containerTypes}
+      onHover={handleHover}
+      onToggleExpand={handleToggleExpand}
+      dropZoneClassName={dropZoneClassName}
+      dropZoneActiveClassName={dropZoneActiveClassName}
+      indentClassName={indentClassName}
+      rootClassName={className}
+      canDrag={canDrag}
+      previewPosition={previewPosition}
+      draggedBlock={draggedBlock}
+      focusedId={keyboardNavigation ? focusedIdRef.current : undefined}
+      selectedIds={multiSelect ? selectedIds : undefined}
+      onBlockClick={multiSelect ? handleBlockClick : undefined}
+      animation={animation}
+      virtualVisibleIds={virtualResult?.visibleSet ?? null}
+    />
+  )
+
   return (
     <DndContext
       sensors={sensors}
@@ -768,35 +847,34 @@ export function BlockTree<
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div
-        ref={rootRef}
-        className={className}
-        style={{ minWidth: 0 }}
-        onKeyDown={keyboardNavigation ? handleKeyDown : undefined}
-        role={keyboardNavigation ? 'tree' : undefined}
-      >
-        <TreeRenderer
-          blocks={blocks}
-          blocksByParent={blocksByParent}
-          parentId={null}
-          activeId={stateRef.current.activeId}
-          expandedMap={stateRef.current.expandedMap}
-          renderers={renderers as InternalRenderers<T>}
-          containerTypes={containerTypes}
-          onHover={handleHover}
-          onToggleExpand={handleToggleExpand}
-          dropZoneClassName={dropZoneClassName}
-          dropZoneActiveClassName={dropZoneActiveClassName}
-          indentClassName={indentClassName}
-          rootClassName={className}
-          canDrag={canDrag}
-          previewPosition={previewPosition}
-          draggedBlock={draggedBlock}
-          focusedId={keyboardNavigation ? focusedIdRef.current : undefined}
-          selectedIds={multiSelect ? selectedIds : undefined}
-          onBlockClick={multiSelect ? handleBlockClick : undefined}
-        />
-      </div>
+      {virtualize ? (
+        <div
+          ref={(el) => {
+            (virtualContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+            (rootRef as React.MutableRefObject<HTMLDivElement | null>).current = el
+          }}
+          className={className}
+          style={{ minWidth: 0, overflow: 'auto', position: 'relative' }}
+          onKeyDown={keyboardNavigation ? handleKeyDown : undefined}
+          role={keyboardNavigation ? 'tree' : undefined}
+        >
+          <div style={{ height: virtualResult!.totalHeight, position: 'relative' }}>
+            <div style={{ position: 'absolute', top: virtualResult!.offsetY, left: 0, right: 0 }}>
+              {treeContent}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div
+          ref={rootRef}
+          className={className}
+          style={{ minWidth: 0 }}
+          onKeyDown={keyboardNavigation ? handleKeyDown : undefined}
+          role={keyboardNavigation ? 'tree' : undefined}
+        >
+          {treeContent}
+        </div>
+      )}
       <DragOverlay activeBlock={activeBlock} selectedCount={multiSelect ? selectedIds.size : 0}>
         {dragOverlay}
       </DragOverlay>

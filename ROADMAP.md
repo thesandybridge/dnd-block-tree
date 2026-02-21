@@ -16,8 +16,8 @@
 
 ## Low Priority
 
-- [ ] **Virtual scrolling** — Windowed rendering for large trees (1000+ blocks) to maintain performance.
-- [ ] **Serialization helpers** — Utility functions for flat array ↔ nested tree conversion.
-- [ ] **Touch/mobile sensor support** — Improved DnD experience on touch devices with appropriate activation delays and tolerances.
-- [ ] **Animation/transition support** — Smooth reorder animations for block moves using layout animation techniques.
-- [ ] **SSR compatibility** — Ensure safe hydration in Next.js App Router and other SSR environments.
+- [x] **Virtual scrolling** — Windowed rendering for large trees (1000+ blocks) via `virtualize` prop and `useVirtualTree` hook.
+- [x] **Serialization helpers** — `flatToNested` / `nestedToFlat` utility functions for flat array ↔ nested tree conversion.
+- [x] **Touch/mobile sensor support** — `longPressDelay` and `hapticFeedback` options in `SensorConfig` for fine-tuned touch behavior.
+- [x] **Animation/transition support** — `AnimationConfig` wired through `TreeRenderer` for expand/collapse transitions. Standalone `useLayoutAnimation` hook for FLIP-based reorder animations.
+- [x] **SSR compatibility** — `BlockTreeSSR` hydration-safe wrapper component with optional `fallback` prop.

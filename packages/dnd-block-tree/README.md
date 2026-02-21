@@ -15,7 +15,7 @@ A headless React library for building hierarchical drag-and-drop interfaces. Bri
 - **Stable Drop Zones** - Zones render based on original block positions, not preview state, ensuring consistent drop targets during drag
 - **Ghost Preview** - Semi-transparent preview shows where blocks will land without affecting zone positions
 - **Depth-Aware Collision** - Smart algorithm prefers nested zones when cursor is at indented levels, with hysteresis to prevent flickering
-- **Mobile & Touch Support** - Separate touch/pointer activation constraints prevent interference with scrolling on mobile devices
+- **Mobile & Touch Support** - Separate touch/pointer activation constraints with configurable `longPressDelay` and optional `hapticFeedback`
 - **Snapshot-Based Computation** - State captured at drag start. All preview computations use snapshot, ensuring consistent behavior
 - **Debounced Preview** - 150ms debounced virtual state for smooth drag previews without jitter
 - **Customizable Drag Rules** - `canDrag` and `canDrop` filters for fine-grained control over drag behavior
@@ -25,6 +25,10 @@ A headless React library for building hierarchical drag-and-drop interfaces. Bri
 - **Undo/Redo** - Composable `useBlockHistory` hook with past/future stacks for state history management
 - **Lifecycle Callbacks** - `onBlockAdd`, `onBlockDelete`, `onBlockMove`, `onBeforeMove` middleware, and more
 - **Fractional Indexing** - Opt-in CRDT-compatible ordering via `orderingStrategy: 'fractional'`
+- **Serialization** - `flatToNested` / `nestedToFlat` converters for flat array ↔ nested tree transforms
+- **SSR Compatible** - `BlockTreeSSR` wrapper for hydration-safe rendering in Next.js and other SSR environments
+- **Animation Support** - CSS expand/collapse transitions via `AnimationConfig` and FLIP reorder animations via `useLayoutAnimation`
+- **Virtual Scrolling** - Windowed rendering for large trees (1000+ blocks) via `virtualize` prop
 
 ## Installation
 
@@ -84,7 +88,8 @@ function App() {
 | `canDrag` | `(block: T) => boolean` | - | Filter which blocks can be dragged |
 | `canDrop` | `(block, zone, target) => boolean` | - | Filter valid drop targets |
 | `collisionDetection` | `CollisionDetection` | sticky | Custom collision detection algorithm (from `@dnd-kit/core`) |
-| `sensors` | `SensorConfig` | - | Sensor configuration (`{ activationDistance, activationDelay, tolerance }`) |
+| `sensors` | `SensorConfig` | - | Sensor configuration (see [Sensor Config](#sensor-config)) |
+| `animation` | `AnimationConfig` | - | Animation configuration (see [Animation](#animation--transitions)) |
 | `maxDepth` | `number` | - | Maximum nesting depth (1 = flat, 2 = one level, etc.) |
 | `keyboardNavigation` | `boolean` | `false` | Enable keyboard navigation with arrow keys |
 | `multiSelect` | `boolean` | `false` | Enable multi-select with Cmd/Ctrl+Click and Shift+Click |
@@ -92,6 +97,7 @@ function App() {
 | `onSelectionChange` | `(ids: Set<string>) => void` | - | Called when selection changes |
 | `orderingStrategy` | `'integer' \| 'fractional'` | `'integer'` | Sibling ordering strategy |
 | `initialExpanded` | `string[] \| 'all' \| 'none'` | `'all'` | Initially expanded container IDs |
+| `virtualize` | `{ itemHeight: number; overscan?: number }` | - | Enable virtual scrolling (see [Virtual Scrolling](#virtual-scrolling)) |
 | `className` | `string` | - | Root container class |
 | `dropZoneClassName` | `string` | - | Drop zone class |
 | `dropZoneActiveClassName` | `string` | - | Active drop zone class |
@@ -111,6 +117,46 @@ function App() {
 | `onBlockDelete` | `(event: BlockDeleteEvent<T>) => void` | Called after a block is deleted |
 | `onExpandChange` | `(event: ExpandChangeEvent<T>) => void` | Called when expand/collapse changes |
 | `onHoverChange` | `(event: HoverChangeEvent<T>) => void` | Called when hover zone changes |
+
+### Sensor Config
+
+```typescript
+interface SensorConfig {
+  /** Distance in pixels before drag starts (default: 8) */
+  activationDistance?: number
+  /** Delay in ms before drag starts (overrides distance) */
+  activationDelay?: number
+  /** Tolerance in px for delay-based activation (default: 5) */
+  tolerance?: number
+  /** Override the default long-press delay for touch sensors (default: 200ms) */
+  longPressDelay?: number
+  /** Trigger haptic feedback (vibration) on drag start for touch devices */
+  hapticFeedback?: boolean
+}
+```
+
+```tsx
+<BlockTree
+  sensors={{
+    longPressDelay: 300,    // 300ms long-press for touch
+    hapticFeedback: true,   // Vibrate on drag start
+  }}
+  ...
+/>
+```
+
+### Animation Config
+
+```typescript
+interface AnimationConfig {
+  /** Duration for expand/collapse animations in ms */
+  expandDuration?: number
+  /** Duration for drag overlay animation in ms */
+  dragOverlayDuration?: number
+  /** Easing function (CSS timing function, default: 'ease') */
+  easing?: string
+}
+```
 
 ### Event Types
 
@@ -250,6 +296,182 @@ interface ContainerRendererProps<T extends BaseBlock> extends BlockRendererProps
   isExpanded: boolean
   onToggleExpand: () => void
 }
+```
+
+#### NestedBlock
+
+Tree representation used by serialization helpers:
+
+```typescript
+type NestedBlock<T extends BaseBlock> = Omit<T, 'parentId' | 'order'> & {
+  children: NestedBlock<T>[]
+}
+```
+
+## Serialization Helpers
+
+Convert between flat block arrays and nested tree structures:
+
+```tsx
+import { flatToNested, nestedToFlat, type NestedBlock } from 'dnd-block-tree'
+
+// Flat array -> nested tree (e.g. for JSON export)
+const nested: NestedBlock<MyBlock>[] = flatToNested(blocks)
+
+// Nested tree -> flat array (e.g. for JSON import)
+const flat: MyBlock[] = nestedToFlat(nested)
+```
+
+`flatToNested` groups by `parentId`, sorts siblings by `order`, and recursively builds `children` arrays. `parentId` and `order` are omitted from the output since they're structural.
+
+`nestedToFlat` performs a DFS walk, assigning `parentId` and integer `order` on the way down.
+
+## SSR Compatibility
+
+For Next.js App Router or other SSR environments, use `BlockTreeSSR` to avoid hydration mismatches:
+
+```tsx
+import { BlockTreeSSR } from 'dnd-block-tree'
+
+function Page() {
+  return (
+    <BlockTreeSSR
+      blocks={blocks}
+      renderers={renderers}
+      containerTypes={CONTAINER_TYPES}
+      onChange={setBlocks}
+      fallback={<div>Loading tree...</div>}
+    />
+  )
+}
+```
+
+`BlockTreeSSR` renders the `fallback` (default: `null`) on the server, then mounts the full `BlockTree` after hydration via `useEffect`. All `BlockTree` props are passed through.
+
+```typescript
+interface BlockTreeSSRProps<T, C> extends BlockTreeProps<T, C> {
+  fallback?: ReactNode
+}
+```
+
+## Animation & Transitions
+
+### Expand/Collapse Transitions
+
+Pass an `AnimationConfig` to enable CSS transitions on container expand/collapse:
+
+```tsx
+<BlockTree
+  animation={{
+    expandDuration: 200,    // ms
+    easing: 'ease-in-out',  // CSS timing function
+  }}
+  ...
+/>
+```
+
+### FLIP Reorder Animation
+
+The `useLayoutAnimation` hook provides FLIP-based (First-Last-Invert-Play) animations for block reorder transitions. It's a standalone composable — not built into BlockTree:
+
+```tsx
+import { useLayoutAnimation } from 'dnd-block-tree'
+
+function MyTree() {
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  useLayoutAnimation(containerRef, {
+    duration: 200,          // Transition duration in ms (default: 200)
+    easing: 'ease',         // CSS easing (default: 'ease')
+    selector: '[data-block-id]',  // Selector for animated children (default)
+  })
+
+  return (
+    <div ref={containerRef}>
+      <BlockTree ... />
+    </div>
+  )
+}
+```
+
+```typescript
+interface UseLayoutAnimationOptions {
+  duration?: number    // default: 200
+  easing?: string      // default: 'ease'
+  selector?: string    // default: '[data-block-id]'
+}
+```
+
+## Virtual Scrolling
+
+Enable windowed rendering for large trees (1000+ blocks) with the `virtualize` prop:
+
+```tsx
+<BlockTree
+  virtualize={{
+    itemHeight: 40,   // Fixed height of each item in pixels
+    overscan: 5,      // Extra items rendered outside viewport (default: 5)
+  }}
+  blocks={blocks}
+  ...
+/>
+```
+
+When enabled, only visible blocks (plus overscan) are rendered. The tree is wrapped in a scrollable container with a spacer div maintaining correct total height.
+
+**Limitations:** Fixed item height only. Variable height items are not supported.
+
+### useVirtualTree Hook
+
+For custom virtual scrolling implementations outside of BlockTree:
+
+```tsx
+import { useVirtualTree } from 'dnd-block-tree'
+
+const containerRef = useRef<HTMLDivElement>(null)
+const { visibleRange, totalHeight, offsetY } = useVirtualTree({
+  containerRef,
+  itemCount: 1000,
+  itemHeight: 40,
+  overscan: 5,
+})
+```
+
+```typescript
+interface UseVirtualTreeOptions {
+  containerRef: React.RefObject<HTMLElement | null>
+  itemCount: number
+  itemHeight: number
+  overscan?: number   // default: 5
+}
+
+interface UseVirtualTreeResult {
+  visibleRange: { start: number; end: number }
+  totalHeight: number
+  offsetY: number
+}
+```
+
+## Touch & Mobile
+
+Touch support is built-in with sensible defaults (200ms long-press, 5px tolerance). For fine-tuning:
+
+```tsx
+<BlockTree
+  sensors={{
+    longPressDelay: 300,    // Override default 200ms touch activation
+    hapticFeedback: true,   // Vibrate on drag start (uses navigator.vibrate)
+  }}
+  ...
+/>
+```
+
+The `triggerHaptic` utility is also exported for use in custom components:
+
+```tsx
+import { triggerHaptic } from 'dnd-block-tree'
+
+triggerHaptic(10)  // Vibrate for 10ms (default)
 ```
 
 ## Undo/Redo
@@ -442,11 +664,18 @@ import {
   getBlockDepth,              // Compute depth of a block (root = 1)
   getSubtreeDepth,            // Max depth of a subtree (leaf = 1)
 
+  // Serialization
+  flatToNested,               // Convert flat block array to nested tree
+  nestedToFlat,               // Convert nested tree to flat block array
+
   // ID / zone helpers
   generateId,                 // Generate unique block IDs
   extractUUID,                // Extract block ID from zone ID string
   getDropZoneType,            // Parse zone type: 'before' | 'after' | 'into'
   extractBlockId,             // Extract block ID from zone ID (alias)
+
+  // Touch
+  triggerHaptic,              // Trigger haptic feedback (navigator.vibrate)
 
   // Fractional indexing
   generateKeyBetween,         // Generate a fractional key between two keys
@@ -459,6 +688,18 @@ import {
   weightedVerticalCollision,  // Edge-distance collision, depth-aware
   closestCenterCollision,     // Simple closest-center collision
   createStickyCollision,      // Hysteresis wrapper to prevent flickering
+
+  // Hooks
+  useBlockHistory,            // Undo/redo state management
+  useLayoutAnimation,         // FLIP-based reorder animations
+  useVirtualTree,             // Virtual scrolling primitives
+
+  // Components
+  BlockTree,                  // Main drag-and-drop tree component
+  BlockTreeSSR,               // SSR-safe wrapper
+  TreeRenderer,               // Recursive tree renderer
+  DropZone,                   // Individual drop zone
+  DragOverlay,                // Drag overlay wrapper
 } from 'dnd-block-tree'
 ```
 

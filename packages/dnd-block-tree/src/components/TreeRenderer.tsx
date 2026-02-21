@@ -2,7 +2,7 @@
 
 import { Fragment, type ReactNode } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import type { BaseBlock, InternalRenderers, ContainerRendererProps, CanDragFn } from '../core/types'
+import type { BaseBlock, InternalRenderers, ContainerRendererProps, CanDragFn, AnimationConfig } from '../core/types'
 import { DropZone } from './DropZone'
 
 export interface TreeRendererProps<T extends BaseBlock> {
@@ -31,6 +31,10 @@ export interface TreeRendererProps<T extends BaseBlock> {
   selectedIds?: Set<string>
   /** Click handler for multi-select */
   onBlockClick?: (blockId: string, event: React.MouseEvent) => void
+  /** Animation configuration */
+  animation?: AnimationConfig
+  /** When virtual scrolling is active, only render blocks in this set */
+  virtualVisibleIds?: Set<string> | null
 }
 
 /**
@@ -99,12 +103,19 @@ export function TreeRenderer<T extends BaseBlock>({
   focusedId,
   selectedIds,
   onBlockClick,
+  animation,
+  virtualVisibleIds,
 }: TreeRendererProps<T>) {
   const items = blocksByParent.get(parentId) ?? []
 
   // Always filter out the dragged block - it appears in drag overlay
   // Zones stay stable because we use original order
-  const filteredBlocks = items.filter(block => block.id !== activeId)
+  let filteredBlocks = items.filter(block => block.id !== activeId)
+
+  // When virtual scrolling is active at root level, only render visible blocks
+  if (virtualVisibleIds && depth === 0) {
+    filteredBlocks = filteredBlocks.filter(block => virtualVisibleIds.has(block.id))
+  }
 
   // Check if preview ghost should appear in this container
   const showGhostHere = previewPosition?.parentId === parentId && draggedBlock
@@ -166,8 +177,15 @@ export function TreeRenderer<T extends BaseBlock>({
             >
               {({ isDragging }) => {
                 if (isContainer) {
+                  const expandStyle = animation?.expandDuration
+                    ? {
+                        transition: `opacity ${animation.expandDuration}ms ${animation.easing ?? 'ease'}`,
+                        opacity: isExpanded ? 1 : 0,
+                      }
+                    : undefined
+
                   const childContent = isExpanded ? (
-                    <>
+                    <div style={expandStyle}>
                       <TreeRenderer
                         blocks={blocks}
                         blocksByParent={blocksByParent}
@@ -189,8 +207,10 @@ export function TreeRenderer<T extends BaseBlock>({
                         focusedId={focusedId}
                         selectedIds={selectedIds}
                         onBlockClick={onBlockClick}
+                        animation={animation}
+                        virtualVisibleIds={virtualVisibleIds}
                       />
-                    </>
+                    </div>
                   ) : null
 
                   return Renderer({

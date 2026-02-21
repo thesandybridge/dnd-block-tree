@@ -251,6 +251,10 @@ export interface SensorConfig {
   activationDistance?: number
   activationDelay?: number
   tolerance?: number
+  /** Override the default long-press delay (200ms) for touch sensors */
+  longPressDelay?: number
+  /** Trigger haptic feedback (vibration) on drag start for touch devices */
+  hapticFeedback?: boolean
 }
 
 /**

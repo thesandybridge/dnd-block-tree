@@ -60,11 +60,20 @@ export type { DropZoneProps } from './components/DropZone'
 
 export { DragOverlay } from './components/DragOverlay'
 
+export { BlockTreeSSR } from './components/BlockTreeSSR'
+export type { BlockTreeSSRProps } from './components/BlockTreeSSR'
+
 // Hooks
 export { createBlockState } from './hooks/useBlockState'
 export { createTreeState } from './hooks/useTreeState'
 export { useBlockHistory } from './hooks/useBlockHistory'
 export type { UseBlockHistoryOptions, UseBlockHistoryResult } from './hooks/useBlockHistory'
+
+export { useLayoutAnimation } from './hooks/useLayoutAnimation'
+export type { UseLayoutAnimationOptions } from './hooks/useLayoutAnimation'
+
+export { useVirtualTree } from './hooks/useVirtualTree'
+export type { UseVirtualTreeOptions, UseVirtualTreeResult } from './hooks/useVirtualTree'
 
 // Utils
 export {
@@ -80,7 +89,11 @@ export {
   reparentMultipleBlocks,
 } from './utils/blocks'
 
-export { extractUUID, debounce, generateId } from './utils/helper'
+export { extractUUID, debounce, generateId, triggerHaptic } from './utils/helper'
+
+// Serialization
+export { flatToNested, nestedToFlat } from './utils/serialization'
+export type { NestedBlock } from './utils/serialization'
 
 // Fractional indexing
 export {
