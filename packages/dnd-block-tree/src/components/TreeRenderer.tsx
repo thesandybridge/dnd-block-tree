@@ -25,6 +25,12 @@ export interface TreeRendererProps<T extends BaseBlock> {
   previewPosition?: { parentId: string | null; index: number } | null
   /** The dragged block for rendering preview ghost */
   draggedBlock?: T | null
+  /** Currently focused block ID for keyboard navigation */
+  focusedId?: string | null
+  /** Currently selected block IDs for multi-select */
+  selectedIds?: Set<string>
+  /** Click handler for multi-select */
+  onBlockClick?: (blockId: string, event: React.MouseEvent) => void
 }
 
 /**
@@ -34,22 +40,35 @@ function DraggableBlock<T extends BaseBlock>({
   block,
   children,
   disabled,
+  focusedId,
+  isSelected,
+  onBlockClick,
 }: {
   block: T
   children: (props: { isDragging: boolean }) => ReactNode
   disabled?: boolean
+  focusedId?: string | null
+  isSelected?: boolean
+  onBlockClick?: (blockId: string, event: React.MouseEvent) => void
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: block.id,
     disabled,
   })
 
+  const isFocused = focusedId === block.id
+
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      style={{ touchAction: 'none', minWidth: 0 }}
+      data-block-id={block.id}
+      tabIndex={isFocused ? 0 : -1}
+      onClick={onBlockClick ? (e: React.MouseEvent) => onBlockClick(block.id, e) : undefined}
+      data-selected={isSelected || undefined}
+      style={{ touchAction: 'none', minWidth: 0, outline: 'none' }}
+      role="treeitem"
     >
       {children({ isDragging })}
     </div>
@@ -77,6 +96,9 @@ export function TreeRenderer<T extends BaseBlock>({
   canDrag,
   previewPosition,
   draggedBlock,
+  focusedId,
+  selectedIds,
+  onBlockClick,
 }: TreeRendererProps<T>) {
   const items = blocksByParent.get(parentId) ?? []
 
@@ -135,7 +157,13 @@ export function TreeRenderer<T extends BaseBlock>({
             )}
 
             {/* Render the block */}
-            <DraggableBlock block={block} disabled={isDragDisabled}>
+            <DraggableBlock
+              block={block}
+              disabled={isDragDisabled}
+              focusedId={focusedId}
+              isSelected={selectedIds?.has(block.id)}
+              onBlockClick={onBlockClick}
+            >
               {({ isDragging }) => {
                 if (isContainer) {
                   const childContent = isExpanded ? (
@@ -158,6 +186,9 @@ export function TreeRenderer<T extends BaseBlock>({
                         canDrag={canDrag}
                         previewPosition={previewPosition}
                         draggedBlock={draggedBlock}
+                        focusedId={focusedId}
+                        selectedIds={selectedIds}
+                        onBlockClick={onBlockClick}
                       />
                     </>
                   ) : null

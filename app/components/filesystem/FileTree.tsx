@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useCallback, useRef, useMemo } from 'react'
-import { BlockTree, type BlockRenderers, generateId } from 'dnd-block-tree'
+import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
+import { BlockTree, type BlockRenderers, type OrderingStrategy, generateId, initFractionalOrder } from 'dnd-block-tree'
 import type { FileSystemBlock } from './types'
 import { CONTAINER_TYPES } from './types'
 import { FolderBlock } from './blocks/FolderBlock'
@@ -15,6 +15,7 @@ import { useIsMobile } from '@/hooks/use-mobile'
 interface FeatureSettings {
   showDropPreview: boolean
   activationDistance: number
+  orderingStrategy: OrderingStrategy
 }
 
 const INITIAL_BLOCKS: FileSystemBlock[] = [
@@ -94,6 +95,7 @@ export function FileTree() {
   const [settings, setSettings] = useState<FeatureSettings>({
     showDropPreview: true,
     activationDistance: 8,
+    orderingStrategy: 'integer',
   })
   const [settingsExpanded, setSettingsExpanded] = useState(false)
   const isMobile = useIsMobile()
@@ -167,6 +169,18 @@ export function FileTree() {
     setSelectedId(null)
   }, [])
 
+  // Re-key blocks when switching ordering strategy
+  useEffect(() => {
+    if (settings.orderingStrategy === 'fractional') {
+      setBlocks(prev => initFractionalOrder(prev))
+    } else {
+      setBlocks(prev => prev.map((b, _, arr) => ({
+        ...b,
+        order: arr.filter(s => s.parentId === b.parentId).findIndex(s => s.id === b.id),
+      })))
+    }
+  }, [settings.orderingStrategy])
+
   const renderers: BlockRenderers<FileSystemBlock> = useMemo(
     () => ({
       folder: (props) => (
@@ -237,6 +251,7 @@ export function FileTree() {
             indentClassName="tree-indent-compact"
             showDropPreview={settings.showDropPreview}
             activationDistance={settings.activationDistance}
+            orderingStrategy={settings.orderingStrategy}
           />
         </div>
 
@@ -275,6 +290,36 @@ export function FileTree() {
                   className="w-5 h-5"
                 />
               </label>
+
+              <div className="p-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm">Ordering Strategy</span>
+                  <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
+                    {settings.orderingStrategy}
+                  </span>
+                </div>
+                <div className="flex rounded-lg overflow-hidden border border-border/50">
+                  {(['integer', 'fractional'] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSettings(prev => ({ ...prev, orderingStrategy: s }))}
+                      className={cn(
+                        'flex-1 py-1.5 text-xs font-medium transition-colors',
+                        settings.orderingStrategy === s
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                      )}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                  {settings.orderingStrategy === 'integer'
+                    ? 'All siblings reindexed 0, 1, 2… on every move.'
+                    : 'Only moved block gets a new fractional key. Watch order values in the diff view.'}
+                </p>
+              </div>
 
               <div className="p-2">
                 <div className="flex items-center justify-between mb-2">

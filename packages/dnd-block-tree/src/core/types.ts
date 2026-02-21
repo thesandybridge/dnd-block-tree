@@ -8,7 +8,8 @@ export interface BaseBlock {
   id: string
   type: string
   parentId: string | null
-  order: number
+  /** Ordering value. Number for integer ordering (default), string for fractional ordering. */
+  order: number | string
 }
 
 /**
@@ -121,6 +122,21 @@ export interface BlockMoveEvent<T extends BaseBlock = BaseBlock> {
   to: BlockPosition
   /** All blocks after the move */
   blocks: T[]
+  /** IDs of all blocks that were moved (for multi-select) */
+  movedIds: string[]
+}
+
+/**
+ * A pending move operation passed through the onBeforeMove middleware pipeline.
+ * Return a modified operation to transform the move, or return false to cancel.
+ */
+export interface MoveOperation<T extends BaseBlock = BaseBlock> {
+  /** The block being moved */
+  block: T
+  /** Position before the move */
+  from: BlockPosition
+  /** Target drop zone ID */
+  targetZone: string
 }
 
 /**
@@ -130,6 +146,24 @@ export interface ExpandChangeEvent<T extends BaseBlock = BaseBlock> {
   block: T
   blockId: string
   expanded: boolean
+}
+
+/**
+ * Event fired when a block is added
+ */
+export interface BlockAddEvent<T extends BaseBlock = BaseBlock> {
+  block: T
+  parentId: string | null
+  index: number
+}
+
+/**
+ * Event fired when a block (and optionally its descendants) is deleted
+ */
+export interface BlockDeleteEvent<T extends BaseBlock = BaseBlock> {
+  block: T
+  deletedIds: string[]
+  parentId: string | null
 }
 
 /**
@@ -158,17 +192,38 @@ export interface BlockTreeCallbacks<T extends BaseBlock = BaseBlock> {
   onDragEnd?: (event: DragEndEvent<T>) => void
   /** Called when drag is cancelled */
   onDragCancel?: (event: DragEndEvent<T>) => void
+  /**
+   * Called before a block move is committed. Return a modified MoveOperation to
+   * transform the move (e.g. change the target zone), or return false to cancel.
+   * Return void / undefined to allow the move as-is.
+   */
+  onBeforeMove?: (operation: MoveOperation<T>) => MoveOperation<T> | false | void
   /** Called after a block is moved to a new position */
   onBlockMove?: (event: BlockMoveEvent<T>) => void
   /** Called when expand/collapse state changes */
   onExpandChange?: (event: ExpandChangeEvent<T>) => void
   /** Called when hover zone changes during drag */
   onHoverChange?: (event: HoverChangeEvent<T>) => void
+  /** Called after a block is added */
+  onBlockAdd?: (event: BlockAddEvent<T>) => void
+  /** Called after a block (and its descendants) is deleted */
+  onBlockDelete?: (event: BlockDeleteEvent<T>) => void
 }
 
 // ============================================================================
 // Customization Types
 // ============================================================================
+
+/**
+ * Ordering strategy for block siblings.
+ *
+ * - `'integer'` (default): siblings are reindexed 0, 1, 2, … after every move.
+ *   Simple and efficient; not suitable for collaborative/CRDT scenarios.
+ * - `'fractional'`: each move only updates the moved block's `order` with a
+ *   lexicographically sortable string key (fractional index). Siblings are never
+ *   reindexed, making it conflict-free for concurrent edits.
+ */
+export type OrderingStrategy = 'integer' | 'fractional'
 
 /**
  * Filter function to determine if a block can be dragged
@@ -256,6 +311,14 @@ export interface BlockTreeCustomization<T extends BaseBlock = BaseBlock> {
   idGenerator?: IdGeneratorFn
   /** Initially expanded block IDs */
   initialExpanded?: string[] | 'all' | 'none'
+  /**
+   * Ordering strategy for block siblings.
+   * Defaults to `'integer'` (reindex all siblings on every move).
+   * Use `'fractional'` for CRDT-compatible collaborative editing.
+   */
+  orderingStrategy?: OrderingStrategy
+  /** Maximum nesting depth (1 = flat list, 2 = one level of nesting, etc.) */
+  maxDepth?: number
 }
 
 // ============================================================================
@@ -358,6 +421,10 @@ export interface BlockStateProviderProps<T extends BaseBlock = BaseBlock> {
   initialBlocks?: T[]
   containerTypes?: readonly string[]
   onChange?: (blocks: T[]) => void
+  orderingStrategy?: OrderingStrategy
+  maxDepth?: number
+  onBlockAdd?: (event: BlockAddEvent<T>) => void
+  onBlockDelete?: (event: BlockDeleteEvent<T>) => void
 }
 
 /**

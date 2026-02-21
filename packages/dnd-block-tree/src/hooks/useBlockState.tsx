@@ -9,15 +9,17 @@ import {
   type ReactNode,
 } from 'react'
 import type { UniqueIdentifier } from '@dnd-kit/core'
-import type { BaseBlock, BlockIndex, BlockAction, BlockStateContextValue, BlockStateProviderProps } from '../core/types'
+import type { BaseBlock, BlockIndex, BlockAction, BlockStateContextValue, BlockStateProviderProps, BlockAddEvent, BlockDeleteEvent, OrderingStrategy } from '../core/types'
 import {
   cloneMap,
   cloneParentMap,
   computeNormalizedIndex,
   reparentBlockIndex,
   deleteBlockAndDescendants,
+  getDescendantIds,
 } from '../utils/blocks'
 import { generateId } from '../utils/helper'
+import { generateKeyBetween } from '../utils/fractional'
 
 /**
  * Block reducer for state management
@@ -25,7 +27,9 @@ import { generateId } from '../utils/helper'
 function blockReducer<T extends BaseBlock>(
   state: BlockIndex<T>,
   action: BlockAction<T>,
-  containerTypes: readonly string[] = []
+  containerTypes: readonly string[] = [],
+  orderingStrategy: OrderingStrategy = 'integer',
+  maxDepth?: number
 ): BlockIndex<T> {
   switch (action.type) {
     case 'ADD_ITEM': {
@@ -76,7 +80,9 @@ function blockReducer<T extends BaseBlock>(
         state,
         action.payload.activeId,
         action.payload.targetZone,
-        containerTypes
+        containerTypes,
+        orderingStrategy,
+        maxDepth
       )
     }
 
@@ -102,16 +108,20 @@ export function createBlockState<T extends BaseBlock>() {
     initialBlocks = [],
     containerTypes = [],
     onChange,
+    orderingStrategy = 'integer',
+    maxDepth,
+    onBlockAdd,
+    onBlockDelete,
   }: BlockStateProviderProps<T>) {
-    const reducerWithContainerTypes = useCallback(
+    const reducerWithOptions = useCallback(
       (state: BlockIndex<T>, action: BlockAction<T>) =>
-        blockReducer(state, action, containerTypes),
-      [containerTypes]
+        blockReducer(state, action, containerTypes, orderingStrategy, maxDepth),
+      [containerTypes, orderingStrategy, maxDepth]
     )
 
     const [state, dispatch] = useReducer(
-      reducerWithContainerTypes,
-      computeNormalizedIndex(initialBlocks)
+      reducerWithOptions,
+      computeNormalizedIndex(initialBlocks, orderingStrategy)
     )
 
     // Compute flat blocks array
@@ -123,14 +133,14 @@ export function createBlockState<T extends BaseBlock>() {
           const id = children[i]
           const b = state.byId.get(id)
           if (b) {
-            result.push({ ...b, order: i })
+            result.push(orderingStrategy === 'fractional' ? b : { ...b, order: i })
             if (containerTypes.includes(b.type)) walk(b.id)
           }
         }
       }
       walk(null)
       return result
-    }, [state, containerTypes])
+    }, [state, containerTypes, orderingStrategy])
 
     // Notify on change
     useMemo(() => {
@@ -162,17 +172,20 @@ export function createBlockState<T extends BaseBlock>() {
 
     const createItem = useCallback(
       (type: T['type'], parentId: string | null = null): T => {
-        const newItem = {
-          id: generateId(),
-          type,
-          parentId,
-          order: 0,
-        } as T
+        const siblings = state.byParent.get(parentId) ?? []
+        let order: number | string = siblings.length
+        if (orderingStrategy === 'fractional') {
+          const lastId = siblings[siblings.length - 1]
+          const lastOrder = lastId ? String(state.byId.get(lastId)!.order) : null
+          order = generateKeyBetween(lastOrder, null)
+        }
 
+        const newItem = { id: generateId(), type, parentId, order } as T
         dispatch({ type: 'ADD_ITEM', payload: newItem })
+        onBlockAdd?.({ block: newItem, parentId, index: siblings.length })
         return newItem
       },
-      []
+      [state, orderingStrategy, onBlockAdd]
     )
 
     const insertItem = useCallback(
@@ -185,26 +198,36 @@ export function createBlockState<T extends BaseBlock>() {
         const index = siblings.indexOf(referenceId)
         const insertIndex = position === 'before' ? index : index + 1
 
-        const newItem = {
-          id: generateId(),
-          type,
-          parentId,
-          order: insertIndex,
-        } as T
+        let order: number | string = insertIndex
+        if (orderingStrategy === 'fractional') {
+          const prevId = insertIndex > 0 ? siblings[insertIndex - 1] : null
+          const nextId = insertIndex < siblings.length ? siblings[insertIndex] : null
+          const prevOrder = prevId ? String(state.byId.get(prevId)!.order) : null
+          const nextOrder = nextId ? String(state.byId.get(nextId)!.order) : null
+          order = generateKeyBetween(prevOrder, nextOrder)
+        }
+
+        const newItem = { id: generateId(), type, parentId, order } as T
 
         dispatch({
           type: 'INSERT_ITEM',
           payload: { item: newItem, parentId, index: insertIndex },
         })
 
+        onBlockAdd?.({ block: newItem, parentId, index: insertIndex })
         return newItem
       },
-      [state]
+      [state, orderingStrategy, onBlockAdd]
     )
 
     const deleteItem = useCallback((id: string) => {
+      const block = state.byId.get(id)
+      if (block && onBlockDelete) {
+        const deletedIds = [...getDescendantIds(state, id)]
+        onBlockDelete({ block, deletedIds, parentId: block.parentId })
+      }
       dispatch({ type: 'DELETE_ITEM', payload: { id } })
-    }, [])
+    }, [state, onBlockDelete])
 
     const moveItem = useCallback((activeId: UniqueIdentifier, targetZone: string) => {
       dispatch({ type: 'MOVE_ITEM', payload: { activeId, targetZone } })

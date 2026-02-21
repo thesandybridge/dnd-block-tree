@@ -55,7 +55,11 @@ function buildTree<T extends BaseBlock>(
 
   function walk(parentId: string | null, depth: number) {
     const children = byParent.get(parentId) ?? []
-    children.sort((a, b) => a.order - b.order)
+    children.sort((a, b) => {
+      const ao = a.order, bo = b.order
+      if (typeof ao === 'number' && typeof bo === 'number') return ao - bo
+      return String(ao) < String(bo) ? -1 : String(ao) > String(bo) ? 1 : 0
+    })
 
     for (const block of children) {
       result.push({
@@ -153,6 +157,14 @@ export function DiffView<T extends BaseBlock>({
             </span>
             <span className="truncate flex-1">
               {getLabel(block)}
+            </span>
+            <span className={cn(
+              'font-mono text-[10px] shrink-0 px-1.5 py-0.5 rounded',
+              changeType === 'unchanged' && 'bg-muted/40 text-muted-foreground/50',
+              changeType === 'moved' && 'bg-amber-500/20 text-amber-600 dark:text-amber-400',
+              changeType === 'added' && 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400',
+            )}>
+              {String(block.order)}
             </span>
           </div>
         ))}

@@ -20,6 +20,9 @@ export type {
   DragMoveEvent,
   DragEndEvent,
   BlockMoveEvent,
+  BlockAddEvent,
+  BlockDeleteEvent,
+  MoveOperation,
   ExpandChangeEvent,
   HoverChangeEvent,
   // Callback types
@@ -33,6 +36,7 @@ export type {
   AnimationConfig,
   AutoExpandConfig,
   BlockTreeCustomization,
+  OrderingStrategy,
   InternalRenderers,
 } from './core/types'
 
@@ -59,6 +63,8 @@ export { DragOverlay } from './components/DragOverlay'
 // Hooks
 export { createBlockState } from './hooks/useBlockState'
 export { createTreeState } from './hooks/useTreeState'
+export { useBlockHistory } from './hooks/useBlockHistory'
+export type { UseBlockHistoryOptions, UseBlockHistoryResult } from './hooks/useBlockHistory'
 
 // Utils
 export {
@@ -69,6 +75,18 @@ export {
   reparentBlockIndex,
   getDescendantIds,
   deleteBlockAndDescendants,
+  getBlockDepth,
+  getSubtreeDepth,
+  reparentMultipleBlocks,
 } from './utils/blocks'
 
 export { extractUUID, debounce, generateId } from './utils/helper'
+
+// Fractional indexing
+export {
+  generateKeyBetween,
+  generateNKeysBetween,
+  generateInitialKeys,
+  initFractionalOrder,
+  compareFractionalKeys,
+} from './utils/fractional'

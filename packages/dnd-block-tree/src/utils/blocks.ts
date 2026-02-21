@@ -1,6 +1,7 @@
 import type { UniqueIdentifier } from '@dnd-kit/core'
-import type { BaseBlock, BlockIndex } from '../core/types'
+import type { BaseBlock, BlockIndex, OrderingStrategy } from '../core/types'
 import { extractUUID } from './helper'
+import { generateKeyBetween, compareFractionalKeys } from './fractional'
 
 /**
  * Clone a Map
@@ -21,9 +22,15 @@ export function cloneParentMap(map: Map<string | null, string[]>): Map<string | 
 }
 
 /**
- * Compute normalized index from flat block array
+ * Compute normalized index from flat block array.
+ *
+ * With `orderingStrategy: 'fractional'`, siblings are sorted by their `order`
+ * field (lexicographic). With `'integer'` (default), the input order is preserved.
  */
-export function computeNormalizedIndex<T extends BaseBlock>(blocks: T[]): BlockIndex<T> {
+export function computeNormalizedIndex<T extends BaseBlock>(
+  blocks: T[],
+  orderingStrategy: OrderingStrategy = 'integer'
+): BlockIndex<T> {
   const byId = new Map<string, T>()
   const byParent = new Map<string | null, string[]>()
 
@@ -34,15 +41,31 @@ export function computeNormalizedIndex<T extends BaseBlock>(blocks: T[]): BlockI
     byParent.set(key, [...list, block.id])
   }
 
+  if (orderingStrategy === 'fractional') {
+    for (const [parentId, ids] of byParent.entries()) {
+      ids.sort((a, b) => {
+        const orderA = String(byId.get(a)!.order)
+        const orderB = String(byId.get(b)!.order)
+        return compareFractionalKeys(orderA, orderB)
+      })
+      byParent.set(parentId, ids)
+    }
+  }
+
   return { byId, byParent }
 }
 
 /**
- * Build ordered flat array from BlockIndex
+ * Build ordered flat array from BlockIndex.
+ *
+ * With `'integer'` ordering (default), assigns sequential `order: 0, 1, 2, …`.
+ * With `'fractional'` ordering, preserves existing `order` values — the moved
+ * block already has its new fractional key set by `reparentBlockIndex`.
  */
 export function buildOrderedBlocks<T extends BaseBlock>(
   index: BlockIndex<T>,
-  containerTypes: readonly string[] = []
+  containerTypes: readonly string[] = [],
+  orderingStrategy: OrderingStrategy = 'integer'
 ): T[] {
   const result: T[] = []
 
@@ -52,8 +75,7 @@ export function buildOrderedBlocks<T extends BaseBlock>(
       const id = children[i]
       const block = index.byId.get(id)
       if (block) {
-        result.push({ ...block, order: i })
-        // Recursively walk children if this is a container type
+        result.push(orderingStrategy === 'fractional' ? block : { ...block, order: i })
         if (containerTypes.includes(block.type)) {
           walk(block.id)
         }
@@ -66,18 +88,21 @@ export function buildOrderedBlocks<T extends BaseBlock>(
 }
 
 /**
- * Reparent a block based on drop zone ID
+ * Reparent a block based on drop zone ID.
  *
  * @param state - Current block index
  * @param activeId - ID of the dragged block
  * @param targetZone - Drop zone ID (e.g., "after-uuid", "before-uuid", "into-uuid")
  * @param containerTypes - Block types that can have children
+ * @param orderingStrategy - Whether to assign a fractional key to the moved block
  */
 export function reparentBlockIndex<T extends BaseBlock>(
   state: BlockIndex<T>,
   activeId: UniqueIdentifier,
   targetZone: string,
-  containerTypes: readonly string[] = []
+  containerTypes: readonly string[] = [],
+  orderingStrategy: OrderingStrategy = 'integer',
+  maxDepth?: number
 ): BlockIndex<T> {
   const byId = cloneMap(state.byId)
   const byParent = cloneParentMap(state.byParent)
@@ -104,6 +129,13 @@ export function reparentBlockIndex<T extends BaseBlock>(
     if (newParent && !containerTypes.includes(newParent.type)) {
       return state
     }
+  }
+
+  // Enforce maxDepth: parentDepth + subtreeDepth of dragged must not exceed limit
+  if (maxDepth != null) {
+    const parentDepth = newParentId !== null ? getBlockDepth(state, newParentId) : 0
+    const subtreeDepth = getSubtreeDepth(state, dragged.id)
+    if (parentDepth + subtreeDepth > maxDepth) return state
   }
 
   // Cannot drop on itself
@@ -138,13 +170,60 @@ export function reparentBlockIndex<T extends BaseBlock>(
   newList.splice(insertIndex, 0, dragged.id)
   byParent.set(newParentId, newList)
 
-  // Update dragged block's parentId
+  // Compute new order value
+  let newOrder: number | string = dragged.order
+  if (orderingStrategy === 'fractional') {
+    const siblings = newList
+    const movedIdx = siblings.indexOf(dragged.id)
+    const prevId = movedIdx > 0 ? siblings[movedIdx - 1] : null
+    const nextId = movedIdx < siblings.length - 1 ? siblings[movedIdx + 1] : null
+    const prevOrder = prevId ? String(byId.get(prevId)!.order) : null
+    const nextOrder = nextId ? String(byId.get(nextId)!.order) : null
+    newOrder = generateKeyBetween(prevOrder, nextOrder)
+  }
+
   byId.set(dragged.id, {
     ...dragged,
     parentId: newParentId,
+    order: newOrder,
   })
 
   return { byId, byParent }
+}
+
+/**
+ * Compute the depth of a block by walking its parentId chain.
+ * Root-level blocks have depth 1.
+ */
+export function getBlockDepth<T extends BaseBlock>(
+  index: BlockIndex<T>,
+  blockId: string
+): number {
+  let depth = 0
+  let current: string | null = blockId
+  while (current !== null) {
+    depth++
+    const block = index.byId.get(current)
+    current = block?.parentId ?? null
+  }
+  return depth
+}
+
+/**
+ * Compute the maximum depth of a subtree rooted at blockId (inclusive).
+ * A leaf block returns 1.
+ */
+export function getSubtreeDepth<T extends BaseBlock>(
+  index: BlockIndex<T>,
+  blockId: string
+): number {
+  const children = index.byParent.get(blockId) ?? []
+  if (children.length === 0) return 1
+  let max = 0
+  for (const childId of children) {
+    max = Math.max(max, getSubtreeDepth(index, childId))
+  }
+  return 1 + max
 }
 
 /**
@@ -165,6 +244,35 @@ export function getDescendantIds<T extends BaseBlock>(
   }
 
   return toDelete
+}
+
+/**
+ * Reparent multiple blocks to a target zone, preserving their relative order.
+ * The first block in `blockIds` is treated as the primary (anchor) block.
+ */
+export function reparentMultipleBlocks<T extends BaseBlock>(
+  state: BlockIndex<T>,
+  blockIds: string[],
+  targetZone: string,
+  containerTypes: readonly string[] = [],
+  orderingStrategy: OrderingStrategy = 'integer',
+  maxDepth?: number
+): BlockIndex<T> {
+  if (blockIds.length === 0) return state
+  if (blockIds.length === 1) {
+    return reparentBlockIndex(state, blockIds[0], targetZone, containerTypes, orderingStrategy, maxDepth)
+  }
+
+  // Move the primary block first
+  let result = reparentBlockIndex(state, blockIds[0], targetZone, containerTypes, orderingStrategy, maxDepth)
+  if (result === state) return state // move was rejected
+
+  // Move remaining blocks after the primary, preserving relative order
+  for (let i = 1; i < blockIds.length; i++) {
+    result = reparentBlockIndex(result, blockIds[i], `after-${blockIds[i - 1]}`, containerTypes, orderingStrategy, maxDepth)
+  }
+
+  return result
 }
 
 /**

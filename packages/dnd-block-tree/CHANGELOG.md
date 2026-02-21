@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.0
+
+### Features
+
+- **Max depth constraint** - New `maxDepth` prop limits nesting depth. Enforced in both drag validation and programmatic APIs. `getBlockDepth()` and `getSubtreeDepth()` utility functions exported.
+- **Keyboard navigation** - Accessible tree navigation via `keyboardNavigation` prop. Arrow keys traverse visible blocks, Enter/Space toggles expand/collapse, Home/End jump to first/last. Tree root gets `role="tree"` and blocks get `role="treeitem"` with roving `tabIndex`.
+- **Multi-select drag** - Batch selection via `multiSelect` prop. Cmd/Ctrl+Click toggles, Shift+Click range-selects. Drag overlay shows stacked card effect with count badge. New `reparentMultipleBlocks()` utility. `BlockMoveEvent` now includes `movedIds`.
+- **Undo/redo support** - New `useBlockHistory` composable hook with configurable `maxSteps`. Returns `{ blocks, set, undo, redo, canUndo, canRedo }` for easy integration.
+- **Block lifecycle callbacks** - New `onBlockAdd` and `onBlockDelete` callbacks with `BlockAddEvent` and `BlockDeleteEvent` types. Delete events include all descendant IDs.
+
 ## 0.3.0
 
 ### Features
