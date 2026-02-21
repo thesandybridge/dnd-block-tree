@@ -3,47 +3,61 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import * as Collapsible from '@radix-ui/react-collapsible'
+import * as ScrollArea from '@radix-ui/react-scroll-area'
 import { Button, Sheet, SheetTrigger, SheetContent } from '@thesandybridge/ui/components'
 import { ThemePicker } from './ThemePicker'
-import {
-  Layers, Github, ArrowLeft, Menu,
-  BookOpen, Package, Settings, Code2, Zap, Wrench, FileText,
-  Undo2, Keyboard, CheckSquare, Shield, GitBranch, ArrowRightLeft,
-  Smartphone, Server, Play, List, Crosshair,
-} from 'lucide-react'
-import { DOC_NAV, UNGROUPED_NAV, DOC_SECTIONS, type DocNavItem } from '@/lib/docs-nav'
+import { Layers, Github, ArrowLeft, Menu, ChevronRight } from 'lucide-react'
+import { DOC_NAV, UNGROUPED_NAV, DOC_SECTIONS, type DocNavItem, type DocNavGroup } from '@/lib/docs-nav'
+import { ICON_MAP } from '@/lib/docs-icons'
 
-const ICON_MAP: Record<string, React.ReactNode> = {
-  BookOpen: <BookOpen className="h-4 w-4" />,
-  Package: <Package className="h-4 w-4" />,
-  Settings: <Settings className="h-4 w-4" />,
-  Code2: <Code2 className="h-4 w-4" />,
-  Zap: <Zap className="h-4 w-4" />,
-  Wrench: <Wrench className="h-4 w-4" />,
-  FileText: <FileText className="h-4 w-4" />,
-  Undo2: <Undo2 className="h-4 w-4" />,
-  Keyboard: <Keyboard className="h-4 w-4" />,
-  CheckSquare: <CheckSquare className="h-4 w-4" />,
-  Shield: <Shield className="h-4 w-4" />,
-  GitBranch: <GitBranch className="h-4 w-4" />,
-  ArrowRightLeft: <ArrowRightLeft className="h-4 w-4" />,
-  Smartphone: <Smartphone className="h-4 w-4" />,
-  Server: <Server className="h-4 w-4" />,
-  Play: <Play className="h-4 w-4" />,
-  List: <List className="h-4 w-4" />,
-  Crosshair: <Crosshair className="h-4 w-4" />,
-}
-
-function NavLink({ item, onClick }: { item: DocNavItem; onClick?: () => void }) {
+function NavLink({ item, isActive, onClick }: { item: DocNavItem; isActive: boolean; onClick?: () => void }) {
   return (
     <Link
       href={item.href}
       onClick={onClick}
-      className="flex items-center gap-2 px-3 py-2 text-sm rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+      className={`flex items-center gap-2 px-3 py-2.5 text-sm rounded-md transition-colors ${
+        isActive
+          ? 'bg-muted text-foreground font-medium'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+      }`}
     >
       {ICON_MAP[item.icon]}
       {item.title}
     </Link>
+  )
+}
+
+function MobileNavGroup({
+  group,
+  pathname,
+  onNavigate,
+}: {
+  group: DocNavGroup
+  pathname: string
+  onNavigate: () => void
+}) {
+  const hasActive = group.items.some(item => item.href === pathname)
+
+  return (
+    <Collapsible.Root defaultOpen={hasActive}>
+      <Collapsible.Trigger className="flex items-center justify-between w-full px-3 py-2.5 text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider hover:text-muted-foreground transition-colors group">
+        {group.title}
+        <ChevronRight className="h-3.5 w-3.5 transition-transform group-data-[state=open]:rotate-90" />
+      </Collapsible.Trigger>
+      <Collapsible.Content className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
+        <div className="space-y-0.5 pt-0.5 pb-1">
+          {group.items.map(item => (
+            <NavLink
+              key={item.id}
+              item={item}
+              isActive={pathname === item.href}
+              onClick={onNavigate}
+            />
+          ))}
+        </div>
+      </Collapsible.Content>
+    </Collapsible.Root>
   )
 }
 
@@ -70,7 +84,7 @@ export function DocsHeader() {
           </Link>
           <div className="flex items-center gap-2">
             <Layers className="h-5 w-5 text-primary" />
-            <span className="font-mono font-semibold text-base sm:text-lg">
+            <span className="font-mono font-semibold text-base sm:text-lg truncate max-w-[180px] sm:max-w-none">
               {pageTitle}
             </span>
           </div>
@@ -93,34 +107,41 @@ export function DocsHeader() {
                 <span className="sr-only">Open navigation</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-64 pt-12 px-4">
-              <nav className="space-y-6">
-                {DOC_NAV.map(group => (
-                  <div key={group.title}>
-                    <div className="px-3 mb-1 text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
-                      {group.title}
-                    </div>
-                    <div className="space-y-0.5">
-                      {group.items.map(item => (
+            <SheetContent side="right" className="w-72 p-0" showCloseButton={false}>
+              <div className="flex items-center gap-2 px-4 h-14 border-b border-border/50 shrink-0">
+                <Layers className="h-4 w-4 text-primary" />
+                <span className="font-mono font-semibold text-sm">Navigation</span>
+              </div>
+              <ScrollArea.Root className="flex-1 h-[calc(100vh-3.5rem)]">
+                <ScrollArea.Viewport className="h-full w-full">
+                  <nav className="px-3 py-4 space-y-2">
+                    {DOC_NAV.map(group => (
+                      <MobileNavGroup
+                        key={group.title}
+                        group={group}
+                        pathname={pathname}
+                        onNavigate={() => setMobileNavOpen(false)}
+                      />
+                    ))}
+                    <div className="border-t border-border/50 pt-3 mt-3 space-y-0.5">
+                      {UNGROUPED_NAV.map(item => (
                         <NavLink
                           key={item.id}
                           item={item}
+                          isActive={pathname === item.href}
                           onClick={() => setMobileNavOpen(false)}
                         />
                       ))}
                     </div>
-                  </div>
-                ))}
-                <div className="border-t border-border/50 pt-4 space-y-0.5">
-                  {UNGROUPED_NAV.map(item => (
-                    <NavLink
-                      key={item.id}
-                      item={item}
-                      onClick={() => setMobileNavOpen(false)}
-                    />
-                  ))}
-                </div>
-              </nav>
+                  </nav>
+                </ScrollArea.Viewport>
+                <ScrollArea.Scrollbar
+                  orientation="vertical"
+                  className="flex select-none touch-none p-0.5 transition-colors w-2 hover:bg-border/50"
+                >
+                  <ScrollArea.Thumb className="relative flex-1 rounded-full bg-border" />
+                </ScrollArea.Scrollbar>
+              </ScrollArea.Root>
             </SheetContent>
           </Sheet>
         </div>
