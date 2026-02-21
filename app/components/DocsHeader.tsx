@@ -5,9 +5,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
-import { Button, Sheet, SheetTrigger, SheetContent } from '@thesandybridge/ui/components'
+import { Button, Sheet, SheetTrigger, SheetContent, SheetClose } from '@thesandybridge/ui/components'
 import { ThemePicker } from './ThemePicker'
-import { Layers, Github, ArrowLeft, Menu, ChevronRight } from 'lucide-react'
+import { Layers, Github, ArrowLeft, Menu, ChevronRight, X } from 'lucide-react'
 import { DOC_NAV, UNGROUPED_NAV, DOC_SECTIONS, type DocNavItem, type DocNavGroup } from '@/lib/docs-nav'
 import { ICON_MAP } from '@/lib/docs-icons'
 
@@ -107,12 +107,18 @@ export function DocsHeader() {
                 <span className="sr-only">Open navigation</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 p-0" showCloseButton={false}>
-              <div className="flex items-center gap-2 px-4 h-14 border-b border-border/50 shrink-0">
-                <Layers className="h-4 w-4 text-primary" />
-                <span className="font-mono font-semibold text-sm">Navigation</span>
+            <SheetContent side="right" className="w-72 !p-0 !gap-0" showCloseButton={false}>
+              <div className="flex items-center justify-between px-4 h-14 border-b border-border/50 shrink-0">
+                <div className="flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-primary" />
+                  <span className="font-mono font-semibold text-sm">Navigation</span>
+                </div>
+                <SheetClose className="rounded-sm opacity-70 hover:opacity-100 transition-opacity">
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </SheetClose>
               </div>
-              <ScrollArea.Root className="flex-1 h-[calc(100vh-3.5rem)]">
+              <ScrollArea.Root className="flex-1 min-h-0">
                 <ScrollArea.Viewport className="h-full w-full">
                   <nav className="px-3 py-4 space-y-2">
                     {DOC_NAV.map(group => (
