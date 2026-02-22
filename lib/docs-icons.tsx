@@ -1,5 +1,5 @@
 import {
-  BookOpen, Package, Settings, Code2, Zap, Wrench, FileText,
+  BookOpen, Package, Settings, Code2, Zap, Wrench, FileText, Layers,
   Undo2, Keyboard, CheckSquare, Shield, GitBranch, ArrowRightLeft,
   Smartphone, Server, Play, List, Crosshair,
 } from 'lucide-react'
@@ -12,6 +12,7 @@ export const ICON_MAP: Record<string, React.ReactNode> = {
   Zap: <Zap className="h-4 w-4" />,
   Wrench: <Wrench className="h-4 w-4" />,
   FileText: <FileText className="h-4 w-4" />,
+  Layers: <Layers className="h-4 w-4" />,
   Undo2: <Undo2 className="h-4 w-4" />,
   Keyboard: <Keyboard className="h-4 w-4" />,
   CheckSquare: <CheckSquare className="h-4 w-4" />,

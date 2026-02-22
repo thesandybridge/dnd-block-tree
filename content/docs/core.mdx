@@ -1,0 +1,196 @@
+## Core Overview
+
+`@dnd-block-tree/core` is the framework-agnostic foundation of dnd-block-tree. It provides all the types, tree logic, reducers, and utilities with **zero dependencies** -- no React, no DOM, no @dnd-kit.
+
+### When to Use Core Directly
+
+- **Server-side tree manipulation** -- build, validate, and transform trees in Node.js or edge runtimes
+- **Testing** -- unit test tree logic without mounting React components
+- **Non-React frameworks** -- use with Vue, Svelte, Solid, or vanilla JS
+- **Shared client/server logic** -- same tree operations on both sides
+
+### Install
+
+```bash
+npm install @dnd-block-tree/core
+```
+
+No peer dependencies required.
+
+### Architecture
+
+The library is split into two layers:
+
+| Layer | Package | Provides |
+|-------|---------|----------|
+| **Core** | `@dnd-block-tree/core` | Types, reducers, tree factory, utilities, collision detection algorithms |
+| **React Adapter** | `@dnd-block-tree/react` | `<BlockTree>` component, hooks, @dnd-kit bridge, context providers |
+
+Core has no knowledge of React or the DOM. The React adapter imports core and adds the component layer on top.
+
+### createBlockTree
+
+The main headless API. Creates a stateful tree instance with event-driven updates.
+
+```typescript
+import { createBlockTree, type BaseBlock } from '@dnd-block-tree/core'
+
+interface Task extends BaseBlock {
+  type: 'section' | 'task'
+  title: string
+}
+
+const tree = createBlockTree<Task>({
+  initialBlocks: [
+    { id: '1', type: 'section', title: 'Sprint 1', parentId: null, order: 0 },
+    { id: '2', type: 'task', title: 'Build API', parentId: '1', order: 0 },
+    { id: '3', type: 'task', title: 'Write tests', parentId: '1', order: 1 },
+  ],
+  containerTypes: ['section'],
+  maxDepth: 3,
+})
+
+// Read state
+tree.getBlocks()          // full ordered array
+tree.getChildren('1')     // children of section "1"
+tree.getBlock('2')        // single block lookup
+tree.isExpanded('1')      // expand/collapse state
+
+// Mutate
+tree.addBlock('task', '1')           // add child to section
+tree.insertBlock('task', '2', 'after') // insert after block "2"
+tree.deleteBlock('3')                // delete block and descendants
+tree.moveBlock('2', 'before-3')      // move to drop zone
+tree.setBlocks([...])                // replace entire state
+
+// Expand/collapse
+tree.toggleExpand('1')
+tree.setExpandAll(true)
+
+// Drag lifecycle
+tree.startDrag('2')
+tree.updateDrag('before-3')
+const result = tree.endDrag()  // { blocks, targetZone } or null
+tree.cancelDrag()
+
+// Subscribe to events
+tree.on('blocksChange', (blocks) => {
+  console.log('Tree updated:', blocks.length, 'blocks')
+})
+tree.on('expandChange', ({ id, expanded }) => {
+  console.log(`${id} ${expanded ? 'expanded' : 'collapsed'}`)
+})
+
+// Cleanup
+tree.destroy()
+```
+
+#### BlockTreeOptions
+
+```typescript
+interface BlockTreeOptions<T extends BaseBlock> {
+  initialBlocks?: T[]
+  containerTypes?: readonly string[]
+  orderingStrategy?: OrderingStrategy
+  maxDepth?: number
+  collisionDetection?: CoreCollisionDetection
+  initialExpanded?: string[] | 'all' | 'none'
+  previewDebounce?: number
+  canDrag?: CanDragFn<T>
+  canDrop?: CanDropFn<T>
+  idGenerator?: IdGeneratorFn
+}
+```
+
+### Reducers
+
+Pure reducer functions for building your own state management on top of core.
+
+**`blockReducer`** -- handles block add, delete, move, and insert operations on a `BlockIndex`:
+
+```typescript
+import { blockReducer, computeNormalizedIndex } from '@dnd-block-tree/core'
+
+let state = computeNormalizedIndex(blocks)
+state = blockReducer(state, { type: 'MOVE', id: '2', targetZone: 'before-3' }, ['section'])
+```
+
+**`expandReducer`** -- manages expand/collapse state for containers:
+
+```typescript
+import { expandReducer } from '@dnd-block-tree/core'
+
+let expanded = {}
+expanded = expandReducer(expanded, { type: 'TOGGLE', id: '1' })
+```
+
+**`historyReducer`** -- manages undo/redo history stacks:
+
+```typescript
+import { historyReducer } from '@dnd-block-tree/core'
+
+let history = { past: [], present: blocks, future: [] }
+history = historyReducer(history, { type: 'PUSH', state: newBlocks })
+history = historyReducer(history, { type: 'UNDO' })
+```
+
+### EventEmitter
+
+Typed event system used internally by `createBlockTree`. Also exported for custom use.
+
+```typescript
+import { EventEmitter } from '@dnd-block-tree/core'
+
+type MyEvents = {
+  change: (value: string) => void
+  error: (err: Error) => void
+}
+
+const emitter = new EventEmitter<MyEvents>()
+emitter.on('change', (value) => console.log(value))
+emitter.emit('change', 'hello')
+emitter.removeAllListeners()
+```
+
+### Collision Detection
+
+Core defines collision detection algorithms as pure functions that work with simple `Rect` geometry -- no @dnd-kit dependency.
+
+```typescript
+import { weightedVerticalCollision, type CoreCollisionDetection } from '@dnd-block-tree/core'
+
+// CoreCollisionDetection = (candidates: CollisionCandidate[], pointerRect: Rect) => CollisionResult[]
+```
+
+Built-in algorithms: `weightedVerticalCollision`, `closestCenterCollision`, `createStickyCollision`.
+
+To use a core collision detector in `<BlockTree>`, wrap it with `adaptCollisionDetection` from the React adapter:
+
+```tsx
+import { adaptCollisionDetection } from '@dnd-block-tree/react'
+import { weightedVerticalCollision } from '@dnd-block-tree/core'
+
+<BlockTree collisionDetection={adaptCollisionDetection(weightedVerticalCollision)} />
+```
+
+See [Collision Detection](/docs/collision-detection) for full details.
+
+### What's in Core vs React
+
+| Capability | Core | React |
+|-----------|------|-------|
+| Types (`BaseBlock`, `BlockIndex`, etc.) | Yes | re-exports |
+| `createBlockTree` factory | Yes | -- |
+| Reducers (`blockReducer`, `expandReducer`, `historyReducer`) | Yes | -- |
+| Tree utilities (`computeNormalizedIndex`, `reparentBlockIndex`, etc.) | Yes | re-exports |
+| Serialization (`flatToNested`, `nestedToFlat`) | Yes | re-exports |
+| Fractional indexing | Yes | re-exports |
+| Collision algorithms | Yes | re-exports + `adaptCollisionDetection` bridge |
+| `EventEmitter` | Yes | -- |
+| `<BlockTree>` component | -- | Yes |
+| Hooks (`useBlockHistory`, `useLayoutAnimation`, etc.) | -- | Yes |
+| Context factories (`createBlockState`, `createTreeState`) | -- | Yes |
+| @dnd-kit integration | -- | Yes |
+| `triggerHaptic` | -- | Yes |
+
+See [Utilities](/docs/utilities) for the full API reference of all exported functions.

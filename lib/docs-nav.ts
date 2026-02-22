@@ -19,7 +19,14 @@ export const DOC_NAV: DocNavGroup[] = [
     ],
   },
   {
-    title: 'Core API',
+    title: 'Headless Core',
+    items: [
+      { id: 'core', title: 'Core Overview', icon: 'Layers', href: '/docs/core' },
+      { id: 'utilities', title: 'Utilities', icon: 'Wrench', href: '/docs/utilities' },
+    ],
+  },
+  {
+    title: 'React API',
     items: [
       { id: 'api', title: 'BlockTree Props', icon: 'Settings', href: '/docs/api' },
       { id: 'callbacks', title: 'Callbacks & Events', icon: 'Zap', href: '/docs/callbacks' },
@@ -46,7 +53,6 @@ export const DOC_NAV: DocNavGroup[] = [
     title: 'Advanced',
     items: [
       { id: 'collision-detection', title: 'Collision Detection', icon: 'Crosshair', href: '/docs/collision-detection' },
-      { id: 'utilities', title: 'Utilities', icon: 'Wrench', href: '/docs/utilities' },
     ],
   },
 ]

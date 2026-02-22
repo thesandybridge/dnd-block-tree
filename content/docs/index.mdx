@@ -1,10 +1,13 @@
 ## dnd-block-tree
 
-A headless, type-safe React library for building hierarchical drag-and-drop interfaces with [@dnd-kit](https://dndkit.com/). Define your block types, provide renderers, and get a fully functional nested tree with drag-and-drop out of the box.
+A framework-agnostic, type-safe library for building hierarchical drag-and-drop interfaces. The headless core (`@dnd-block-tree/core`) provides tree logic, reducers, and utilities with zero dependencies. The React adapter adds [@dnd-kit](https://dndkit.com/) integration, components, and hooks on top.
 
 ### Features
 
 <CardGrid>
+  <MiniCard title="Framework-Agnostic Core">
+    Zero-dependency headless core with tree factory, reducers, and utilities -- use with any framework or on the server.
+  </MiniCard>
   <MiniCard title="Type-Safe Renderers">
     Generic types ensure each block type gets the correct renderer props -- containers receive `children`, `isExpanded`, and `onToggleExpand` automatically.
   </MiniCard>
@@ -102,6 +105,7 @@ See [Installation & Setup](/docs/getting-started) for peer dependencies and a co
 
 ### Explore the Docs
 
+- [**Core Overview**](/docs/core) -- headless API, `createBlockTree`, reducers, and what's in core vs React
 - [**BlockTree Props**](/docs/api) -- every prop with type, default, and description
 - [**Callbacks & Events**](/docs/callbacks) -- hook into the drag-and-drop lifecycle
 - [**Type Reference**](/docs/types) -- all exported types and interfaces
