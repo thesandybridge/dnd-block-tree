@@ -305,7 +305,7 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
   const [showTooltip, setShowTooltip] = useState(false)
 
   const [activeCorner, setActiveCorner] = useState<Corner>(() => loadStoredPosition() ?? position)
-  const [btnPos, setBtnPos] = useState<{ x: number; y: number }>(() => cornerToXY(loadStoredPosition() ?? position))
+  const [btnPos, setBtnPos] = useState<{ x: number; y: number } | null>(null)
   const [btnDragging, setBtnDragging] = useState(false)
   const [btnTransition, setBtnTransition] = useState(false)
   const btnDragRef = useRef<{ active: boolean; startX: number; startY: number; origX: number; origY: number; moved: boolean }>({
@@ -329,6 +329,7 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
   }, [activeCorner])
 
   const handleBtnPointerDown = useCallback((e: React.PointerEvent) => {
+    if (!btnPos) return
     btnDragRef.current = {
       active: true,
       startX: e.clientX,
@@ -359,6 +360,7 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
   }, [])
 
   const handleBtnPointerUp = useCallback(() => {
+    if (!btnPos) return
     const wasMoved = btnDragRef.current.moved
     btnDragRef.current.active = false
     if (wasMoved) {
@@ -559,6 +561,8 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
 
   const isBottom = activeCorner.startsWith('bottom')
   const isLeft = activeCorner.endsWith('left')
+
+  if (!btnPos) return null
 
   const triggerBtnStyle: React.CSSProperties = {
     position: 'fixed',
