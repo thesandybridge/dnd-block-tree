@@ -2,14 +2,14 @@
 
 Convert between flat block arrays and nested tree structures.
 
-`dnd-block-tree` uses a flat array of blocks internally, where each block references its parent via `parentId`. The serialization utilities let you convert between this flat representation and a nested tree structure for JSON export, API responses, or external rendering.
+dnd-block-tree uses a flat array of blocks internally, where each block references its parent via `parentId`. The serialization utilities let you convert between this flat representation and a nested tree structure for JSON export, API responses, or external rendering.
 
 ### flatToNested
 
 Converts a flat `BaseBlock[]` array into a nested tree structure. Each block's children are gathered and sorted by `order`, then nested recursively.
 
 ```typescript
-import { flatToNested, type NestedBlock } from 'dnd-block-tree'
+import { flatToNested, type NestedBlock } from '@dnd-block-tree/react'
 
 function flatToNested<T extends BaseBlock>(blocks: T[]): NestedBlock<T>[]
 ```
@@ -27,7 +27,7 @@ type NestedBlock<T extends BaseBlock> = Omit<T, 'parentId' | 'order'> & {
 Converts a nested tree back to a flat array. Assigns `parentId` and integer `order` values during a depth-first walk.
 
 ```typescript
-import { nestedToFlat } from 'dnd-block-tree'
+import { nestedToFlat } from '@dnd-block-tree/react'
 
 function nestedToFlat<T extends BaseBlock>(nested: NestedBlock<T>[]): T[]
 ```
@@ -35,7 +35,7 @@ function nestedToFlat<T extends BaseBlock>(nested: NestedBlock<T>[]): T[]
 ### Roundtrip Example
 
 ```tsx
-import { flatToNested, nestedToFlat, type BaseBlock } from 'dnd-block-tree'
+import { flatToNested, nestedToFlat, type BaseBlock } from '@dnd-block-tree/react'
 
 interface MyBlock extends BaseBlock {
   type: 'section' | 'task'

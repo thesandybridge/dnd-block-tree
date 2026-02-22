@@ -13,7 +13,7 @@ With integer ordering, inserting a block between positions 2 and 3 requires rein
 Set `orderingStrategy="fractional"` on `BlockTree`. Use `initFractionalOrder` to migrate existing integer-ordered blocks to fractional keys.
 
 ```tsx
-import { BlockTree, initFractionalOrder } from 'dnd-block-tree'
+import { BlockTree, initFractionalOrder } from '@dnd-block-tree/react'
 
 const [blocks, setBlocks] = useState(() => initFractionalOrder(initialBlocks))
 
@@ -43,7 +43,7 @@ import {
   generateInitialKeys,
   initFractionalOrder,
   compareFractionalKeys,
-} from 'dnd-block-tree'
+} from '@dnd-block-tree/react'
 
 // Generate a key between two existing keys
 const mid = generateKeyBetween('a', 'c') // => "b"

@@ -8,22 +8,17 @@ A type-safe library for building hierarchical drag-and-drop interfaces. The fram
 
 ## Packages
 
-As of v2.0.0, the library is split into a monorepo with three packages:
-
 | Package | Description |
 |---------|-------------|
 | [`@dnd-block-tree/core`](./packages/core) | Framework-agnostic core — types, collision detection, reducers, tree factory, utilities. Zero dependencies. |
 | [`@dnd-block-tree/react`](./packages/react) | React adapter — components, hooks, @dnd-kit integration. |
-| [`dnd-block-tree`](./packages/dnd-block-tree) | Compatibility wrapper — re-exports everything from `@dnd-block-tree/react`. |
 
-**Existing users**: `import { ... } from 'dnd-block-tree'` continues to work with no code changes.
-
-**New users**: you can import from `dnd-block-tree` for the full API, or use `@dnd-block-tree/core` directly for framework-agnostic tree operations (server-side manipulation, testing, non-React frameworks).
+Use `@dnd-block-tree/react` for the full React API, or `@dnd-block-tree/core` directly for framework-agnostic tree operations (server-side manipulation, testing, non-React frameworks).
 
 ## Installation
 
 ```bash
-npm install dnd-block-tree @dnd-kit/core @dnd-kit/utilities
+npm install @dnd-block-tree/react @dnd-kit/core @dnd-kit/utilities
 ```
 
 Requires **React 18+** and **@dnd-kit/core 6+**.
@@ -31,7 +26,7 @@ Requires **React 18+** and **@dnd-kit/core 6+**.
 ## Quick Start
 
 ```tsx
-import { BlockTree, type BaseBlock, type BlockRenderers } from 'dnd-block-tree'
+import { BlockTree, type BaseBlock, type BlockRenderers } from '@dnd-block-tree/react'
 
 interface MyBlock extends BaseBlock {
   type: 'section' | 'task' | 'note'

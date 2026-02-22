@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useRef, useEffect } from 'react'
-import type { BaseBlock } from 'dnd-block-tree'
+import type { BaseBlock } from '@dnd-block-tree/react'
 import { cn } from '@/lib/utils'
 
 interface DiffViewProps<T extends BaseBlock> {

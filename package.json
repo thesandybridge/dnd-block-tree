@@ -7,8 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "lib:build": "turbo run build --filter='@dnd-block-tree/*' --filter='dnd-block-tree'",
-    "lib:dev": "npm run dev --workspace=dnd-block-tree",
+    "lib:build": "turbo run build --filter='@dnd-block-tree/*'",
+    "lib:dev": "npm run dev --workspace=@dnd-block-tree/react",
     "dev": "next dev",
     "build": "turbo run build && next build",
     "start": "next start",
@@ -25,7 +25,7 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dnd-block-tree": "^0.1.0",
+    "@dnd-block-tree/react": "*",
     "lucide-react": "^0.575.0",
     "next": "^14.2.28",
     "next-mdx-remote": "^6.0.0",

@@ -9,7 +9,7 @@ Custom algorithms that determine which drop zone the pointer is closest to durin
 Scores drop zones by distance to nearest edge with bottom bias and depth-aware horizontal scoring.
 
 ```typescript
-import { weightedVerticalCollision } from 'dnd-block-tree'
+import { weightedVerticalCollision } from '@dnd-block-tree/react'
 ```
 
 How it works:
@@ -25,7 +25,7 @@ How it works:
 Simple Euclidean distance from pointer to zone center. Useful as a baseline or fallback.
 
 ```typescript
-import { closestCenterCollision } from 'dnd-block-tree'
+import { closestCenterCollision } from '@dnd-block-tree/react'
 ```
 
 #### createStickyCollision
@@ -33,7 +33,7 @@ import { closestCenterCollision } from 'dnd-block-tree'
 Creates a collision detector with hysteresis -- the active zone doesn't change unless a new zone scores significantly better than the current one. Supports snapshotted zone rects.
 
 ```typescript
-import { createStickyCollision } from 'dnd-block-tree'
+import { createStickyCollision } from '@dnd-block-tree/react'
 
 const stickyCollision = createStickyCollision(15) // threshold in pixels
 
@@ -61,7 +61,7 @@ The in-flow ghost preview shifts drop zone positions during drag. Without mitiga
 To prevent this, `createStickyCollision` accepts a `SnapshotRectsRef` -- a ref to a `Map` of frozen zone positions. When provided, collision detection uses the snapshot instead of live DOM measurements.
 
 ```typescript
-import { createStickyCollision, type SnapshotRectsRef } from 'dnd-block-tree'
+import { createStickyCollision, type SnapshotRectsRef } from '@dnd-block-tree/react'
 
 const snapshotRef: SnapshotRectsRef = { current: null }
 const collision = createStickyCollision(20, snapshotRef)
@@ -89,7 +89,7 @@ The core package (`@dnd-block-tree/core`) defines its own `CoreCollisionDetectio
 The React package (`@dnd-block-tree/react`) uses @dnd-kit's `CollisionDetection` type for its `BlockTree` component. The `adaptCollisionDetection` bridge function converts a `CoreCollisionDetection` into a @dnd-kit `CollisionDetection`:
 
 ```typescript
-import { adaptCollisionDetection } from 'dnd-block-tree'
+import { adaptCollisionDetection } from '@dnd-block-tree/react'
 import type { CoreCollisionDetection } from '@dnd-block-tree/core'
 
 const myCoreDetector: CoreCollisionDetection = (pointer, candidates) => {

@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronRight, GripVertical } from 'lucide-react'
-import type { ContainerRendererProps } from 'dnd-block-tree'
+import type { ContainerRendererProps } from '@dnd-block-tree/react'
 import type { ProductivityBlock } from '../types'
 import { cn } from '@/lib/utils'
 

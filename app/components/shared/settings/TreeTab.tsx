@@ -1,5 +1,5 @@
 import type { BaseSettings } from './types'
-import type { OrderingStrategy } from 'dnd-block-tree'
+import type { OrderingStrategy } from '@dnd-block-tree/react'
 import { Toggle } from './Toggle'
 import { Slider } from './Slider'
 import { SegmentedControl } from './SegmentedControl'

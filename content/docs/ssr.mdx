@@ -11,7 +11,7 @@
 A wrapper component that renders a `fallback` on the server and during initial hydration, then mounts the full `BlockTree` after the client hydrates.
 
 ```typescript
-import { BlockTreeSSR } from 'dnd-block-tree'
+import { BlockTreeSSR } from '@dnd-block-tree/react'
 
 interface BlockTreeSSRProps<T, C> extends BlockTreeProps<T, C> {
   fallback?: ReactNode  // Content shown during SSR/hydration (default: null)
@@ -21,7 +21,7 @@ interface BlockTreeSSRProps<T, C> extends BlockTreeProps<T, C> {
 ### Next.js App Router Example
 
 ```tsx
-import { BlockTreeSSR, type BaseBlock, type BlockRenderers } from 'dnd-block-tree'
+import { BlockTreeSSR, type BaseBlock, type BlockRenderers } from '@dnd-block-tree/react'
 
 interface DocBlock extends BaseBlock {
   type: 'heading' | 'paragraph'

@@ -1,7 +1,7 @@
 'use client'
 
 import { GripVertical, StickyNote } from 'lucide-react'
-import type { BlockRendererProps } from 'dnd-block-tree'
+import type { BlockRendererProps } from '@dnd-block-tree/react'
 import type { ProductivityBlock } from '../types'
 import { cn } from '@/lib/utils'
 

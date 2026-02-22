@@ -59,7 +59,7 @@ tree.destroy() // Clean up listeners
 - Testing tree logic without UI dependencies
 - Shared tree operations between client and server
 
-For React applications, use [`dnd-block-tree`](https://www.npmjs.com/package/dnd-block-tree) or [`@dnd-block-tree/react`](https://www.npmjs.com/package/@dnd-block-tree/react) which wraps this package with React components and @dnd-kit integration.
+For React applications, use [`@dnd-block-tree/react`](https://www.npmjs.com/package/@dnd-block-tree/react) which wraps this package with React components and @dnd-kit integration.
 
 ## Documentation
 

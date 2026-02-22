@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
-import { BlockTree, useBlockHistory, useDevToolsCallbacks, BlockTreeDevTools, type BlockRenderers, generateId, initFractionalOrder } from 'dnd-block-tree'
+import { BlockTree, useBlockHistory, useDevToolsCallbacks, BlockTreeDevTools, type BlockRenderers, generateId, initFractionalOrder } from '@dnd-block-tree/react'
 import type { ProductivityBlock } from './types'
 import { CONTAINER_TYPES } from './types'
 import { SectionBlock } from './blocks/SectionBlock'

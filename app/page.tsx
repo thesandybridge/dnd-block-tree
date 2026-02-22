@@ -35,7 +35,7 @@ const FEATURES = [
   },
 ] as const
 
-const USAGE_CODE = `import { BlockTree } from 'dnd-block-tree'
+const USAGE_CODE = `import { BlockTree } from '@dnd-block-tree/react'
 
 const renderers = {
   section: (props) => <SectionBlock {...props} />,

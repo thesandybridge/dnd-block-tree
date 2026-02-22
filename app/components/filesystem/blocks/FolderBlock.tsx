@@ -1,7 +1,7 @@
 'use client'
 
 import { ChevronRight, Folder, FolderOpen, GripVertical } from 'lucide-react'
-import type { ContainerRendererProps } from 'dnd-block-tree'
+import type { ContainerRendererProps } from '@dnd-block-tree/react'
 import type { FileSystemBlock } from '../types'
 import { cn } from '@/lib/utils'
 

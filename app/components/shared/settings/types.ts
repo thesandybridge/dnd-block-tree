@@ -1,4 +1,4 @@
-import type { OrderingStrategy } from 'dnd-block-tree'
+import type { OrderingStrategy } from '@dnd-block-tree/react'
 
 export interface BaseSettings {
   showDropPreview: boolean

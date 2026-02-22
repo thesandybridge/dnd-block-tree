@@ -48,24 +48,21 @@ A framework-agnostic, type-safe library for building hierarchical drag-and-drop 
 
 ### Packages
 
-As of v2.0.0, the library is split into three packages:
-
 | Package | Description |
 |---------|-------------|
-| [`dnd-block-tree`](https://www.npmjs.com/package/dnd-block-tree) | Full React library (re-exports `@dnd-block-tree/react`) |
 | [`@dnd-block-tree/react`](https://www.npmjs.com/package/@dnd-block-tree/react) | React adapter — components, hooks, @dnd-kit integration |
 | [`@dnd-block-tree/core`](https://www.npmjs.com/package/@dnd-block-tree/core) | Framework-agnostic core — types, reducers, tree factory, utilities (zero deps) |
 
-Most users should install `dnd-block-tree`. Use `@dnd-block-tree/core` directly for non-React use cases (server-side manipulation, testing, other frameworks).
+Most users should install `@dnd-block-tree/react`. Use `@dnd-block-tree/core` directly for non-React use cases (server-side manipulation, testing, other frameworks).
 
 ### Quick Start
 
 ```bash
-npm install dnd-block-tree @dnd-kit/core @dnd-kit/utilities
+npm install @dnd-block-tree/react @dnd-kit/core @dnd-kit/utilities
 ```
 
 ```tsx
-import { BlockTree, type BaseBlock, type BlockRenderers } from 'dnd-block-tree'
+import { BlockTree, type BaseBlock, type BlockRenderers } from '@dnd-block-tree/react'
 
 interface MyBlock extends BaseBlock {
   type: 'section' | 'task'

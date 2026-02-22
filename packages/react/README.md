@@ -52,10 +52,6 @@ function App() {
 }
 ```
 
-## dnd-block-tree vs @dnd-block-tree/react
-
-These two packages export the same API. The [`dnd-block-tree`](https://www.npmjs.com/package/dnd-block-tree) package is a compatibility wrapper that re-exports everything from `@dnd-block-tree/react`. Use whichever package name you prefer.
-
 ## Documentation
 
 Full docs at **[blocktree.sandybridge.io](https://blocktree.sandybridge.io/docs)**.

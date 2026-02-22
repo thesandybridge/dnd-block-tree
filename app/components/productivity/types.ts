@@ -1,4 +1,4 @@
-import type { BaseBlock } from 'dnd-block-tree'
+import type { BaseBlock } from '@dnd-block-tree/react'
 
 export interface ProductivityBlock extends BaseBlock {
   type: 'section' | 'task' | 'note'

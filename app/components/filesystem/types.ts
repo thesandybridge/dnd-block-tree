@@ -1,4 +1,4 @@
-import type { BaseBlock } from 'dnd-block-tree'
+import type { BaseBlock } from '@dnd-block-tree/react'
 
 export interface FileSystemBlock extends BaseBlock {
   type: 'folder' | 'file'

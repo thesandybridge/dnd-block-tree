@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
-import { BlockTree, useDevToolsCallbacks, BlockTreeDevTools, type BlockRenderers, generateId, initFractionalOrder } from 'dnd-block-tree'
+import { BlockTree, useDevToolsCallbacks, BlockTreeDevTools, type BlockRenderers, generateId, initFractionalOrder } from '@dnd-block-tree/react'
 import type { FileSystemBlock } from './types'
 import { CONTAINER_TYPES } from './types'
 import { FolderBlock } from './blocks/FolderBlock'

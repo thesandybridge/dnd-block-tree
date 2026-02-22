@@ -27,7 +27,7 @@ Configure animation timing on `BlockTree`:
 FLIP-based layout animation hook for smooth reorder transitions. Captures block positions before render and applies CSS transform transitions after render.
 
 ```typescript
-import { useLayoutAnimation } from 'dnd-block-tree'
+import { useLayoutAnimation } from '@dnd-block-tree/react'
 
 interface UseLayoutAnimationOptions {
   duration?: number   // Default: 200ms
@@ -47,7 +47,7 @@ Create a ref for the container element, pass it to a wrapper `div` around `Block
 
 ```tsx
 import { useRef } from 'react'
-import { BlockTree, useLayoutAnimation } from 'dnd-block-tree'
+import { BlockTree, useLayoutAnimation } from '@dnd-block-tree/react'
 
 function AnimatedTree({ blocks, onChange, renderers, containerTypes }) {
   const containerRef = useRef<HTMLDivElement>(null)
