@@ -712,10 +712,19 @@ import {
   createStickyCollision,      // Hysteresis wrapper with snapshot support
   type SnapshotRectsRef,      // Ref type for frozen zone rects
 
+  // Internal helpers
+  cloneMap,                   // Clone a Map
+  cloneParentMap,             // Deep clone a parent->children Map
+  debounce,                   // Debounce with cancel()
+
   // Hooks
+  createBlockState,           // Factory for block state context + provider
+  createTreeState,            // Factory for tree UI state context + provider
   useBlockHistory,            // Undo/redo state management
   useLayoutAnimation,         // FLIP-based reorder animations
   useVirtualTree,             // Virtual scrolling primitives
+  useConfiguredSensors,       // Configure dnd-kit sensors
+  getSensorConfig,            // Get sensor config from SensorConfig
 
   // Components
   BlockTree,                  // Main drag-and-drop tree component

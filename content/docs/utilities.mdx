@@ -177,7 +177,10 @@ See [Collision Detection](/docs/collision-detection) for details.
 ```typescript
 const weightedVerticalCollision: CollisionDetection
 const closestCenterCollision: CollisionDetection
-function createStickyCollision(threshold?: number): CollisionDetection & { reset: () => void }
+function createStickyCollision(
+  threshold?: number,
+  snapshotRef?: SnapshotRectsRef
+): CollisionDetection & { reset: () => void }
 ```
 
 ### Hooks
@@ -189,4 +192,24 @@ function useBlockHistory<T>(initial: T[], options?): UseBlockHistoryResult<T>
 function useLayoutAnimation(ref, options?): void
 function useVirtualTree(options): UseVirtualTreeResult
 function useConfiguredSensors(config?: SensorConfig): Sensor[]
+function getSensorConfig(config?: SensorConfig): { pointer: {...}; touch: {...} }
+```
+
+### Context Factories
+
+Factory functions for creating typed block and tree state contexts. Used internally by `BlockTree` but exported for advanced use cases (e.g. custom tree implementations).
+
+```typescript
+function createBlockState<T extends BaseBlock>(): {
+  useBlockState: () => BlockStateContextValue<T>
+  BlockStateProvider: (props: BlockStateProviderProps<T>) => ReactNode
+}
+
+function createTreeState<T extends BaseBlock>(options?: {
+  previewDebounce?: number
+  containerTypes?: readonly string[]
+}): {
+  useTreeState: () => TreeStateContextValue<T>
+  TreeStateProvider: (props: TreeStateProviderProps<T>) => ReactNode
+}
 ```
