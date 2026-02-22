@@ -32,7 +32,7 @@ jobs:
       - name: Run tests
         run: npx turbo run test
 
-  publish:
+  publish-core:
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -61,20 +61,34 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish react
-        run: npm publish --access public --provenance
-        working-directory: packages/react
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  publish-adapters:
+    needs: publish-core
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    strategy:
+      matrix:
+        package: [react, svelte, vanilla]
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Publish svelte
-        run: npm publish --access public --provenance
-        working-directory: packages/svelte
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
 
-      - name: Publish vanilla
+      - name: Install dependencies
+        run: npm install
+        env:
+          NPM_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+
+      - name: Build all packages
+        run: npm run lib:build
+
+      - name: Publish ${{ matrix.package }}
         run: npm publish --access public --provenance
-        working-directory: packages/vanilla
+        working-directory: packages/${{ matrix.package }}
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
