@@ -1,10 +1,8 @@
 # dnd-block-tree
 
 [![npm version](https://img.shields.io/npm/v/dnd-block-tree.svg)](https://www.npmjs.com/package/dnd-block-tree)
-[![npm downloads](https://img.shields.io/npm/dm/dnd-block-tree.svg)](https://www.npmjs.com/package/dnd-block-tree)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/dnd-block-tree)](https://bundlephobia.com/package/dnd-block-tree)
 [![CI](https://github.com/thesandybridge/dnd-block-tree/actions/workflows/ci.yml/badge.svg)](https://github.com/thesandybridge/dnd-block-tree/actions/workflows/ci.yml)
-[![demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://dnd-block-tree.vercel.app)
+[![demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://blocktree.sandybridge.io)
 
 A headless React library for building hierarchical drag-and-drop interfaces. Bring your own components, we handle the complexity.
 
@@ -730,7 +728,7 @@ import {
 
 ## Demo
 
-Check out the [live demo](https://dnd-block-tree.vercel.app) to see the library in action with two example use cases:
+Check out the [live demo](https://blocktree.sandybridge.io) to see the library in action with two example use cases:
 
 - **Productivity** - Sections, tasks, and notes with undo/redo, max depth control, and keyboard navigation
 - **File System** - Folders and files
