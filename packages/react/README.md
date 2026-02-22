@@ -7,10 +7,10 @@ React adapter for [dnd-block-tree](https://github.com/thesandybridge/dnd-block-t
 ## Installation
 
 ```bash
-npm install @dnd-block-tree/react @dnd-kit/core @dnd-kit/utilities
+npm install @dnd-block-tree/core @dnd-block-tree/react @dnd-kit/core @dnd-kit/utilities
 ```
 
-Requires **React 18+** and **@dnd-kit/core 6+**.
+Requires **@dnd-block-tree/core 2+**, **React 18+**, and **@dnd-kit/core 6+**.
 
 ## What's Included
 

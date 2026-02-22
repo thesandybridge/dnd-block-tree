@@ -24,7 +24,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@dnd-block-tree/core": "^2.0.0"
   },
   "devDependencies": {

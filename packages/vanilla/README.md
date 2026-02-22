@@ -7,10 +7,10 @@ Vanilla JS/TS adapter for [dnd-block-tree](https://github.com/thesandybridge/dnd
 ## Installation
 
 ```bash
-npm install @dnd-block-tree/vanilla
+npm install @dnd-block-tree/core @dnd-block-tree/vanilla
 ```
 
-Only dependency is `@dnd-block-tree/core`. No framework peer dependencies required.
+Requires **@dnd-block-tree/core 2+**. No framework peer dependencies.
 
 ## What's Included
 

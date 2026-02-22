@@ -19,10 +19,8 @@
     "test": "vitest run",
     "typecheck": "svelte-check --tsconfig tsconfig.json"
   },
-  "dependencies": {
-    "@dnd-block-tree/core": "^2.0.0"
-  },
   "peerDependencies": {
+    "@dnd-block-tree/core": "^2.0.0",
     "@dnd-kit/dom": "^0.3.0",
     "@dnd-kit/svelte": "^0.3.0",
     "svelte": "^5.29.0"

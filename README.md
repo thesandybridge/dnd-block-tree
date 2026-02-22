@@ -21,7 +21,7 @@ Choose the adapter for your framework, or use `@dnd-block-tree/core` directly fo
 ### React
 
 ```bash
-npm install @dnd-block-tree/react @dnd-kit/core @dnd-kit/utilities
+npm install @dnd-block-tree/core @dnd-block-tree/react @dnd-kit/core @dnd-kit/utilities
 ```
 
 Requires **React 18+** and **@dnd-kit/core 6+**.
@@ -29,7 +29,7 @@ Requires **React 18+** and **@dnd-kit/core 6+**.
 ### Svelte 5
 
 ```bash
-npm install @dnd-block-tree/svelte @dnd-kit/svelte @dnd-kit/dom svelte
+npm install @dnd-block-tree/core @dnd-block-tree/svelte @dnd-kit/svelte @dnd-kit/dom svelte
 ```
 
 Requires **Svelte 5.29+**, **@dnd-kit/svelte 0.3+**, and **@dnd-kit/dom 0.3+**.
@@ -37,10 +37,10 @@ Requires **Svelte 5.29+**, **@dnd-kit/svelte 0.3+**, and **@dnd-kit/dom 0.3+**.
 ### Vanilla JS/TS
 
 ```bash
-npm install @dnd-block-tree/vanilla
+npm install @dnd-block-tree/core @dnd-block-tree/vanilla
 ```
 
-Only dependency is `@dnd-block-tree/core`. No framework peer dependencies.
+No framework peer dependencies.
 
 ## Quick Start
 

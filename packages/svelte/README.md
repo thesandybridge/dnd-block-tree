@@ -7,10 +7,10 @@ Svelte 5 adapter for [dnd-block-tree](https://github.com/thesandybridge/dnd-bloc
 ## Installation
 
 ```bash
-npm install @dnd-block-tree/svelte @dnd-kit/svelte @dnd-kit/dom svelte
+npm install @dnd-block-tree/core @dnd-block-tree/svelte @dnd-kit/svelte @dnd-kit/dom svelte
 ```
 
-Requires **Svelte 5.29+**, **@dnd-kit/svelte 0.3+**, and **@dnd-kit/dom 0.3+**.
+Requires **@dnd-block-tree/core 2+**, **Svelte 5.29+**, **@dnd-kit/svelte 0.3+**, and **@dnd-kit/dom 0.3+**.
 
 ## What's Included
 
