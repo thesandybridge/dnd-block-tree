@@ -1,6 +1,5 @@
 # dnd-block-tree
 
-[![npm version](https://img.shields.io/npm/v/dnd-block-tree.svg)](https://www.npmjs.com/package/dnd-block-tree)
 [![CI](https://github.com/thesandybridge/dnd-block-tree/actions/workflows/ci.yml/badge.svg)](https://github.com/thesandybridge/dnd-block-tree/actions/workflows/ci.yml)
 [![demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://blocktree.sandybridge.io)
 
@@ -8,12 +7,12 @@ A type-safe library for building hierarchical drag-and-drop interfaces. The fram
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| [`@dnd-block-tree/core`](./packages/core) | Framework-agnostic core — types, collision detection, reducers, tree factory, utilities. Zero dependencies. |
-| [`@dnd-block-tree/react`](./packages/react) | React adapter — components, hooks, @dnd-kit/core integration. |
-| [`@dnd-block-tree/svelte`](./packages/svelte) | Svelte 5 adapter — components, runes-based state, @dnd-kit/svelte integration. |
-| [`@dnd-block-tree/vanilla`](./packages/vanilla) | Vanilla JS/TS adapter — headless controller + optional default renderer. Zero framework deps. |
+| Package | Version | Description |
+|---------|---------|-------------|
+| [`@dnd-block-tree/core`](./packages/core) | [![npm](https://img.shields.io/npm/v/@dnd-block-tree/core.svg)](https://www.npmjs.com/package/@dnd-block-tree/core) | Framework-agnostic core — types, collision detection, reducers, tree factory, utilities. Zero dependencies. |
+| [`@dnd-block-tree/react`](./packages/react) | [![npm](https://img.shields.io/npm/v/@dnd-block-tree/react.svg)](https://www.npmjs.com/package/@dnd-block-tree/react) | React adapter — components, hooks, @dnd-kit/core integration. |
+| [`@dnd-block-tree/svelte`](./packages/svelte) | [![npm](https://img.shields.io/npm/v/@dnd-block-tree/svelte.svg)](https://www.npmjs.com/package/@dnd-block-tree/svelte) | Svelte 5 adapter — components, runes-based state, @dnd-kit/svelte integration. |
+| [`@dnd-block-tree/vanilla`](./packages/vanilla) | [![npm](https://img.shields.io/npm/v/@dnd-block-tree/vanilla.svg)](https://www.npmjs.com/package/@dnd-block-tree/vanilla) | Vanilla JS/TS adapter — headless controller + optional default renderer. Zero framework deps. |
 
 Choose the adapter for your framework, or use `@dnd-block-tree/core` directly for headless tree operations (server-side manipulation, testing, custom integrations).
 
