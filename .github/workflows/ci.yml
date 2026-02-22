@@ -23,7 +23,7 @@ jobs:
       - name: Install dependencies
         run: npm install
         env:
-          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       - name: Build
         run: npm run lib:build
