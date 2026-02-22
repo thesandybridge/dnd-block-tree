@@ -311,6 +311,7 @@ export function ProductivityTree() {
         events={devToolsEvents}
         onClearEvents={clearEvents}
         getLabel={getBlockLabel}
+        forceMount
       />
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1 p-1 bg-muted rounded-lg">

@@ -112,6 +112,7 @@ interface BlockTreeDevToolsProps<T extends BaseBlock = BaseBlock> {
   position?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right'
   buttonStyle?: React.CSSProperties
   panelStyle?: React.CSSProperties
+  forceMount?: boolean
 }
 ```
 
@@ -126,6 +127,7 @@ interface BlockTreeDevToolsProps<T extends BaseBlock = BaseBlock> {
 | `position` | `string` | `'bottom-left'` | Initial corner for the trigger button (overridden by `localStorage` if the user has dragged it) |
 | `buttonStyle` | `CSSProperties` | — | Custom styles for the trigger button |
 | `panelStyle` | `CSSProperties` | — | Custom styles for the floating card |
+| `forceMount` | `boolean` | `false` | Force render in production. DevTools renders nothing when `NODE_ENV=production` unless this is `true`. |
 
 ### `useDevToolsCallbacks`
 
@@ -162,12 +164,12 @@ const { callbacks, events, clearEvents } = useDevToolsCallbacks()
 
 <CalloutCard title="Production builds">
 
-DevTools adds minimal overhead but is intended for development. You can conditionally render it:
+DevTools automatically renders nothing when `NODE_ENV` is `"production"`. No conditional wrappers needed — just leave the component in your tree and it will be invisible in production builds.
+
+To force it on in production (e.g. for a demo site), pass `forceMount`:
 
 ```tsx
-{process.env.NODE_ENV === 'development' && (
-  <BlockTreeDevTools blocks={blocks} events={events} onClearEvents={clearEvents} />
-)}
+<BlockTreeDevTools blocks={blocks} events={events} onClearEvents={clearEvents} forceMount />
 ```
 
 </CalloutCard>

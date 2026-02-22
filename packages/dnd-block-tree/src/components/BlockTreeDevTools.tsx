@@ -38,6 +38,8 @@ export interface BlockTreeDevToolsProps<T extends BaseBlock = BaseBlock> {
   buttonStyle?: React.CSSProperties
   /** Custom inline styles for the card panel */
   panelStyle?: React.CSSProperties
+  /** Force mount in production (default: false). DevTools renders nothing in production unless this is true. */
+  forceMount?: boolean
 }
 
 // ============================================================================
@@ -248,16 +250,32 @@ function savePosition(corner: Corner) {
 function computeCardOrigin(corner: Corner, width: number, height: number): { x: number; y: number } {
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1024
   const vh = typeof window !== 'undefined' ? window.innerHeight : 768
+  // Compute ideal position, then clamp to viewport
+  let x: number
+  let y: number
   switch (corner) {
     case 'bottom-right':
-      return { x: Math.max(0, vw - BTN_MARGIN - width), y: Math.max(0, vh - BTN_MARGIN - height - BTN_SIZE - 8) }
+      x = vw - BTN_MARGIN - width
+      y = vh - BTN_MARGIN - height - BTN_SIZE - 8
+      break
     case 'top-left':
-      return { x: BTN_MARGIN, y: BTN_MARGIN + BTN_SIZE + 8 }
+      x = BTN_MARGIN
+      y = BTN_MARGIN + BTN_SIZE + 8
+      break
     case 'top-right':
-      return { x: Math.max(0, vw - BTN_MARGIN - width), y: BTN_MARGIN + BTN_SIZE + 8 }
+      x = vw - BTN_MARGIN - width
+      y = BTN_MARGIN + BTN_SIZE + 8
+      break
     case 'bottom-left':
     default:
-      return { x: BTN_MARGIN, y: Math.max(0, vh - BTN_MARGIN - height - BTN_SIZE - 8) }
+      x = BTN_MARGIN
+      y = vh - BTN_MARGIN - height - BTN_SIZE - 8
+      break
+  }
+  // Clamp to viewport bounds
+  return {
+    x: Math.max(0, Math.min(x, vw - width)),
+    y: Math.max(0, Math.min(y, vh - height)),
   }
 }
 
@@ -275,7 +293,12 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
   position = 'bottom-left',
   buttonStyle,
   panelStyle,
+  forceMount = false,
 }: BlockTreeDevToolsProps<T>) {
+  // Don't render in production unless explicitly forced
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production' && !forceMount) {
+    return null
+  }
   const [isOpen, setIsOpen] = useState(initialOpen)
   const [showDiff, setShowDiff] = useState(false)
   const [cardPos, setCardPos] = useState<{ x: number; y: number } | null>(null)
@@ -392,17 +415,28 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
     return { added, moved }
   }, [diffTree])
 
-  // Auto-widen/shrink when toggling diff
+  // Auto-widen/shrink when toggling diff, with boundary clamping
   useEffect(() => {
     setCardSize(prev => {
       const targetW = showDiff ? DEFAULT_WIDTH + DIFF_EXTRA_WIDTH : DEFAULT_WIDTH
       const wasDefault = Math.abs(prev.w - DEFAULT_WIDTH) < 20
       const wasExpanded = Math.abs(prev.w - (DEFAULT_WIDTH + DIFF_EXTRA_WIDTH)) < 20
+      let newW = prev.w
       if (showDiff && (wasDefault || prev.w < targetW)) {
-        return { ...prev, w: targetW }
+        newW = targetW
+      } else if (!showDiff && wasExpanded) {
+        newW = DEFAULT_WIDTH
       }
-      if (!showDiff && wasExpanded) {
-        return { ...prev, w: DEFAULT_WIDTH }
+      if (newW !== prev.w) {
+        // Clamp card position so it doesn't go off-screen
+        setCardPos(cp => {
+          if (!cp) return cp
+          const vw = typeof window !== 'undefined' ? window.innerWidth : 1024
+          const maxX = Math.max(0, vw - newW)
+          if (cp.x > maxX) return { ...cp, x: maxX }
+          return cp
+        })
+        return { ...prev, w: newW }
       }
       return prev
     })

@@ -10,6 +10,8 @@
 - **Tooltips throughout** — Hover any stat row, section heading, or event badge to see what it means.
 - **Trigger button tooltip** — Hovering the floating button shows "dnd-block-tree DevTools" when the panel is closed.
 - **Draggable trigger button** — Drag the trigger button to any viewport corner. On release it snaps to the nearest quadrant with an eased CSS transition. The chosen corner is persisted in `localStorage` (`dnd-devtools-position`) and restored on mount. The `position` prop serves as the initial default when no stored preference exists.
+- **Boundary-aware card positioning** — The floating card clamps to viewport bounds when opening and when toggling the diff column. Prevents the panel from extending off-screen on any edge.
+- **Dev-only by default** — `BlockTreeDevTools` renders nothing when `NODE_ENV` is `"production"`. Pass `forceMount` to override (e.g. for demo sites).
 
 ### New Props
 
@@ -18,6 +20,7 @@
 - `position?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right'` — Corner for the trigger button
 - `buttonStyle?: CSSProperties` — Custom styles for the trigger button
 - `panelStyle?: CSSProperties` — Custom styles for the floating card
+- `forceMount?: boolean` — Force render in production (default: `false`)
 
 ### Breaking Changes
 
