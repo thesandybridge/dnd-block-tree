@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.0] - 2026-02-22
+
+### Build
+
+- Make `@dnd-block-tree/core` a peerDependency in react, svelte, and vanilla adapters. Consumers now install core explicitly alongside their chosen adapter, avoiding duplicate copies and giving control over the core version.
+
+### Docs
+
+- Update installation instructions in all READMEs to include `@dnd-block-tree/core`
+- Add per-package npm version badges to root README
+
 ## [2.1.1] - 2026-02-22
 
 ### Tests
