@@ -4,7 +4,7 @@
 [![CI](https://github.com/thesandybridge/dnd-block-tree/actions/workflows/ci.yml/badge.svg)](https://github.com/thesandybridge/dnd-block-tree/actions/workflows/ci.yml)
 [![demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://blocktree.sandybridge.io)
 
-A headless React library for building hierarchical drag-and-drop interfaces. Bring your own components, we handle the complexity.
+A type-safe library for building hierarchical drag-and-drop interfaces. The framework-agnostic core (`@dnd-block-tree/core`) provides tree logic, reducers, and utilities with zero dependencies. The React adapter adds components, hooks, and @dnd-kit integration on top.
 
 ## Packages
 
@@ -62,6 +62,7 @@ function App() {
 
 ## Features
 
+- **Framework-Agnostic Core** — zero-dependency headless core with tree factory, reducers, and utilities ([docs](https://blocktree.sandybridge.io/docs/core))
 - **Stable Drop Zones** — zones render from original positions, not preview state
 - **Ghost Preview** — in-flow semi-transparent preview with accurate layout
 - **Snapshotted Collision** — frozen zone rects prevent layout-shift feedback loops
