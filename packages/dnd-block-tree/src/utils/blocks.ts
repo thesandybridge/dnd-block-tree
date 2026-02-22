@@ -141,6 +141,11 @@ export function reparentBlockIndex<T extends BaseBlock>(
   // Cannot drop on itself
   if (dragged.id === zoneTargetId) return state
 
+  // Cannot move a block into its own descendants
+  if (newParentId !== null && getDescendantIds(state, dragged.id).has(newParentId)) {
+    return state
+  }
+
   // Compute target insert index (before any mutation) for no-op detection
   const oldList = byParent.get(oldParentId) ?? []
   const currentIndexInOldParent = oldList.indexOf(dragged.id)
@@ -218,7 +223,10 @@ export function getBlockDepth<T extends BaseBlock>(
 ): number {
   let depth = 0
   let current: string | null = blockId
+  const visited = new Set<string>()
   while (current !== null) {
+    if (visited.has(current)) break
+    visited.add(current)
     depth++
     const block = index.byId.get(current)
     current = block?.parentId ?? null
@@ -232,13 +240,16 @@ export function getBlockDepth<T extends BaseBlock>(
  */
 export function getSubtreeDepth<T extends BaseBlock>(
   index: BlockIndex<T>,
-  blockId: string
+  blockId: string,
+  visited = new Set<string>()
 ): number {
+  if (visited.has(blockId)) return 0
+  visited.add(blockId)
   const children = index.byParent.get(blockId) ?? []
   if (children.length === 0) return 1
   let max = 0
   for (const childId of children) {
-    max = Math.max(max, getSubtreeDepth(index, childId))
+    max = Math.max(max, getSubtreeDepth(index, childId, visited))
   }
   return 1 + max
 }
@@ -290,6 +301,66 @@ export function reparentMultipleBlocks<T extends BaseBlock>(
   }
 
   return result
+}
+
+/**
+ * Result of validating a block tree
+ */
+export interface TreeValidationResult {
+  valid: boolean
+  issues: string[]
+}
+
+/**
+ * Validate a block tree index for structural integrity.
+ * Checks for cycles, orphans (parentId references non-existent block),
+ * and stale refs (byParent lists IDs not present in byId).
+ *
+ * Opt-in utility — not called automatically.
+ */
+export function validateBlockTree<T extends BaseBlock>(
+  index: BlockIndex<T>
+): TreeValidationResult {
+  const issues: string[] = []
+
+  // Check for cycles: walk parentId chain with visited set
+  for (const [id] of index.byId) {
+    const visited = new Set<string>()
+    let current: string | null = id
+    while (current !== null) {
+      if (visited.has(current)) {
+        issues.push(`Cycle detected: block "${id}" has a circular parentId chain`)
+        break
+      }
+      visited.add(current)
+      const block = index.byId.get(current)
+      current = block?.parentId ?? null
+    }
+  }
+
+  // Check for orphans: parentId points to non-existent ID
+  for (const [id, block] of index.byId) {
+    if (block.parentId !== null && !index.byId.has(block.parentId)) {
+      issues.push(`Orphan: block "${id}" references non-existent parent "${block.parentId}"`)
+    }
+  }
+
+  // Check for stale refs: byParent lists contain IDs not in byId
+  for (const [parentId, childIds] of index.byParent) {
+    for (const childId of childIds) {
+      if (!index.byId.has(childId)) {
+        issues.push(`Stale ref: byParent key "${parentId}" lists non-existent block "${childId}"`)
+      }
+    }
+  }
+
+  if (issues.length > 0) {
+    for (const issue of issues) {
+      console.warn(`[dnd-block-tree] ${issue}`)
+    }
+  }
+
+  return { valid: issues.length === 0, issues }
 }
 
 /**

@@ -118,7 +118,12 @@ function computeInitialExpanded<T extends BaseBlock>(
   initialExpanded: string[] | 'all' | 'none' | undefined
 ): Record<string, boolean> {
   if (initialExpanded === 'none') {
-    return {}
+    const expandedMap: Record<string, boolean> = {}
+    const containers = blocks.filter(b => containerTypes.includes(b.type))
+    for (const container of containers) {
+      expandedMap[container.id] = false
+    }
+    return expandedMap
   }
 
   const expandedMap: Record<string, boolean> = {}
@@ -278,16 +283,19 @@ export function BlockTree<
   ).current
 
   // Use original blocks for zones (stable during drag)
-  const originalIndex = computeNormalizedIndex(blocks, orderingStrategy)
+  const originalIndex = useMemo(
+    () => computeNormalizedIndex(blocks, orderingStrategy),
+    [blocks, orderingStrategy]
+  )
 
   // Blocks by parent for rendering - always use original for stable zones
-  const blocksByParent = new Map<string | null, T[]>()
-  for (const [parentId, ids] of originalIndex.byParent.entries()) {
-    blocksByParent.set(
-      parentId,
-      ids.map(id => originalIndex.byId.get(id)!).filter(Boolean)
-    )
-  }
+  const blocksByParent = useMemo(() => {
+    const map = new Map<string | null, T[]>()
+    for (const [parentId, ids] of originalIndex.byParent.entries()) {
+      map.set(parentId, ids.map(id => originalIndex.byId.get(id)!).filter(Boolean))
+    }
+    return map
+  }, [originalIndex])
 
   // --- Keyboard navigation ---
   const focusedIdRef = useRef<string | null>(null)

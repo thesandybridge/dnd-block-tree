@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import {
   cloneMap,
   cloneParentMap,
@@ -8,6 +8,9 @@ import {
   reparentMultipleBlocks,
   getDescendantIds,
   deleteBlockAndDescendants,
+  getBlockDepth,
+  getSubtreeDepth,
+  validateBlockTree,
 } from './blocks'
 import type { BaseBlock } from '../core/types'
 import { generateNKeysBetween, compareFractionalKeys } from './fractional'
@@ -627,5 +630,191 @@ describe('reparentMultipleBlocks', () => {
     const keyA = String(result.byId.get('a')!.order)
     const keyC = String(result.byId.get('c')!.order)
     expect(compareFractionalKeys(keyA, keyC)).toBe(-1)
+  })
+})
+
+describe('getBlockDepth', () => {
+  it('root block has depth 1, nested block has depth 2', () => {
+    const blocks: TestBlock[] = [
+      createBlock('1', 'container', null, 0),
+      createBlock('2', 'item', '1', 0),
+    ]
+    const index = computeNormalizedIndex(blocks)
+
+    expect(getBlockDepth(index, '1')).toBe(1)
+    expect(getBlockDepth(index, '2')).toBe(2)
+  })
+
+  it('circular A->B->A terminates without infinite loop', () => {
+    const byId = new Map<string, TestBlock>([
+      ['a', createBlock('a', 'item', 'b', 0)],
+      ['b', createBlock('b', 'item', 'a', 0)],
+    ])
+    const byParent = new Map<string | null, string[]>([
+      ['a', ['b']],
+      ['b', ['a']],
+    ])
+    const index = { byId, byParent }
+
+    // Should not hang; the visited set breaks the cycle
+    const depthA = getBlockDepth(index, 'a')
+    const depthB = getBlockDepth(index, 'b')
+    expect(depthA).toBeGreaterThan(0)
+    expect(depthB).toBeGreaterThan(0)
+  })
+})
+
+describe('getSubtreeDepth', () => {
+  it('leaf block returns 1', () => {
+    const blocks: TestBlock[] = [
+      createBlock('1', 'container', null, 0),
+      createBlock('2', 'item', '1', 0),
+    ]
+    const index = computeNormalizedIndex(blocks)
+
+    expect(getSubtreeDepth(index, '2')).toBe(1)
+  })
+
+  it('normal tree returns correct depth', () => {
+    const blocks: TestBlock[] = [
+      createBlock('1', 'container', null, 0),
+      createBlock('2', 'container', '1', 0),
+      createBlock('3', 'item', '2', 0),
+    ]
+    const index = computeNormalizedIndex(blocks)
+
+    // '1' -> '2' -> '3' = depth 3
+    expect(getSubtreeDepth(index, '1')).toBe(3)
+    // '2' -> '3' = depth 2
+    expect(getSubtreeDepth(index, '2')).toBe(2)
+  })
+
+  it('circular byParent terminates without infinite loop', () => {
+    const byId = new Map<string, TestBlock>([
+      ['a', createBlock('a', 'item', 'b', 0)],
+      ['b', createBlock('b', 'item', 'a', 0)],
+    ])
+    const byParent = new Map<string | null, string[]>([
+      ['a', ['b']],
+      ['b', ['a']],
+    ])
+    const index = { byId, byParent }
+
+    // Should not hang; the visited set breaks the cycle
+    const depth = getSubtreeDepth(index, 'a')
+    expect(depth).toBeGreaterThan(0)
+  })
+})
+
+describe('reparentBlockIndex -- descendant rejection', () => {
+  it('rejects move of container into its own child', () => {
+    const blocks: TestBlock[] = [
+      createBlock('1', 'container', null, 0),
+      createBlock('2', 'container', '1', 0),
+      createBlock('3', 'item', '2', 0),
+    ]
+    const index = computeNormalizedIndex(blocks)
+
+    const result = reparentBlockIndex(index, '1', 'into-2', ['container'])
+
+    expect(result).toBe(index)
+  })
+
+  it('rejects move of container into its own grandchild', () => {
+    const blocks: TestBlock[] = [
+      createBlock('1', 'container', null, 0),
+      createBlock('2', 'container', '1', 0),
+      createBlock('3', 'container', '2', 0),
+    ]
+    const index = computeNormalizedIndex(blocks)
+
+    const result = reparentBlockIndex(index, '1', 'into-3', ['container'])
+
+    expect(result).toBe(index)
+  })
+
+  it('allows move of container into non-descendant', () => {
+    const blocks: TestBlock[] = [
+      createBlock('1', 'container', null, 0),
+      createBlock('2', 'container', '1', 0),
+      createBlock('3', 'container', null, 1),
+    ]
+    const index = computeNormalizedIndex(blocks)
+
+    const result = reparentBlockIndex(index, '1', 'into-3', ['container'])
+
+    expect(result).not.toBe(index)
+    expect(result.byId.get('1')!.parentId).toBe('3')
+    expect(result.byParent.get('3')).toContain('1')
+  })
+})
+
+describe('validateBlockTree', () => {
+  it('valid tree returns { valid: true, issues: [] }', () => {
+    const blocks: TestBlock[] = [
+      createBlock('1', 'container', null, 0),
+      createBlock('2', 'item', '1', 0),
+      createBlock('3', 'item', null, 1),
+    ]
+    const index = computeNormalizedIndex(blocks)
+
+    const result = validateBlockTree(index)
+
+    expect(result.valid).toBe(true)
+    expect(result.issues).toEqual([])
+  })
+
+  it('detects orphans (parentId references non-existent block)', () => {
+    const byId = new Map<string, TestBlock>([
+      ['1', createBlock('1', 'item', 'missing', 0)],
+    ])
+    const byParent = new Map<string | null, string[]>([
+      ['missing', ['1']],
+    ])
+    const index = { byId, byParent }
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = validateBlockTree(index)
+    warnSpy.mockRestore()
+
+    expect(result.valid).toBe(false)
+    expect(result.issues.some(i => i.includes('Orphan'))).toBe(true)
+  })
+
+  it('detects cycles (A.parentId = B, B.parentId = A)', () => {
+    const byId = new Map<string, TestBlock>([
+      ['a', createBlock('a', 'item', 'b', 0)],
+      ['b', createBlock('b', 'item', 'a', 0)],
+    ])
+    const byParent = new Map<string | null, string[]>([
+      ['a', ['b']],
+      ['b', ['a']],
+    ])
+    const index = { byId, byParent }
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = validateBlockTree(index)
+    warnSpy.mockRestore()
+
+    expect(result.valid).toBe(false)
+    expect(result.issues.some(i => i.includes('Cycle'))).toBe(true)
+  })
+
+  it('detects stale refs (byParent lists ID not in byId)', () => {
+    const byId = new Map<string, TestBlock>([
+      ['1', createBlock('1', 'container', null, 0)],
+    ])
+    const byParent = new Map<string | null, string[]>([
+      [null, ['1']],
+      ['1', ['ghost']],
+    ])
+    const index = { byId, byParent }
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = validateBlockTree(index)
+    warnSpy.mockRestore()
+
+    expect(result.valid).toBe(false)
+    expect(result.issues.some(i => i.includes('Stale ref'))).toBe(true)
   })
 })

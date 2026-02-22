@@ -40,6 +40,8 @@ export type {
   InternalRenderers,
 } from './core/types'
 
+export type { TreeValidationResult } from './utils/blocks'
+
 export { getDropZoneType, extractBlockId } from './core/types'
 
 // Collision detection
@@ -88,6 +90,7 @@ export {
   getBlockDepth,
   getSubtreeDepth,
   reparentMultipleBlocks,
+  validateBlockTree,
 } from './utils/blocks'
 
 export { extractUUID, debounce, generateId, triggerHaptic } from './utils/helper'

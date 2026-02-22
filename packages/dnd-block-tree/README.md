@@ -513,7 +513,7 @@ Enable accessible tree navigation with the `keyboardNavigation` prop:
 | Home | Focus first block |
 | End | Focus last block |
 
-Blocks receive `data-block-id` and `tabIndex` attributes for focus management, and the tree root gets `role="tree"`.
+Blocks receive `data-block-id` and `tabIndex` attributes for focus management, and the tree root gets `role="tree"`. Each block element includes WAI-ARIA TreeView attributes: `aria-level`, `aria-posinset`, `aria-setsize`, `aria-expanded` (containers only), and `aria-selected`.
 
 ## Multi-Select Drag
 
@@ -685,6 +685,7 @@ import {
   deleteBlockAndDescendants,  // Remove a block and all its descendants from index
   getBlockDepth,              // Compute depth of a block (root = 1)
   getSubtreeDepth,            // Max depth of a subtree (leaf = 1)
+  validateBlockTree,          // Validate tree for cycles, orphans, stale refs
 
   // Serialization
   flatToNested,               // Convert flat block array to nested tree

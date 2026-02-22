@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.1.0
+
+### Robustness
+
+- **Cycle detection** — `getBlockDepth()` and `getSubtreeDepth()` now detect circular parentId chains and terminate instead of looping infinitely.
+- **Descendant move rejection** — `reparentBlockIndex()` rejects moves that would place a block inside its own descendants, preventing corrupted tree state.
+- **`validateBlockTree()` utility** — New opt-in validation function checks a `BlockIndex` for cycles, orphans (parentId references non-existent block), and stale refs (byParent lists IDs not in byId). Returns `{ valid, issues }` and warns per issue. New `TreeValidationResult` type exported.
+
+### Performance
+
+- **Memoized `originalIndex`** — `computeNormalizedIndex` result in `BlockTree` is now wrapped in `useMemo`, avoiding recomputation on every render when `blocks` and `orderingStrategy` haven't changed.
+- **Memoized `blocksByParent`** — The parent-to-blocks map is now derived from `originalIndex` via `useMemo` instead of being rebuilt each render.
+- **`TreeRenderer` memoized** — Wrapped with `React.memo` to skip re-renders when props are referentially stable.
+
+### Accessibility
+
+- **WAI-ARIA TreeView attributes** — Each block element now includes `aria-level`, `aria-posinset`, `aria-setsize`, `aria-expanded` (containers only), and `aria-selected`, conforming to the WAI-ARIA TreeView pattern.
+
+### Type Safety
+
+- **Typed collision data** — Replaced all `as unknown as` and `as { value: number }` casts in `collision.ts` with a `WeightedCollisionData` interface and typed accessor functions (`collisionValue`, `collisionLeft`).
+
+### Fixes
+
+- **`initialExpanded="none"` now works correctly** — Previously, containers defaulted to expanded because the expanded map was empty. Now explicitly sets all containers to `false`.
+
+### Tests
+
+- 38 new tests across 6 files (161 total):
+  - `blocks.test.ts` — cycle detection, descendant move rejection, `validateBlockTree`
+  - `TreeRenderer.test.tsx` — rendering, expandedMap, all ARIA attributes
+  - `DropZone.test.tsx` — data-zone-id, self-drop hiding
+  - `BlockTree.test.tsx` — rendering, `role="tree"`, `initialExpanded="none"`
+  - `useBlockHistory.test.tsx` — set/undo/redo, maxSteps, no-ops
+  - `useVirtualTree.test.tsx` — totalHeight, visibleRange, overscan, offsetY
+
 ## 1.0.0
 
 Stable release. All roadmap items complete.

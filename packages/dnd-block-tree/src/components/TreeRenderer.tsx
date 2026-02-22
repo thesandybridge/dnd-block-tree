@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, memo, type ReactNode } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import type { BaseBlock, InternalRenderers, ContainerRendererProps, CanDragFn, AnimationConfig } from '../core/types'
 import { DropZone } from './DropZone'
@@ -60,6 +60,11 @@ function DraggableBlock<T extends BaseBlock>({
   focusedId,
   isSelected,
   onBlockClick,
+  isContainer,
+  isExpanded,
+  depth,
+  posInSet,
+  setSize,
 }: {
   block: T
   children: (props: { isDragging: boolean }) => ReactNode
@@ -67,6 +72,11 @@ function DraggableBlock<T extends BaseBlock>({
   focusedId?: string | null
   isSelected?: boolean
   onBlockClick?: (blockId: string, event: React.MouseEvent) => void
+  isContainer?: boolean
+  isExpanded?: boolean
+  depth: number
+  posInSet: number
+  setSize: number
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: block.id,
@@ -86,6 +96,11 @@ function DraggableBlock<T extends BaseBlock>({
       data-selected={isSelected || undefined}
       style={{ touchAction: 'none', minWidth: 0, outline: 'none' }}
       role="treeitem"
+      aria-level={depth + 1}
+      aria-posinset={posInSet}
+      aria-setsize={setSize}
+      aria-expanded={isContainer ? isExpanded : undefined}
+      aria-selected={isSelected ?? undefined}
     >
       {children({ isDragging })}
     </div>
@@ -95,7 +110,7 @@ function DraggableBlock<T extends BaseBlock>({
 /**
  * Recursive tree renderer with smart drop zones
  */
-export function TreeRenderer<T extends BaseBlock>({
+function TreeRendererInner<T extends BaseBlock>({
   blocks,
   blocksByParent,
   parentId,
@@ -187,6 +202,11 @@ export function TreeRenderer<T extends BaseBlock>({
               focusedId={focusedId}
               isSelected={selectedIds?.has(block.id)}
               onBlockClick={onBlockClick}
+              isContainer={isContainer}
+              isExpanded={isExpanded}
+              depth={depth}
+              posInSet={originalIndex + 1}
+              setSize={items.length}
             >
               {({ isDragging }) => {
                 if (isContainer) {
@@ -285,3 +305,5 @@ export function TreeRenderer<T extends BaseBlock>({
     </div>
   )
 }
+
+export const TreeRenderer = memo(TreeRendererInner) as typeof TreeRendererInner

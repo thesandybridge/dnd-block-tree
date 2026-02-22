@@ -2,6 +2,20 @@ import type { CollisionDetection, CollisionDescriptor, UniqueIdentifier } from '
 
 export type SnapshotRectsRef = { current: Map<UniqueIdentifier, DOMRect> | null }
 
+interface WeightedCollisionData {
+  droppableContainer: Parameters<CollisionDetection>[0]['droppableContainers'][number]
+  value: number
+  left: number
+}
+
+function collisionValue(d: CollisionDescriptor): number {
+  return (d.data as WeightedCollisionData).value
+}
+
+function collisionLeft(d: CollisionDescriptor): number {
+  return (d.data as WeightedCollisionData).left
+}
+
 /**
  * Compute collision scores for drop zones
  * Considers both vertical distance and horizontal containment
@@ -61,11 +75,7 @@ function computeCollisionScores(
     .filter((c): c is CollisionDescriptor => c !== null)
 
   // Sort by score (lowest wins)
-  candidates.sort((a, b) => {
-    const aValue = (a.data as { value: number }).value
-    const bValue = (b.data as { value: number }).value
-    return aValue - bValue
-  })
+  candidates.sort((a, b) => collisionValue(a) - collisionValue(b))
 
   return candidates
 }
@@ -114,20 +124,20 @@ export function createStickyCollision(
     if (candidates.length === 0) return []
 
     const bestCandidate = candidates[0]
-    const bestScore = (bestCandidate.data as { value: number }).value
+    const bestScore = collisionValue(bestCandidate)
 
     // If we have a current zone, check if it's still valid and competitive
     if (currentZoneId !== null) {
       const currentCandidate = candidates.find(c => c.id === currentZoneId)
 
       if (currentCandidate) {
-        const currentScore = (currentCandidate.data as { value: number }).value
+        const currentScore = collisionValue(currentCandidate)
 
         // Use reduced threshold for cross-depth transitions (different indentation
         // levels). Same-depth zones get full stickiness to prevent flickering;
         // cross-depth zones are responsive so users can move in/out of containers.
-        const currentLeft = (currentCandidate.data as unknown as { left: number }).left
-        const bestLeft = (bestCandidate.data as unknown as { left: number }).left
+        const currentLeft = collisionLeft(currentCandidate)
+        const bestLeft = collisionLeft(bestCandidate)
         const crossDepth = Math.abs(currentLeft - bestLeft) > 20
         const effectiveThreshold = crossDepth ? threshold * 0.25 : threshold
 
@@ -186,11 +196,7 @@ export const closestCenterCollision: CollisionDetection = ({
     })
     .filter((c): c is CollisionDescriptor => c !== null)
 
-  candidates.sort((a, b) => {
-    const aValue = (a.data as { value: number }).value
-    const bValue = (b.data as { value: number }).value
-    return aValue - bValue
-  })
+  candidates.sort((a, b) => collisionValue(a) - collisionValue(b))
 
   return candidates.slice(0, 1)
 }
