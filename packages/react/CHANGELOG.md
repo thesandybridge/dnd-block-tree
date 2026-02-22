@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.1.0 (2026-02-22)
+
+### Features
+
+- **Svelte 5 adapter** (`@dnd-block-tree/svelte`) — components (`BlockTree`, `TreeRenderer`, `DraggableBlock`, `DropZone`, `DragOverlay`, `GhostPreview`, `BlockTreeSSR`, `BlockTreeDevTools`), runes-based state factories (`createBlockState`, `createTreeState`, `createBlockHistory`), and @dnd-kit/svelte collision bridge
+- **Vanilla JS/TS adapter** (`@dnd-block-tree/vanilla`) — headless controller (`createBlockTreeController`) with optional default renderer (`createDefaultRenderer`), built-in pointer/touch/keyboard sensors, collision bridge, undo/redo history, FLIP layout animation, and virtual scroller
+- Publish workflow updated to publish all four packages (core, react, svelte, vanilla)
+
+### Docs
+
+- New doc pages: Svelte Overview, Svelte BlockTree Props, Svelte State Management, Vanilla Overview, Vanilla Controller API, Vanilla Default Renderer
+- Updated root README, Introduction, and Installation & Setup with framework selection guidance and quick starts for React, Svelte 5, and Vanilla JS/TS
+- Added Svelte API and Vanilla API groups to docs sidebar navigation
+- Package READMEs for `@dnd-block-tree/svelte` and `@dnd-block-tree/vanilla`
+
+### Fixes
+
+- Pinned react adapter's core dependency to `^2.0.0` (was `*`)
+
 ## 2.0.0 (2026-02-22)
 
 ### Breaking Changes
