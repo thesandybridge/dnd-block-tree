@@ -26,5 +26,10 @@
     "typescript": "^5",
     "vitest": "^4.0.18"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thesandybridge/dnd-block-tree",
+    "directory": "packages/core"
+  },
   "license": "MIT"
 }
