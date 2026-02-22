@@ -53,8 +53,8 @@ describe('buildCandidates', () => {
 describe('detectCollision', () => {
   it('returns the first result id from the detector', () => {
     const detector: CoreCollisionDetection = vi.fn(() => [
-      { id: 'zone-a', value: 10 },
-      { id: 'zone-b', value: 5 },
+      { id: 'zone-a', value: 10, left: 0 },
+      { id: 'zone-b', value: 5, left: 0 },
     ])
     const rects = new Map<string, Rect>([
       ['zone-a', { top: 0, left: 0, width: 100, height: 50, right: 100, bottom: 50 }],

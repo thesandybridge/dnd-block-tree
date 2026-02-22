@@ -26,7 +26,7 @@ function makeDroppable(id: string, rect: DOMRect) {
 describe('adaptCollisionDetection (svelte)', () => {
   it('converts droppables to candidates and returns mapped results', () => {
     const coreDetector: CoreCollisionDetection = vi.fn(() => [
-      { id: 'zone-1', value: 10 },
+      { id: 'zone-1', value: 10, left: 0 },
     ])
     const detect = adaptCollisionDetection(coreDetector)
     const droppable = makeDroppable('zone-1', makeDOMRect(0, 0, 100, 50))

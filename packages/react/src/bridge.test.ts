@@ -21,7 +21,7 @@ function makeContainer(id: string, rect: { top: number; left: number; width: num
 describe('adaptCollisionDetection', () => {
   it('converts droppable containers to core candidates and calls detector', () => {
     const coreDetector: CoreCollisionDetection = vi.fn(() => [
-      { id: 'zone-1', value: 10 },
+      { id: 'zone-1', value: 10, left: 0 },
     ])
     const detect = adaptCollisionDetection(coreDetector)
     const container = makeContainer('zone-1', { top: 0, left: 0, width: 100, height: 50 })
@@ -84,8 +84,8 @@ describe('adaptCollisionDetection', () => {
 
   it('filters out results that do not match a container', () => {
     const coreDetector: CoreCollisionDetection = vi.fn(() => [
-      { id: 'z1', value: 10 },
-      { id: 'unknown', value: 5 },
+      { id: 'z1', value: 10, left: 0 },
+      { id: 'unknown', value: 5, left: 0 },
     ])
     const detect = adaptCollisionDetection(coreDetector)
     const container = makeContainer('z1', { top: 0, left: 0, width: 100, height: 50 })
@@ -111,8 +111,9 @@ describe('adaptCollisionDetection', () => {
       collisionRect: { top: 0, left: 0, width: 1, height: 1 },
     } as any)
 
-    expect(result[0].data.value).toBe(42)
-    expect(result[0].data.left).toBe(10)
-    expect(result[0].data.droppableContainer).toBe(container)
+    const data = result[0]!.data as unknown as { value: number; left: number; droppableContainer: typeof container }
+    expect(data.value).toBe(42)
+    expect(data.left).toBe(10)
+    expect(data.droppableContainer).toBe(container)
   })
 })
