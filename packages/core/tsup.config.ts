@@ -7,6 +7,5 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  external: ['react', 'react-dom', '@dnd-kit/core', '@dnd-kit/utilities', '@dnd-block-tree/react', '@dnd-block-tree/core'],
   treeshake: true,
 })
