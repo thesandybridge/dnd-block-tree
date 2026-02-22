@@ -4,25 +4,13 @@ The `@dnd-block-tree/vanilla` package provides a vanilla JS/TS adapter with zero
 
 ### Architecture
 
-```
-┌─────────────────────────────────────────────┐
-│  Layer 2: Default Renderer (optional)       │
-│  - Subscribes to controller events          │
-│  - Builds/updates DOM automatically         │
-│  - Sets data attributes for styling         │
-│  - Registers draggables and drop zones      │
-├─────────────────────────────────────────────┤
-│  Layer 1: Headless Controller               │
-│  - Manages all tree state                   │
-│  - Handles drag logic and collision         │
-│  - Drives sensors (pointer, touch, keyboard)│
-│  - Emits events (render, drag, selection)   │
-├─────────────────────────────────────────────┤
-│  @dnd-block-tree/core                       │
-│  - Tree factory, reducers, utilities        │
-│  - Collision detection algorithms           │
-└─────────────────────────────────────────────┘
-```
+The vanilla adapter is built in three layers:
+
+| Layer | Package | Role |
+|-------|---------|------|
+| **Default Renderer** (optional) | `@dnd-block-tree/vanilla` | Subscribes to controller events, builds/updates DOM, sets data attributes, registers draggables and drop zones |
+| **Headless Controller** | `@dnd-block-tree/vanilla` | Manages all tree state, handles drag logic and collision, drives sensors (pointer, touch, keyboard), emits events |
+| **Core** | `@dnd-block-tree/core` | Tree factory, reducers, utilities, collision detection algorithms |
 
 **Layer 1 (Controller)** manages all state without touching the DOM. Use it headless for complete rendering control, or pair it with the default renderer.
 
