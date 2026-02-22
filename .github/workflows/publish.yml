@@ -20,6 +20,8 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        env:
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Typecheck
         run: npm run typecheck
@@ -49,6 +51,8 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+        env:
+          NPM_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
         run: npm run build
