@@ -6,6 +6,20 @@
 
 A headless React library for building hierarchical drag-and-drop interfaces. Bring your own components, we handle the complexity.
 
+## Packages
+
+As of v2.0.0, the library is split into a monorepo with three packages:
+
+| Package | Description |
+|---------|-------------|
+| [`@dnd-block-tree/core`](./packages/core) | Framework-agnostic core — types, collision detection, reducers, tree factory, utilities. Zero dependencies. |
+| [`@dnd-block-tree/react`](./packages/react) | React adapter — components, hooks, @dnd-kit integration. |
+| [`dnd-block-tree`](./packages/dnd-block-tree) | Compatibility wrapper — re-exports everything from `@dnd-block-tree/react`. |
+
+**Existing users**: `import { ... } from 'dnd-block-tree'` continues to work with no code changes.
+
+**New users**: you can import from `dnd-block-tree` for the full API, or use `@dnd-block-tree/core` directly for framework-agnostic tree operations (server-side manipulation, testing, non-React frameworks).
+
 ## Features
 
 - **Stable Drop Zones** - Zones render based on original block positions, not preview state, ensuring consistent drop targets during drag
@@ -746,6 +760,7 @@ Check out the [live demo](https://blocktree.sandybridge.io) to see the library i
 ## Built With
 
 - [dnd-kit](https://dndkit.com/) - Modern drag and drop toolkit for React
+- [Turborepo](https://turbo.build/) - Monorepo build system
 - React 18+ / React 19
 - TypeScript
 

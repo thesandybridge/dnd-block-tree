@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.0.0 (2026-02-22)
+
+### Breaking Changes
+
+- **Monorepo rewrite** — the library is now split into three packages:
+  - `@dnd-block-tree/core` — framework-agnostic pure TypeScript (zero deps, no DOM, no React)
+  - `@dnd-block-tree/react` — React adapter wrapping core + @dnd-kit/core
+  - `dnd-block-tree` — compatibility wrapper re-exporting from `@dnd-block-tree/react`
+- Internal type changes: `UniqueIdentifier` replaced with `string`, collision detection uses framework-agnostic `CoreCollisionDetection` in core (bridged automatically in React)
+- **No migration required** — existing consumers using `import { ... } from 'dnd-block-tree'` need no code changes. The full public API surface is preserved via the compat wrapper.
+
+### Features
+
+- Framework-agnostic core with typed event emitter, reducers, tree factory (`createBlockTree`), and all utility functions
+- `@dnd-block-tree/core` can be used standalone for server-side tree manipulation, testing, or non-React frameworks
+- `adaptCollisionDetection` bridge converts between core's abstract collision types and @dnd-kit's concrete types
+- 239 unit tests for core package covering collision, reducers, event emitter, tree operations, and utilities
+- Turborepo build pipeline for parallel package builds
+
+### Fixes
+
+- DevTools trigger button no longer causes SSR hydration mismatch (position deferred to client-side effect)
+
 ## 1.3.0
 
 ### Features
