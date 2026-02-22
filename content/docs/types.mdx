@@ -6,6 +6,12 @@ All types exported from `dnd-block-tree`. Import any type directly:
 import type { BaseBlock, BlockRenderers, BlockIndex } from 'dnd-block-tree'
 ```
 
+<CalloutCard title="Core vs React Types">
+
+Most types are defined in `@dnd-block-tree/core` and re-exported by the React packages. The renderer types (`BlockRendererProps`, `ContainerRendererProps`, `BlockRenderers`, `InternalRenderers`) use `ReactNode` in `@dnd-block-tree/react` but are generic `TNode` in core. If you're using core directly without React, you can define your own node type for these generics.
+
+</CalloutCard>
+
 ### Core Types
 
 #### BaseBlock

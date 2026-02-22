@@ -43,6 +43,18 @@ A headless, type-safe React library for building hierarchical drag-and-drop inte
   </MiniCard>
 </CardGrid>
 
+### Packages
+
+As of v2.0.0, the library is split into three packages:
+
+| Package | Description |
+|---------|-------------|
+| [`dnd-block-tree`](https://www.npmjs.com/package/dnd-block-tree) | Full React library (re-exports `@dnd-block-tree/react`) |
+| [`@dnd-block-tree/react`](https://www.npmjs.com/package/@dnd-block-tree/react) | React adapter — components, hooks, @dnd-kit integration |
+| [`@dnd-block-tree/core`](https://www.npmjs.com/package/@dnd-block-tree/core) | Framework-agnostic core — types, reducers, tree factory, utilities (zero deps) |
+
+Most users should install `dnd-block-tree`. Use `@dnd-block-tree/core` directly for non-React use cases (server-side manipulation, testing, other frameworks).
+
 ### Quick Start
 
 ```bash

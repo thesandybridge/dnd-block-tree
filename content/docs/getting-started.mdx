@@ -10,7 +10,29 @@ npm install dnd-block-tree @dnd-kit/core @dnd-kit/utilities
 
 Requires **React 18+** and **@dnd-kit/core 6+**.
 
+### Packages
+
+As of v2.0.0, the library is a monorepo with three packages:
+
+| Package | Description |
+|---------|-------------|
+| `dnd-block-tree` | Full React library — re-exports everything from `@dnd-block-tree/react` |
+| `@dnd-block-tree/react` | React adapter — components, hooks, @dnd-kit integration |
+| `@dnd-block-tree/core` | Framework-agnostic core — types, reducers, tree factory, utilities (zero deps) |
+
+**Existing users**: `import { ... } from 'dnd-block-tree'` continues to work with no code changes. The `dnd-block-tree` package re-exports the full API.
+
+**Core-only install** (for non-React use cases like server-side tree manipulation, testing, or other frameworks):
+
+```bash
+npm install @dnd-block-tree/core
+```
+
+No peer dependencies required for core-only usage.
+
 ### Peer Dependencies
+
+When using the React packages (`dnd-block-tree` or `@dnd-block-tree/react`):
 
 | Package | Version | Purpose |
 |---------|---------|---------|

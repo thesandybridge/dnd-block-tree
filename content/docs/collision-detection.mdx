@@ -82,6 +82,29 @@ When switching between zones at different indentation levels (e.g., `end-{contai
 
 The depth change is detected by comparing the `left` edge of the current zone with the best candidate. If they differ by more than 20px, a reduced threshold is applied.
 
+### Core vs dnd-kit Collision Types
+
+The core package (`@dnd-block-tree/core`) defines its own `CoreCollisionDetection` type that is framework-agnostic — it works with plain `Rect` objects and `CollisionCandidate` arrays, without any @dnd-kit dependencies.
+
+The React package (`@dnd-block-tree/react`) uses @dnd-kit's `CollisionDetection` type for its `BlockTree` component. The `adaptCollisionDetection` bridge function converts a `CoreCollisionDetection` into a @dnd-kit `CollisionDetection`:
+
+```typescript
+import { adaptCollisionDetection } from 'dnd-block-tree'
+import type { CoreCollisionDetection } from '@dnd-block-tree/core'
+
+const myCoreDetector: CoreCollisionDetection = (pointer, candidates) => {
+  // pointer: { x: number; y: number }
+  // candidates: Array<{ id: string; rect: Rect }>
+  // Return: { id: string } | null
+  return candidates[0] ?? null
+}
+
+// Bridge to @dnd-kit CollisionDetection for use in <BlockTree>
+const dndKitDetector = adaptCollisionDetection(myCoreDetector)
+```
+
+The built-in collision algorithms (`weightedVerticalCollision`, `closestCenterCollision`, `createStickyCollision`) are already bridged automatically when passed to `BlockTree`.
+
 ### Custom Collision Detection
 
 You can provide your own collision detection function. It receives the same arguments as `@dnd-kit`'s `CollisionDetection` type:

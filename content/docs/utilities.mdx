@@ -2,7 +2,15 @@
 
 All exported utility functions for tree operations, ID handling, fractional indexing, and more.
 
+<CalloutCard title="Package Provenance">
+
+All utilities below are available from both `dnd-block-tree` and `@dnd-block-tree/react`. Functions marked **core** are also available from `@dnd-block-tree/core` (no React dependency). Functions marked **react** require `@dnd-block-tree/react` or `dnd-block-tree`.
+
+</CalloutCard>
+
 ### Tree Operations
+
+All tree operations are **core** exports.
 
 #### computeNormalizedIndex
 
@@ -34,7 +42,7 @@ Move a single block to a new position in the index.
 ```typescript
 function reparentBlockIndex<T extends BaseBlock>(
   state: BlockIndex<T>,
-  activeId: UniqueIdentifier,
+  activeId: string,
   targetZone: string,
   containerTypes?: readonly string[],
   orderingStrategy?: OrderingStrategy,
@@ -101,7 +109,88 @@ function getSubtreeDepth<T extends BaseBlock>(
 ): number
 ```
 
+#### validateBlockTree
+
+Validate a tree for cycles, orphans, and stale references. Returns `{ valid: boolean; issues: string[] }`.
+
+```typescript
+function validateBlockTree<T extends BaseBlock>(
+  index: BlockIndex<T>
+): TreeValidationResult
+```
+
+### Tree Factory
+
+**Core** export. Create a stateful tree instance with event-driven updates — useful for server-side manipulation, testing, or non-React frameworks.
+
+#### createBlockTree
+
+```typescript
+function createBlockTree<T extends BaseBlock>(
+  options?: BlockTreeOptions<T>
+): BlockTreeInstance<T>
+```
+
+The returned `BlockTreeInstance` provides methods for reading state (`getBlocks`, `getBlock`, `getChildren`), mutations (`addBlock`, `deleteBlock`, `moveBlock`, `setBlocks`), expand/collapse (`toggleExpand`, `setExpandAll`), drag lifecycle (`startDrag`, `updateDrag`, `endDrag`), and typed event subscription (`on`, `off`).
+
+See [@dnd-block-tree/core README](https://www.npmjs.com/package/@dnd-block-tree/core) for a usage example.
+
+### Reducers
+
+**Core** exports. Pure reducer functions for immutable state management.
+
+#### blockReducer
+
+Handles block add/delete/move/insert operations on a `BlockIndex`.
+
+```typescript
+function blockReducer<T extends BaseBlock>(
+  state: BlockIndex<T>,
+  action: BlockAction<T>,
+  containerTypes?: readonly string[],
+  orderingStrategy?: OrderingStrategy,
+  maxDepth?: number
+): BlockIndex<T>
+```
+
+#### expandReducer
+
+Manages expand/collapse state for container blocks.
+
+```typescript
+function expandReducer(
+  state: Record<string, boolean>,
+  action: ExpandAction
+): Record<string, boolean>
+```
+
+#### historyReducer
+
+Manages undo/redo history stacks.
+
+```typescript
+function historyReducer<T>(
+  state: HistoryState<T>,
+  action: HistoryAction<T>
+): HistoryState<T>
+```
+
+### Event Emitter
+
+**Core** export. Typed event emitter for subscribe/unsubscribe patterns.
+
+```typescript
+class EventEmitter<T extends Record<string, (...args: any[]) => void>> {
+  on<K extends keyof T>(event: K, handler: T[K]): void
+  off<K extends keyof T>(event: K, handler: T[K]): void
+  emit<K extends keyof T>(event: K, ...args: Parameters<T[K]>): void
+  removeAllListeners(): void
+}
+```
+
 ### Map Utilities
+
+**Core** exports.
 
 #### cloneMap / cloneParentMap
 
@@ -116,15 +205,31 @@ function cloneParentMap(map: Map<string | null, string[]>): Map<string | null, s
 
 #### extractUUID
 
-Extract the block ID from a zone ID string (removes the prefix like `"before-"`, `"into-"`, etc.).
+**Core.** Extract the block ID from a zone ID string (removes the prefix like `"before-"`, `"into-"`, etc.).
 
 ```typescript
 function extractUUID(id: string, pattern?: string): string
 ```
 
+#### extractBlockId
+
+**Core.** Alias for `extractUUID` — extracts the block ID from a zone ID.
+
+```typescript
+function extractBlockId(zoneId: string): string
+```
+
+#### getDropZoneType
+
+**Core.** Parse the zone type from a zone ID string.
+
+```typescript
+function getDropZoneType(zoneId: string): DropZoneType  // 'before' | 'after' | 'into'
+```
+
 #### generateId
 
-Generate a unique ID (timestamp + random).
+**Core.** Generate a unique ID (timestamp + random).
 
 ```typescript
 function generateId(): string
@@ -132,7 +237,7 @@ function generateId(): string
 
 #### triggerHaptic
 
-Trigger device vibration. No-ops if the vibration API is unavailable.
+**React.** Trigger device vibration. No-ops if the vibration API is unavailable.
 
 ```typescript
 function triggerHaptic(durationMs?: number): void  // Default: 10ms
@@ -140,7 +245,7 @@ function triggerHaptic(durationMs?: number): void  // Default: 10ms
 
 #### debounce
 
-Create a debounced function with a `cancel()` method.
+**Core.** Create a debounced function with a `cancel()` method.
 
 ```typescript
 function debounce<Args extends unknown[]>(
@@ -149,9 +254,23 @@ function debounce<Args extends unknown[]>(
 ): ((...args: Args) => void) & { cancel: () => void }
 ```
 
+### Collision Detection Bridge
+
+#### adaptCollisionDetection
+
+**React.** Bridges a core `CoreCollisionDetection` function to @dnd-kit's `CollisionDetection` type. Useful when writing custom collision detectors with the framework-agnostic core API and using them in `<BlockTree>`.
+
+```typescript
+function adaptCollisionDetection(
+  coreDetector: CoreCollisionDetection
+): CollisionDetection
+```
+
+See [Collision Detection](/docs/collision-detection) for details on built-in algorithms and the core vs dnd-kit type distinction.
+
 ### Serialization
 
-See [Serialization](/docs/serialization) for details.
+**Core** exports. See [Serialization](/docs/serialization) for details.
 
 ```typescript
 function flatToNested<T extends BaseBlock>(blocks: T[]): NestedBlock<T>[]
@@ -160,7 +279,7 @@ function nestedToFlat<T extends BaseBlock>(nested: NestedBlock<T>[]): T[]
 
 ### Fractional Indexing
 
-See [Fractional Indexing](/docs/fractional-indexing) for details.
+**Core** exports. See [Fractional Indexing](/docs/fractional-indexing) for details.
 
 ```typescript
 function generateKeyBetween(lo: string | null, hi: string | null): string
@@ -172,20 +291,20 @@ function compareFractionalKeys(a: string, b: string): number
 
 ### Collision Detection
 
-See [Collision Detection](/docs/collision-detection) for details.
+**Core** exports. See [Collision Detection](/docs/collision-detection) for details.
 
 ```typescript
-const weightedVerticalCollision: CollisionDetection
-const closestCenterCollision: CollisionDetection
+const weightedVerticalCollision: CoreCollisionDetection
+const closestCenterCollision: CoreCollisionDetection
 function createStickyCollision(
   threshold?: number,
   snapshotRef?: SnapshotRectsRef
-): CollisionDetection & { reset: () => void }
+): CoreCollisionDetection & { reset: () => void }
 ```
 
 ### Hooks
 
-See individual feature pages for detailed usage.
+**React** exports. See individual feature pages for detailed usage.
 
 ```typescript
 function useBlockHistory<T>(initial: T[], options?): UseBlockHistoryResult<T>
@@ -197,7 +316,7 @@ function getSensorConfig(config?: SensorConfig): { pointer: {...}; touch: {...} 
 
 ### Context Factories
 
-Factory functions for creating typed block and tree state contexts. Used internally by `BlockTree` but exported for advanced use cases (e.g. custom tree implementations).
+**React** exports. Factory functions for creating typed block and tree state contexts. Used internally by `BlockTree` but exported for advanced use cases (e.g. custom tree implementations).
 
 ```typescript
 function createBlockState<T extends BaseBlock>(): {
