@@ -1,26 +1,24 @@
 'use client'
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
-import { BlockTree, useBlockHistory, type BlockRenderers, type OrderingStrategy, generateId, initFractionalOrder } from 'dnd-block-tree'
+import { BlockTree, useBlockHistory, useDevToolsCallbacks, type BlockRenderers, generateId, initFractionalOrder } from 'dnd-block-tree'
 import type { ProductivityBlock } from './types'
 import { CONTAINER_TYPES } from './types'
 import { SectionBlock } from './blocks/SectionBlock'
 import { TaskBlock } from './blocks/TaskBlock'
 import { NoteBlock } from './blocks/NoteBlock'
 import { DiffView } from '../DiffView'
+import { SettingsPanel, type SettingsTab } from '../shared/SettingsPanel'
+import { DragDropTab } from '../shared/settings/DragDropTab'
+import { TreeTab } from '../shared/settings/TreeTab'
+import { AnimationTab } from '../shared/settings/AnimationTab'
+import { SensorsTab } from '../shared/settings/SensorsTab'
+import { DevToolsTab } from '../shared/settings/DevToolsTab'
+import { Toggle } from '../shared/settings/Toggle'
+import { DEFAULT_PRODUCTIVITY_SETTINGS, type ProductivitySettings } from '../shared/settings/types'
 import { Button } from '@thesandybridge/ui/components'
-import { GripVertical, Plus, RotateCcw, Trash2, Settings, ChevronDown, Undo2, Redo2 } from 'lucide-react'
+import { GripVertical, Plus, RotateCcw, Trash2, Undo2, Redo2, GripHorizontal, Trees, Sparkles, Radio, Bug } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useIsMobile } from '@/hooks/use-mobile'
-
-interface FeatureSettings {
-  showDropPreview: boolean
-  activationDistance: number
-  lockCompletedTasks: boolean
-  orderingStrategy: OrderingStrategy
-  maxDepth: number
-  keyboardNavigation: boolean
-}
 
 const INITIAL_BLOCKS: ProductivityBlock[] = [
   { id: '1', type: 'section', title: 'Project Planning', parentId: null, order: 0 },
@@ -97,20 +95,16 @@ export function ProductivityTree() {
   const setBlocks = history.set
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [settings, setSettings] = useState<FeatureSettings>({
-    showDropPreview: true,
-    activationDistance: 8,
-    lockCompletedTasks: false,
-    orderingStrategy: 'integer',
-    maxDepth: 0,
-    keyboardNavigation: false,
-  })
-  const [settingsExpanded, setSettingsExpanded] = useState(false)
-  const isMobile = useIsMobile()
+  const [settings, setSettings] = useState<ProductivitySettings>(DEFAULT_PRODUCTIVITY_SETTINGS)
   const initialBlocksRef = useRef(INITIAL_BLOCKS)
-  // Use ref to avoid stale closures in callbacks
   const settingsRef = useRef(settings)
   settingsRef.current = settings
+
+  const { callbacks: devToolsCallbacks, events: devToolsEvents, clearEvents } = useDevToolsCallbacks<ProductivityBlock>()
+
+  const updateSettings = useCallback((patch: Partial<ProductivitySettings>) => {
+    setSettings(s => ({ ...s, ...patch }))
+  }, [])
 
   const handleSelect = useCallback((id: string) => {
     setSelectedId(id)
@@ -260,6 +254,70 @@ export function ProductivityTree() {
   // maxDepth 0 means unlimited
   const effectiveMaxDepth = settings.maxDepth > 0 ? settings.maxDepth : undefined
 
+  const animationConfig = useMemo(() => (
+    settings.expandDuration > 0
+      ? { expandDuration: settings.expandDuration, easing: settings.easing }
+      : undefined
+  ), [settings.expandDuration, settings.easing])
+
+  const sensorConfig = useMemo(() => ({
+    longPressDelay: settings.longPressDelay,
+    tolerance: settings.tolerance,
+    hapticFeedback: settings.hapticFeedback,
+  }), [settings.longPressDelay, settings.tolerance, settings.hapticFeedback])
+
+  const settingsTabs: SettingsTab[] = useMemo(() => [
+    {
+      id: 'dragdrop',
+      label: 'Drag & Drop',
+      icon: GripHorizontal,
+      content: (
+        <DragDropTab
+          settings={settings}
+          onChange={updateSettings}
+          extra={
+            <Toggle
+              label="Lock Completed Tasks"
+              checked={settings.lockCompletedTasks}
+              onChange={(v) => updateSettings({ lockCompletedTasks: v })}
+            />
+          }
+        />
+      ),
+    },
+    {
+      id: 'tree',
+      label: 'Tree',
+      icon: Trees,
+      content: <TreeTab settings={settings} onChange={updateSettings} />,
+    },
+    {
+      id: 'animation',
+      label: 'Animation',
+      icon: Sparkles,
+      content: <AnimationTab settings={settings} onChange={updateSettings} />,
+    },
+    {
+      id: 'sensors',
+      label: 'Sensors',
+      icon: Radio,
+      content: <SensorsTab settings={settings} onChange={updateSettings} />,
+    },
+    {
+      id: 'devtools',
+      label: 'DevTools',
+      icon: Bug,
+      content: (
+        <DevToolsTab
+          blocks={blocks}
+          containerTypes={CONTAINER_TYPES}
+          events={devToolsEvents}
+          onClearEvents={clearEvents}
+        />
+      ),
+    },
+  ], [settings, updateSettings, blocks, devToolsEvents, clearEvents])
+
   return (
     <div className="space-y-4 w-full max-w-full min-w-0 overflow-hidden">
       <div className="flex flex-wrap items-center gap-2">
@@ -333,138 +391,25 @@ export function ProductivityTree() {
             indentClassName="tree-indent-compact"
             showDropPreview={settings.showDropPreview}
             activationDistance={settings.activationDistance}
+            previewDebounce={settings.previewDebounce}
             orderingStrategy={settings.orderingStrategy}
             canDrag={canDrag}
             maxDepth={effectiveMaxDepth}
             keyboardNavigation={settings.keyboardNavigation}
+            multiSelect={settings.multiSelect}
+            initialExpanded={settings.initialExpanded}
+            animation={animationConfig}
+            sensors={sensorConfig}
+            onDragStart={devToolsCallbacks.onDragStart}
+            onDragEnd={devToolsCallbacks.onDragEnd}
+            onBlockMove={devToolsCallbacks.onBlockMove}
+            onExpandChange={devToolsCallbacks.onExpandChange}
+            onHoverChange={devToolsCallbacks.onHoverChange}
           />
         </div>
 
         <div className="space-y-4">
-          {/* Feature Toggles */}
-          <div className="rounded-xl border border-border/30 bg-card/30 overflow-hidden">
-            <button
-              onClick={() => setSettingsExpanded(!settingsExpanded)}
-              className={cn(
-                "flex items-center justify-between w-full p-4 text-left",
-                "lg:cursor-default",
-                isMobile && "hover:bg-muted/30"
-              )}
-            >
-              <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                <Settings className="h-4 w-4" />
-                Feature Toggles
-              </div>
-              <ChevronDown className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform lg:hidden",
-                settingsExpanded && "rotate-180"
-              )} />
-            </button>
-
-            <div className={cn(
-              "px-4 pb-4 space-y-3",
-              isMobile && !settingsExpanded && "hidden",
-              "lg:block"
-            )}>
-              <label className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
-                <span className="text-sm">Live Drop Preview</span>
-                <input
-                  type="checkbox"
-                  checked={settings.showDropPreview}
-                  onChange={(e) => setSettings(s => ({ ...s, showDropPreview: e.target.checked }))}
-                  className="w-5 h-5"
-                />
-              </label>
-
-              <label className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
-                <span className="text-sm">Lock Completed Tasks</span>
-                <input
-                  type="checkbox"
-                  checked={settings.lockCompletedTasks}
-                  onChange={(e) => setSettings(s => ({ ...s, lockCompletedTasks: e.target.checked }))}
-                  className="w-5 h-5"
-                />
-              </label>
-
-              <label className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer">
-                <span className="text-sm">Keyboard Navigation</span>
-                <input
-                  type="checkbox"
-                  checked={settings.keyboardNavigation}
-                  onChange={(e) => setSettings(s => ({ ...s, keyboardNavigation: e.target.checked }))}
-                  className="w-5 h-5"
-                />
-              </label>
-
-              <div className="p-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm">Ordering Strategy</span>
-                  <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
-                    {settings.orderingStrategy}
-                  </span>
-                </div>
-                <div className="flex rounded-lg overflow-hidden border border-border/50">
-                  {(['integer', 'fractional'] as const).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => setSettings(prev => ({ ...prev, orderingStrategy: s }))}
-                      className={cn(
-                        'flex-1 py-1.5 text-xs font-medium transition-colors',
-                        settings.orderingStrategy === s
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
-                      )}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                  {settings.orderingStrategy === 'integer'
-                    ? 'All siblings reindexed 0, 1, 2… on every move.'
-                    : 'Only moved block gets a new fractional key. Watch order values in the diff view.'}
-                </p>
-              </div>
-
-              <div className="p-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm">Max Depth</span>
-                  <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
-                    {settings.maxDepth === 0 ? 'unlimited' : settings.maxDepth}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={5}
-                  value={settings.maxDepth}
-                  onChange={(e) => setSettings(s => ({ ...s, maxDepth: Number(e.target.value) }))}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  0 = unlimited. 1 = flat list. 2 = one level of nesting.
-                </p>
-              </div>
-
-              <div className="p-2">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm">Activation Distance</span>
-                  <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded">
-                    {settings.activationDistance}px
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={20}
-                  value={settings.activationDistance}
-                  onChange={(e) => setSettings(s => ({ ...s, activationDistance: Number(e.target.value) }))}
-                  className="w-full"
-                />
-              </div>
-            </div>
-          </div>
-
+          <SettingsPanel tabs={settingsTabs} />
           <DiffView blocks={blocks} getLabel={getBlockLabel} />
         </div>
       </div>

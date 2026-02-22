@@ -95,6 +95,10 @@ export {
 
 export { extractUUID, debounce, generateId, triggerHaptic } from './utils/helper'
 
+// DevTools
+export { BlockTreeDevTools, useDevToolsCallbacks } from './components/BlockTreeDevTools'
+export type { BlockTreeDevToolsProps, DevToolsCallbacks, DevToolsEventEntry } from './components/BlockTreeDevTools'
+
 // Serialization
 export { flatToNested, nestedToFlat } from './utils/serialization'
 export type { NestedBlock } from './utils/serialization'
