@@ -210,15 +210,59 @@ function TreeRendererInner<T extends BaseBlock>({
             >
               {({ isDragging }) => {
                 if (isContainer) {
-                  const expandStyle = animation?.expandDuration
-                    ? {
-                        transition: `opacity ${animation.expandDuration}ms ${animation.easing ?? 'ease'}`,
-                        opacity: isExpanded ? 1 : 0,
-                      }
-                    : undefined
+                  const animated = animation?.expandDuration && animation.expandDuration > 0
+                  const easing = animation?.easing ?? 'ease'
+                  const duration = animation?.expandDuration ?? 0
 
-                  const childContent = isExpanded ? (
-                    <div style={expandStyle}>
+                  let childContent: ReactNode
+
+                  if (animated) {
+                    // CSS grid trick: grid-template-rows transitions from 1fr to 0fr
+                    childContent = (
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateRows: isExpanded ? '1fr' : '0fr',
+                          transition: `grid-template-rows ${duration}ms ${easing}`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            overflow: 'hidden',
+                            minHeight: 0,
+                            opacity: isExpanded ? 1 : 0,
+                            transition: `opacity ${duration}ms ${easing}`,
+                          }}
+                        >
+                          <TreeRenderer
+                            blocks={blocks}
+                            blocksByParent={blocksByParent}
+                            parentId={block.id}
+                            activeId={activeId}
+                            expandedMap={expandedMap}
+                            renderers={renderers}
+                            containerTypes={containerTypes}
+                            onHover={onHover}
+                            onToggleExpand={onToggleExpand}
+                            depth={depth + 1}
+                            dropZoneClassName={dropZoneClassName}
+                            dropZoneActiveClassName={dropZoneActiveClassName}
+                            indentClassName={indentClassName}
+                            rootClassName={rootClassName}
+                            canDrag={canDrag}
+                            previewPosition={previewPosition}
+                            draggedBlock={draggedBlock}
+                            focusedId={focusedId}
+                            selectedIds={selectedIds}
+                            onBlockClick={onBlockClick}
+                            animation={animation}
+                            virtualVisibleIds={virtualVisibleIds}
+                          />
+                        </div>
+                      </div>
+                    )
+                  } else {
+                    childContent = isExpanded ? (
                       <TreeRenderer
                         blocks={blocks}
                         blocksByParent={blocksByParent}
@@ -243,8 +287,8 @@ function TreeRendererInner<T extends BaseBlock>({
                         animation={animation}
                         virtualVisibleIds={virtualVisibleIds}
                       />
-                    </div>
-                  ) : null
+                    ) : null
+                  }
 
                   return Renderer({
                     block: block as T & { type: typeof block.type },

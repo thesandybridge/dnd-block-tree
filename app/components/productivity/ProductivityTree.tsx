@@ -16,6 +16,7 @@ import { Toggle } from '../shared/settings/Toggle'
 import { DEFAULT_PRODUCTIVITY_SETTINGS, type ProductivitySettings } from '../shared/settings/types'
 import { Button } from '@thesandybridge/ui/components'
 import { GripVertical, Plus, RotateCcw, Trash2, Undo2, Redo2, GripHorizontal, Trees, Sparkles, Radio } from 'lucide-react'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 
 const INITIAL_BLOCKS: ProductivityBlock[] = [
@@ -94,6 +95,8 @@ export function ProductivityTree() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [settings, setSettings] = useState<ProductivitySettings>(DEFAULT_PRODUCTIVITY_SETTINGS)
+  const [treeKey, setTreeKey] = useState(0)
+  const isMobile = useIsMobile()
   const initialBlocksRef = useRef(INITIAL_BLOCKS)
   const settingsRef = useRef(settings)
   settingsRef.current = settings
@@ -189,6 +192,7 @@ export function ProductivityTree() {
   const reset = useCallback(() => {
     setBlocks(initialBlocksRef.current)
     setSelectedId(null)
+    setTreeKey(k => k + 1)
   }, [setBlocks])
 
   // Re-key blocks when switching ordering strategy
@@ -295,13 +299,13 @@ export function ProductivityTree() {
       icon: Sparkles,
       content: <AnimationTab settings={settings} onChange={updateSettings} />,
     },
-    {
-      id: 'sensors',
+    ...(isMobile ? [{
+      id: 'sensors' as const,
       label: 'Sensors',
       icon: Radio,
       content: <SensorsTab settings={settings} onChange={updateSettings} />,
-    },
-  ], [settings, updateSettings])
+    }] : []),
+  ], [settings, updateSettings, isMobile])
 
   return (
     <div className="space-y-4 w-full max-w-full min-w-0 overflow-hidden">
@@ -373,6 +377,7 @@ export function ProductivityTree() {
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr),300px] gap-4 w-full min-w-0">
         <div onClick={handleClearSelection} className="min-w-0 w-full max-w-full overflow-x-hidden">
           <BlockTree
+            key={treeKey}
             blocks={blocks}
             renderers={renderers}
             containerTypes={CONTAINER_TYPES}

@@ -14,6 +14,7 @@ import { SensorsTab } from '../shared/settings/SensorsTab'
 import { DEFAULT_SETTINGS, type BaseSettings } from '../shared/settings/types'
 import { Button } from '@thesandybridge/ui/components'
 import { Folder, File, GripVertical, Plus, RotateCcw, Trash2, GripHorizontal, Trees, Sparkles, Radio } from 'lucide-react'
+import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
 
 const INITIAL_BLOCKS: FileSystemBlock[] = [
@@ -91,6 +92,8 @@ export function FileTree() {
   const [blocks, setBlocks] = useState<FileSystemBlock[]>(INITIAL_BLOCKS)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [settings, setSettings] = useState<BaseSettings>(DEFAULT_SETTINGS)
+  const [treeKey, setTreeKey] = useState(0)
+  const isMobile = useIsMobile()
   const initialBlocksRef = useRef(INITIAL_BLOCKS)
 
   const { callbacks: devToolsCallbacks, events: devToolsEvents, clearEvents } = useDevToolsCallbacks<FileSystemBlock>()
@@ -165,6 +168,7 @@ export function FileTree() {
   const reset = useCallback(() => {
     setBlocks(initialBlocksRef.current)
     setSelectedId(null)
+    setTreeKey(k => k + 1)
   }, [])
 
   // Re-key blocks when switching ordering strategy
@@ -237,13 +241,13 @@ export function FileTree() {
       icon: Sparkles,
       content: <AnimationTab settings={settings} onChange={updateSettings} />,
     },
-    {
-      id: 'sensors',
+    ...(isMobile ? [{
+      id: 'sensors' as const,
       label: 'Sensors',
       icon: Radio,
       content: <SensorsTab settings={settings} onChange={updateSettings} />,
-    },
-  ], [settings, updateSettings])
+    }] : []),
+  ], [settings, updateSettings, isMobile])
 
   return (
     <div className="space-y-4 w-full max-w-full min-w-0 overflow-hidden">
@@ -288,6 +292,7 @@ export function FileTree() {
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr),300px] gap-4 w-full min-w-0">
         <div onClick={handleClearSelection} className="min-w-0 w-full max-w-full overflow-x-hidden">
           <BlockTree
+            key={treeKey}
             blocks={blocks}
             renderers={renderers}
             containerTypes={CONTAINER_TYPES}
