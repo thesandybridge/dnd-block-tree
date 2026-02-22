@@ -94,7 +94,8 @@ Each row shows the block type, label (via `getLabel`), and current order value.
 ### Interaction
 
 - **Open/close**: Click the trigger button or the × in the title bar
-- **Drag**: Grab the title bar to reposition the panel (clamped to viewport)
+- **Move trigger button**: Drag the trigger button to any corner of the viewport. On release it snaps to the nearest corner with an eased transition. The chosen corner is persisted in `localStorage` and restored on next mount.
+- **Drag panel**: Grab the title bar to reposition the panel (clamped to viewport)
 - **Resize**: Drag any edge or corner to resize (min 280×200)
 - **Diff toggle**: Auto-widens the panel to accommodate the second column
 
@@ -122,7 +123,7 @@ interface BlockTreeDevToolsProps<T extends BaseBlock = BaseBlock> {
 | `onClearEvents` | `() => void` | — | Callback to clear the event log |
 | `getLabel` | `(block: T) => string` | `(b) => b.type` | Label function for the diff view |
 | `initialOpen` | `boolean` | `false` | Whether the panel starts open |
-| `position` | `string` | `'bottom-left'` | Corner for the trigger button |
+| `position` | `string` | `'bottom-left'` | Initial corner for the trigger button (overridden by `localStorage` if the user has dragged it) |
 | `buttonStyle` | `CSSProperties` | — | Custom styles for the trigger button |
 | `panelStyle` | `CSSProperties` | — | Custom styles for the floating card |
 

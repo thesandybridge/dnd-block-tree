@@ -9,6 +9,7 @@
 - **Resizable panel** — Drag any edge or corner to resize the DevTools card (min 280×200). Toggling the diff view auto-adjusts width.
 - **Tooltips throughout** — Hover any stat row, section heading, or event badge to see what it means.
 - **Trigger button tooltip** — Hovering the floating button shows "dnd-block-tree DevTools" when the panel is closed.
+- **Draggable trigger button** — Drag the trigger button to any viewport corner. On release it snaps to the nearest quadrant with an eased CSS transition. The chosen corner is persisted in `localStorage` (`dnd-devtools-position`) and restored on mount. The `position` prop serves as the initial default when no stored preference exists.
 
 ### New Props
 

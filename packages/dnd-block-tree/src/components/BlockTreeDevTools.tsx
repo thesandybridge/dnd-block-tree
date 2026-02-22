@@ -202,32 +202,62 @@ const DEFAULT_HEIGHT = 420
 const DIFF_EXTRA_WIDTH = 300
 const MIN_WIDTH = 280
 const MIN_HEIGHT = 200
+const BTN_SIZE = 40
+const BTN_MARGIN = 16
+const STORAGE_KEY = 'dnd-devtools-position'
+const BTN_DRAG_THRESHOLD = 5
 
-type AnchorCSS = { bottom?: number; top?: number; left?: number; right?: number }
+type Corner = NonNullable<BlockTreeDevToolsProps['position']>
 
-function getAnchorCSS(position: BlockTreeDevToolsProps['position']): AnchorCSS {
-  switch (position) {
-    case 'bottom-right': return { bottom: 16, right: 16 }
-    case 'top-left': return { top: 16, left: 16 }
-    case 'top-right': return { top: 16, right: 16 }
+function cornerToXY(corner: Corner): { x: number; y: number } {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1024
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 768
+  switch (corner) {
+    case 'top-left': return { x: BTN_MARGIN, y: BTN_MARGIN }
+    case 'top-right': return { x: vw - BTN_MARGIN - BTN_SIZE, y: BTN_MARGIN }
+    case 'bottom-right': return { x: vw - BTN_MARGIN - BTN_SIZE, y: vh - BTN_MARGIN - BTN_SIZE }
     case 'bottom-left':
-    default: return { bottom: 16, left: 16 }
+    default: return { x: BTN_MARGIN, y: vh - BTN_MARGIN - BTN_SIZE }
   }
 }
 
-function computeCardOrigin(position: BlockTreeDevToolsProps['position'], width: number, height: number): { x: number; y: number } {
+function xyToCorner(x: number, y: number): Corner {
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1024
   const vh = typeof window !== 'undefined' ? window.innerHeight : 768
-  switch (position) {
+  const isLeft = x + BTN_SIZE / 2 < vw / 2
+  const isTop = y + BTN_SIZE / 2 < vh / 2
+  if (isTop && isLeft) return 'top-left'
+  if (isTop) return 'top-right'
+  if (isLeft) return 'bottom-left'
+  return 'bottom-right'
+}
+
+function loadStoredPosition(): Corner | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const v = localStorage.getItem(STORAGE_KEY)
+    if (v === 'bottom-left' || v === 'bottom-right' || v === 'top-left' || v === 'top-right') return v
+  } catch { /* ignore */ }
+  return null
+}
+
+function savePosition(corner: Corner) {
+  try { localStorage.setItem(STORAGE_KEY, corner) } catch { /* ignore */ }
+}
+
+function computeCardOrigin(corner: Corner, width: number, height: number): { x: number; y: number } {
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1024
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 768
+  switch (corner) {
     case 'bottom-right':
-      return { x: Math.max(0, vw - 16 - width), y: Math.max(0, vh - 16 - height - 48) }
+      return { x: Math.max(0, vw - BTN_MARGIN - width), y: Math.max(0, vh - BTN_MARGIN - height - BTN_SIZE - 8) }
     case 'top-left':
-      return { x: 16, y: 16 + 48 }
+      return { x: BTN_MARGIN, y: BTN_MARGIN + BTN_SIZE + 8 }
     case 'top-right':
-      return { x: Math.max(0, vw - 16 - width), y: 16 + 48 }
+      return { x: Math.max(0, vw - BTN_MARGIN - width), y: BTN_MARGIN + BTN_SIZE + 8 }
     case 'bottom-left':
     default:
-      return { x: 16, y: Math.max(0, vh - 16 - height - 48) }
+      return { x: BTN_MARGIN, y: Math.max(0, vh - BTN_MARGIN - height - BTN_SIZE - 8) }
   }
 }
 
@@ -252,7 +282,87 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
   const [cardSize, setCardSize] = useState<{ w: number; h: number }>({ w: DEFAULT_WIDTH, h: DEFAULT_HEIGHT })
   const [showTooltip, setShowTooltip] = useState(false)
 
-  // Drag state (title bar)
+  // ---------- Corner position (draggable trigger button) ----------
+
+  const [activeCorner, setActiveCorner] = useState<Corner>(() => loadStoredPosition() ?? position)
+  const [btnPos, setBtnPos] = useState<{ x: number; y: number }>(() => cornerToXY(loadStoredPosition() ?? position))
+  const [btnDragging, setBtnDragging] = useState(false)
+  const [btnTransition, setBtnTransition] = useState(false)
+  const btnDragRef = useRef<{ active: boolean; startX: number; startY: number; origX: number; origY: number; moved: boolean }>({
+    active: false, startX: 0, startY: 0, origX: 0, origY: 0, moved: false,
+  })
+
+  // Sync btnPos when activeCorner changes (and on window resize)
+  useEffect(() => {
+    if (!btnDragging) {
+      setBtnPos(cornerToXY(activeCorner))
+    }
+  }, [activeCorner, btnDragging])
+
+  useEffect(() => {
+    const onResize = () => {
+      if (!btnDragRef.current.active) {
+        setBtnPos(cornerToXY(activeCorner))
+      }
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [activeCorner])
+
+  const handleBtnPointerDown = useCallback((e: React.PointerEvent) => {
+    btnDragRef.current = {
+      active: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      origX: btnPos.x,
+      origY: btnPos.y,
+      moved: false,
+    }
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+  }, [btnPos])
+
+  const handleBtnPointerMove = useCallback((e: React.PointerEvent) => {
+    const r = btnDragRef.current
+    if (!r.active) return
+    const dx = e.clientX - r.startX
+    const dy = e.clientY - r.startY
+    if (!r.moved && Math.abs(dx) < BTN_DRAG_THRESHOLD && Math.abs(dy) < BTN_DRAG_THRESHOLD) return
+    r.moved = true
+    setBtnDragging(true)
+    const newX = r.origX + dx
+    const newY = r.origY + dy
+    const maxX = window.innerWidth - BTN_SIZE
+    const maxY = window.innerHeight - BTN_SIZE
+    setBtnPos({
+      x: Math.max(0, Math.min(newX, maxX)),
+      y: Math.max(0, Math.min(newY, maxY)),
+    })
+  }, [])
+
+  const handleBtnPointerUp = useCallback(() => {
+    const wasMoved = btnDragRef.current.moved
+    btnDragRef.current.active = false
+    if (wasMoved) {
+      // Snap to nearest corner
+      const newCorner = xyToCorner(btnPos.x, btnPos.y)
+      setActiveCorner(newCorner)
+      savePosition(newCorner)
+      // Ease to corner target
+      setBtnTransition(true)
+      setBtnPos(cornerToXY(newCorner))
+      setTimeout(() => {
+        setBtnTransition(false)
+        setBtnDragging(false)
+      }, 300)
+    } else {
+      setBtnDragging(false)
+      // This was a click, not a drag — toggle panel
+      setIsOpen(prev => !prev)
+    }
+  }, [btnPos])
+
+  // ---------- Card drag (title bar) ----------
+
   const dragRef = useRef<{ dragging: boolean; startX: number; startY: number; origX: number; origY: number }>({
     dragging: false, startX: 0, startY: 0, origX: 0, origY: 0,
   })
@@ -286,7 +396,6 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
   useEffect(() => {
     setCardSize(prev => {
       const targetW = showDiff ? DEFAULT_WIDTH + DIFF_EXTRA_WIDTH : DEFAULT_WIDTH
-      // Only auto-resize if at the "natural" widths (user hasn't manually resized to something custom)
       const wasDefault = Math.abs(prev.w - DEFAULT_WIDTH) < 20
       const wasExpanded = Math.abs(prev.w - (DEFAULT_WIDTH + DIFF_EXTRA_WIDTH)) < 20
       if (showDiff && (wasDefault || prev.w < targetW)) {
@@ -301,8 +410,8 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
 
   // Compute initial card position
   const getDefaultCardPos = useCallback(() => {
-    return computeCardOrigin(position, cardSize.w, cardSize.h)
-  }, [position, cardSize.w, cardSize.h])
+    return computeCardOrigin(activeCorner, cardSize.w, cardSize.h)
+  }, [activeCorner, cardSize.w, cardSize.h])
 
   // Set card position when opening
   useEffect(() => {
@@ -311,7 +420,7 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
     }
   }, [isOpen, cardPos, getDefaultCardPos])
 
-  // ---------- Drag (title bar) ----------
+  // ---------- Card drag (title bar) ----------
 
   const handleDragPointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
@@ -437,24 +546,30 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
 
   // ---------- Styles ----------
 
-  const anchor = getAnchorCSS(position)
+  const isBottom = activeCorner.startsWith('bottom')
+  const isLeft = activeCorner.endsWith('left')
 
   const triggerBtnStyle: React.CSSProperties = {
     position: 'fixed',
-    ...anchor,
+    left: btnPos.x,
+    top: btnPos.y,
     zIndex: 99998,
-    width: 40,
-    height: 40,
+    width: BTN_SIZE,
+    height: BTN_SIZE,
     borderRadius: '50%',
     border: 'none',
     background: isOpen ? 'rgba(59, 130, 246, 0.9)' : 'rgba(30, 30, 30, 0.85)',
     color: '#fff',
-    cursor: 'pointer',
+    cursor: btnDragging ? 'grabbing' : 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-    transition: 'background 0.15s, transform 0.15s',
+    transition: btnTransition
+      ? 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1), top 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s'
+      : 'background 0.15s',
+    touchAction: 'none',
+    userSelect: 'none',
     ...buttonStyle,
   }
 
@@ -469,11 +584,10 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
     color: '#ccc',
     boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
     pointerEvents: 'none',
-    // Position based on anchor corner
-    ...(anchor.bottom !== undefined
+    ...(isBottom
       ? { bottom: '100%', marginBottom: 8 }
       : { top: '100%', marginTop: 8 }),
-    ...(anchor.left !== undefined
+    ...(isLeft
       ? { left: 0 }
       : { right: 0 }),
   }
@@ -685,9 +799,11 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
   return (
     <>
       {/* Trigger Button + Tooltip */}
-      <div style={{ position: 'fixed', ...anchor, zIndex: 99998 }}>
+      <div style={{ position: 'fixed', left: btnPos.x, top: btnPos.y, zIndex: 99998 }}>
         <button
-          onClick={toggle}
+          onPointerDown={handleBtnPointerDown}
+          onPointerMove={handleBtnPointerMove}
+          onPointerUp={handleBtnPointerUp}
           onMouseEnter={() => setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
           style={triggerBtnStyle}
@@ -695,7 +811,7 @@ export function BlockTreeDevTools<T extends BaseBlock = BaseBlock>({
         >
           <DevToolsLogo size={20} />
         </button>
-        {showTooltip && !isOpen && (
+        {showTooltip && !isOpen && !btnDragging && (
           <div style={tooltipStyle}>dnd-block-tree DevTools</div>
         )}
       </div>
