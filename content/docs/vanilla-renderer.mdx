@@ -1,0 +1,240 @@
+## Default Renderer
+
+The `createDefaultRenderer` function creates an automatic DOM renderer that subscribes to controller events and builds the tree UI. You provide a `renderBlock` callback for custom block content.
+
+### createDefaultRenderer
+
+```typescript
+import { createDefaultRenderer } from '@dnd-block-tree/vanilla'
+
+const renderer = createDefaultRenderer(controller, {
+  container: document.getElementById('tree')!,
+  renderBlock: (block, ctx) => {
+    const el = document.createElement('div')
+    el.textContent = block.title
+    if (ctx.children) el.appendChild(ctx.children)
+    return el
+  },
+})
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `container` | `HTMLElement` | -- | DOM element to render the tree into |
+| `renderBlock` | `(block: T, ctx: RenderBlockContext) => HTMLElement` | -- | Callback that returns a DOM element for each block |
+| `dropZoneHeight` | `number` | `4` | Height in pixels for drop zone elements |
+| `animateExpand` | `boolean` | `false` | Enable expand/collapse animation (future) |
+
+### RenderBlockContext
+
+Your `renderBlock` callback receives a context object:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `children` | `HTMLElement \| null` | Pre-built container of nested children, or null for leaf/collapsed |
+| `depth` | `number` | Nesting depth (0 for root level) |
+| `isExpanded` | `boolean` | Whether children are visible |
+| `isDragging` | `boolean` | Whether this block is being dragged |
+| `isSelected` | `boolean` | Whether this block is in the selection |
+| `onToggleExpand` | `(() => void) \| null` | Toggle callback for containers, null for leaf nodes |
+
+### Return Value
+
+```typescript
+interface DefaultRenderer {
+  (): void       // Call to unsubscribe and clean up
+  refresh(): void // Force a full re-render
+}
+```
+
+### Rendering Flow
+
+1. Controller emits a `render` event (blocks changed, expansion toggled, etc.)
+2. Renderer calls `renderTree()` to recursively build DOM
+3. For each block, your `renderBlock` callback creates the content element
+4. Renderer wraps it with data attributes, drop zones, and drag handles
+5. Renderer registers each block as a draggable and each zone as a drop target
+
+### Data Attributes
+
+The renderer automatically sets data attributes on the generated DOM for styling:
+
+#### Block Elements
+
+```html
+<div data-block-id="abc"
+     data-block-type="task"
+     data-depth="1"
+     data-draggable-id="abc"
+     role="treeitem"
+     aria-level="2"
+     tabindex="-1">
+  <!-- your renderBlock output -->
+</div>
+```
+
+During drag:
+```html
+<div data-block-id="abc" data-dragging="true" ...>
+```
+
+When selected:
+```html
+<div data-block-id="abc" data-selected="true" ...>
+```
+
+#### Drop Zones
+
+```html
+<div data-zone-id="before-abc" style="height: 4px"></div>
+```
+
+Active zone:
+```html
+<div data-zone-id="before-abc" data-zone-active="true"></div>
+```
+
+#### Zone ID Format
+
+| Pattern | Description |
+|---------|-------------|
+| `root-start` | Before first root item |
+| `root-end` | After last root item |
+| `before-{blockId}` | Before a block |
+| `into-{parentId}` | Start of a container's children |
+| `end-{parentId}` | End of a container's children |
+
+### Styling with CSS
+
+```css
+/* Block depth indentation */
+[data-depth="0"] { padding-left: 0; }
+[data-depth="1"] { padding-left: 24px; }
+[data-depth="2"] { padding-left: 48px; }
+
+/* Drag state */
+[data-dragging="true"] {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* Selection */
+[data-selected="true"] {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+/* Drop zones */
+[data-zone-id] {
+  height: 4px;
+  transition: background-color 150ms;
+}
+
+[data-zone-active="true"] {
+  background-color: #3b82f6;
+  height: 4px;
+}
+
+/* Type-specific styling */
+[data-block-type="folder"] {
+  font-weight: 600;
+}
+
+[data-block-type="file"] {
+  font-weight: 400;
+}
+```
+
+### Overlay and Ghost
+
+The renderer also manages:
+
+- **Drag Overlay** (`data-drag-overlay="true"`) — fixed-position element that follows the pointer during drag. Customize via `controller.setOverlayRenderer()`.
+- **Ghost Preview** (`data-dnd-ghost="true"`) — semi-transparent clone shown at the landing position.
+
+### Helper Utilities
+
+The package exports DOM utilities for building block elements:
+
+```typescript
+import { createElement, setDataAttributes } from '@dnd-block-tree/vanilla'
+
+// Create element with attributes
+const el = createElement('div', {
+  class: 'my-block',
+  'data-custom': 'value',
+})
+
+// Set/remove multiple data attributes
+setDataAttributes(el, {
+  blockId: 'abc',      // sets data-block-id="abc"
+  dragging: true,       // sets data-dragging="true"
+  selected: undefined,  // removes data-selected
+})
+```
+
+### Full Example
+
+```typescript
+import {
+  createBlockTreeController,
+  createDefaultRenderer,
+  createElement,
+  type BaseBlock,
+} from '@dnd-block-tree/vanilla'
+
+interface FileBlock extends BaseBlock {
+  type: 'folder' | 'file'
+  name: string
+}
+
+const controller = createBlockTreeController<FileBlock>({
+  initialBlocks: [
+    { id: '1', type: 'folder', name: 'src', parentId: null, order: 0 },
+    { id: '2', type: 'file', name: 'index.ts', parentId: '1', order: 0 },
+    { id: '3', type: 'file', name: 'utils.ts', parentId: '1', order: 1 },
+    { id: '4', type: 'folder', name: 'tests', parentId: null, order: 1 },
+  ],
+  containerTypes: ['folder'],
+  sensors: { keyboard: true },
+  onChange: (blocks) => console.log('updated:', blocks),
+})
+
+controller.enableHistory(30)
+
+const container = document.getElementById('file-tree')!
+
+const renderer = createDefaultRenderer(controller, {
+  container,
+  renderBlock: (block, ctx) => {
+    const el = createElement('div', { class: 'file-entry' })
+
+    if (ctx.onToggleExpand) {
+      const toggle = createElement('button', { class: 'toggle' })
+      toggle.textContent = ctx.isExpanded ? '📂' : '📁'
+      toggle.addEventListener('click', ctx.onToggleExpand)
+      el.appendChild(toggle)
+    } else {
+      const icon = createElement('span', { class: 'icon' })
+      icon.textContent = '📄'
+      el.appendChild(icon)
+    }
+
+    const name = createElement('span', { class: 'name' })
+    name.textContent = block.name
+    el.appendChild(name)
+
+    if (ctx.children) el.appendChild(ctx.children)
+    return el
+  },
+  dropZoneHeight: 4,
+})
+
+controller.mount(container)
+
+// Cleanup
+// renderer()          — unsubscribe renderer
+// controller.destroy() — full cleanup
+```

@@ -1,6 +1,6 @@
 ## dnd-block-tree
 
-A framework-agnostic, type-safe library for building hierarchical drag-and-drop interfaces. The headless core (`@dnd-block-tree/core`) provides tree logic, reducers, and utilities with zero dependencies. The React adapter adds [@dnd-kit](https://dndkit.com/) integration, components, and hooks on top.
+A framework-agnostic, type-safe library for building hierarchical drag-and-drop interfaces. The headless core (`@dnd-block-tree/core`) provides tree logic, reducers, and utilities with zero dependencies. Framework adapters for React, Svelte 5, and vanilla JS/TS add [@dnd-kit](https://dndkit.com/) integration on top.
 
 ### Features
 
@@ -50,12 +50,14 @@ A framework-agnostic, type-safe library for building hierarchical drag-and-drop 
 
 | Package | Description |
 |---------|-------------|
-| [`@dnd-block-tree/react`](https://www.npmjs.com/package/@dnd-block-tree/react) | React adapter — components, hooks, @dnd-kit integration |
+| [`@dnd-block-tree/react`](https://www.npmjs.com/package/@dnd-block-tree/react) | React adapter — components, hooks, @dnd-kit/core integration |
+| [`@dnd-block-tree/svelte`](https://www.npmjs.com/package/@dnd-block-tree/svelte) | Svelte 5 adapter — components, runes-based state, @dnd-kit/svelte integration |
+| [`@dnd-block-tree/vanilla`](https://www.npmjs.com/package/@dnd-block-tree/vanilla) | Vanilla JS/TS adapter — headless controller + optional default renderer (zero framework deps) |
 | [`@dnd-block-tree/core`](https://www.npmjs.com/package/@dnd-block-tree/core) | Framework-agnostic core — types, reducers, tree factory, utilities (zero deps) |
 
-Most users should install `@dnd-block-tree/react`. Use `@dnd-block-tree/core` directly for non-React use cases (server-side manipulation, testing, other frameworks).
+Install the adapter for your framework: `@dnd-block-tree/react` for React, `@dnd-block-tree/svelte` for Svelte 5, or `@dnd-block-tree/vanilla` for vanilla JS/TS. Use `@dnd-block-tree/core` directly for headless tree operations (server-side manipulation, testing, custom integrations).
 
-### Quick Start
+### Quick Start — React
 
 ```bash
 npm install @dnd-block-tree/react @dnd-kit/core @dnd-kit/utilities
@@ -98,14 +100,85 @@ function App() {
 }
 ```
 
+### Quick Start — Svelte 5
+
+```bash
+npm install @dnd-block-tree/svelte @dnd-kit/svelte @dnd-kit/dom svelte
+```
+
+```svelte
+<script lang="ts">
+  import { BlockTree, type BaseBlock } from '@dnd-block-tree/svelte'
+
+  let blocks = $state([
+    { id: '1', type: 'section', title: 'Tasks', parentId: null, order: 0 },
+    { id: '2', type: 'task', title: 'Do something', parentId: '1', order: 0 },
+  ])
+</script>
+
+<BlockTree
+  {blocks}
+  containerTypes={['section']}
+  onChange={(b) => blocks = b}
+>
+  {#snippet renderBlock({ block, children, isExpanded, onToggleExpand })}
+    <div class="border rounded p-2">
+      {#if onToggleExpand}
+        <button onclick={onToggleExpand}>{isExpanded ? '▼' : '▶'}</button>
+      {/if}
+      {block.title}
+      {#if children}{@render children()}{/if}
+    </div>
+  {/snippet}
+</BlockTree>
+```
+
+### Quick Start — Vanilla JS/TS
+
+```bash
+npm install @dnd-block-tree/vanilla
+```
+
+```typescript
+import { createBlockTreeController, createDefaultRenderer, createElement } from '@dnd-block-tree/vanilla'
+
+const controller = createBlockTreeController({
+  initialBlocks: [
+    { id: '1', type: 'section', title: 'Tasks', parentId: null, order: 0 },
+    { id: '2', type: 'task', title: 'Do something', parentId: '1', order: 0 },
+  ],
+  containerTypes: ['section'],
+})
+
+const container = document.getElementById('tree')!
+
+createDefaultRenderer(controller, {
+  container,
+  renderBlock: (block, ctx) => {
+    const el = createElement('div', { class: 'p-2' })
+    el.textContent = block.title
+    if (ctx.children) el.appendChild(ctx.children)
+    return el
+  },
+})
+
+controller.mount(container)
+```
+
 See [Installation & Setup](/docs/getting-started) for peer dependencies and a complete walkthrough.
 
 ### Explore the Docs
 
 - [**Core Overview**](/docs/core) -- headless API, `createBlockTree`, reducers, and what's in core vs React
-- [**BlockTree Props**](/docs/api) -- every prop with type, default, and description
+- [**BlockTree Props**](/docs/api) -- every prop with type, default, and description (React)
 - [**Callbacks & Events**](/docs/callbacks) -- hook into the drag-and-drop lifecycle
 - [**Type Reference**](/docs/types) -- all exported types and interfaces
+- [**Svelte Overview**](/docs/svelte) -- Svelte 5 adapter architecture and components
+- [**Svelte BlockTree Props**](/docs/svelte-api) -- BlockTree component props (Svelte)
+- [**Svelte State Management**](/docs/svelte-state) -- runes-based state factories
+- [**Vanilla Overview**](/docs/vanilla) -- headless controller + optional renderer
+- [**Vanilla Controller API**](/docs/vanilla-api) -- `createBlockTreeController` reference
+- [**Vanilla Default Renderer**](/docs/vanilla-renderer) -- `createDefaultRenderer` and styling
 - [**Undo/Redo**](/docs/undo-redo) -- `useBlockHistory` hook
 - [**Keyboard Navigation**](/docs/keyboard-navigation) -- key bindings and a11y
 - [**Multi-Select**](/docs/multi-select) -- selection modes and batch drag

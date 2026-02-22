@@ -1,0 +1,97 @@
+## Svelte Overview
+
+The `@dnd-block-tree/svelte` package provides a Svelte 5 adapter for dnd-block-tree, with components, runes-based state factories, and [@dnd-kit/svelte](https://dndkit.com/) integration.
+
+### Architecture
+
+The Svelte adapter follows the same architecture as the React adapter:
+
+1. **Core logic** lives in `@dnd-block-tree/core` (tree operations, collision detection, reducers)
+2. **Svelte components** wrap the core with @dnd-kit/svelte for drag-and-drop
+3. **Runes-based state** uses `$state`, `$derived`, and `$effect` for reactive tree management
+4. **Snippet-based rendering** uses Svelte 5 `{#snippet}` blocks instead of React render props
+
+### Key Concepts
+
+**Runes** -- All state management uses Svelte 5 runes (`$state`, `$derived`). The state factories (`createBlockState`, `createTreeState`, `createBlockHistory`) return reactive objects that automatically trigger re-renders.
+
+**Snippets** -- The `BlockTree` component uses `{#snippet renderBlock()}` instead of a renderers map. Your snippet receives the block, its children (as a renderable snippet), expansion state, and a toggle callback.
+
+**Context** -- State is shared via Svelte context. Use `setBlockStateContext()` / `getBlockStateContext()` to provide and consume block state in nested components.
+
+### Components
+
+| Component | Description |
+|-----------|-------------|
+| `BlockTree` | Main orchestrator -- wraps DragDropProvider, manages drag state, renders tree |
+| `TreeRenderer` | Recursive tree renderer with drop zones |
+| `DropZone` | Individual drop target element |
+| `DraggableBlock` | Wraps @dnd-kit/svelte `createDraggable` with ARIA attributes |
+| `DragOverlay` | Floating preview during drag with multi-select count badge |
+| `GhostPreview` | Semi-transparent in-flow preview at landing position |
+| `BlockTreeSSR` | Hydration guard -- only renders children after `onMount` |
+| `BlockTreeDevTools` | Debug panel showing blocks, activeId, hoverZone state |
+
+### Rendering
+
+The `BlockTree` component accepts a `renderBlock` snippet:
+
+```svelte
+<BlockTree {blocks} containerTypes={['section']} onChange={(b) => blocks = b}>
+  {#snippet renderBlock({ block, children, isExpanded, onToggleExpand })}
+    <div>
+      {#if onToggleExpand}
+        <button onclick={onToggleExpand}>{isExpanded ? '▼' : '▶'}</button>
+      {/if}
+      {block.title}
+      {#if children}{@render children()}{/if}
+    </div>
+  {/snippet}
+</BlockTree>
+```
+
+The snippet receives:
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `block` | `BaseBlock` | The block data object |
+| `isDragging` | `boolean` | Whether this block is currently being dragged |
+| `depth` | `number` | Nesting depth (0 for root) |
+| `isExpanded` | `boolean` | Whether children are visible |
+| `onToggleExpand` | `(() => void) \| null` | Toggle callback (null for leaf nodes) |
+| `children` | `Snippet \| null` | Renderable children snippet (null if collapsed or leaf) |
+
+### State Management
+
+See [State Management](/docs/svelte-state) for the full state factory API.
+
+```svelte
+<script lang="ts">
+  import { createBlockState, createBlockHistory } from '@dnd-block-tree/svelte'
+
+  const state = createBlockState({ initialBlocks, containerTypes: ['section'] })
+  const history = createBlockHistory(state.blocks)
+</script>
+```
+
+### Collision Detection
+
+The adapter bridges core's `CoreCollisionDetection` to @dnd-kit/svelte via `adaptCollisionDetection()`:
+
+```typescript
+import { adaptCollisionDetection, weightedVerticalCollision } from '@dnd-block-tree/svelte'
+
+const dndKitCollision = adaptCollisionDetection(weightedVerticalCollision)
+```
+
+### Installation
+
+```bash
+npm install @dnd-block-tree/svelte @dnd-kit/svelte @dnd-kit/dom svelte
+```
+
+| Peer Dependency | Version |
+|-----------------|---------|
+| `svelte` | >= 5.29 |
+| `@dnd-kit/svelte` | >= 0.3.0 |
+| `@dnd-kit/dom` | >= 0.3.0 |

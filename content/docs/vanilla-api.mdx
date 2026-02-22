@@ -1,0 +1,218 @@
+## Controller API
+
+The `createBlockTreeController` function creates a headless controller that manages all tree state, drag logic, and sensor input.
+
+### createBlockTreeController
+
+```typescript
+import { createBlockTreeController } from '@dnd-block-tree/vanilla'
+
+const controller = createBlockTreeController<MyBlock>(options)
+```
+
+### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `initialBlocks` | `T[]` | `[]` | Starting block array |
+| `containerTypes` | `readonly string[]` | `[]` | Block types that can have children |
+| `orderingStrategy` | `'integer' \| 'fractional'` | `'integer'` | Block ordering method |
+| `maxDepth` | `number` | -- | Maximum nesting depth |
+| `previewDebounce` | `number` | `150` | Preview update debounce (ms) |
+| `canDrag` | `(block: T) => boolean` | -- | Control which blocks are draggable |
+| `canDrop` | `(dragging, zone, target) => boolean` | -- | Control which drops are allowed |
+| `idGenerator` | `() => string` | -- | Custom ID generator |
+| `initialExpanded` | `string[] \| 'all' \| 'none'` | `'all'` | Initial expansion state |
+| `sensors` | `VanillaSensorConfig` | -- | Sensor configuration |
+| `onChange` | `(blocks: T[]) => void` | -- | Called after block mutations |
+| `callbacks` | `Partial<BlockTreeCallbacks<T>>` | -- | Drag lifecycle callbacks |
+
+### Mounting
+
+```typescript
+// Attach sensors and prepare for interactions
+controller.mount(container: HTMLElement): void
+
+// Detach sensors and clean up
+controller.unmount(): void
+
+// Full cleanup (unmount + release all resources)
+controller.destroy(): void
+```
+
+### State Reads
+
+```typescript
+// Current drag state
+controller.getDragState(): DragState
+// { isDragging: boolean, activeId: string | null, hoverZone: string | null }
+
+// Current blocks
+controller.getBlocks(): T[]
+
+// Blocks filtered by expansion (what should render)
+controller.getEffectiveBlocks(): T[]
+
+// Expansion state
+controller.getExpandedMap(): Record<string, boolean>
+
+// Lookup by ID
+controller.getBlock(id: string): T | undefined
+
+// Access the underlying core tree instance
+controller.getTree(): BlockTreeInstance<T>
+```
+
+### Tree Mutations
+
+```typescript
+// Toggle a block's expansion
+controller.toggleExpand(id: string): void
+
+// Expand or collapse all blocks
+controller.setExpandAll(expanded: boolean): void
+
+// Add a new block
+controller.addBlock(type: T['type'], parentId?: string | null): T
+
+// Delete a block and its descendants
+controller.deleteBlock(id: string): void
+
+// Replace all blocks
+controller.setBlocks(blocks: T[]): void
+```
+
+### Selection
+
+```typescript
+// Select a block
+controller.select(id: string, mode: 'single' | 'toggle' | 'range'): void
+// 'single'  — clear selection, select one
+// 'toggle'  — add/remove from selection
+// 'range'   — select from last selected to current
+
+// Clear selection
+controller.clearSelection(): void
+
+// Get current selection
+controller.getSelectedIds(): Set<string>
+```
+
+### History (Opt-in)
+
+```typescript
+// Enable undo/redo with max stack depth
+controller.enableHistory(maxSteps?: number): void
+
+// Undo last change (returns new blocks or null)
+controller.undo(): T[] | null
+
+// Redo last undo (returns new blocks or null)
+controller.redo(): T[] | null
+
+// Check availability
+controller.canUndo(): boolean
+controller.canRedo(): boolean
+```
+
+### Events
+
+Subscribe to controller events with `on()`. Returns an unsubscribe function.
+
+```typescript
+const unsub = controller.on('render', (blocks, expandedMap) => {
+  // Tree data changed — update your UI
+})
+
+// Later: unsubscribe
+unsub()
+```
+
+| Event | Handler Signature | Description |
+|-------|-------------------|-------------|
+| `render` | `(blocks: T[], expandedMap: Record<string, boolean>) => void` | Blocks or expansion changed |
+| `drag:statechange` | `(state: DragState) => void` | Drag state changed |
+| `selection:change` | `(selectedIds: Set<string>) => void` | Selection changed |
+
+### Registration (Headless Mode)
+
+When using the controller without the default renderer, manually register draggable elements and drop zones:
+
+```typescript
+// Register a draggable block element
+const unsub = controller.registerDraggable(id: string, element: HTMLElement): Unsubscribe
+
+// Register a drop zone element
+const unsub = controller.registerDropZone(id: string, element: HTMLElement): Unsubscribe
+```
+
+### Custom Drag Overlay
+
+```typescript
+// Provide a custom element for the drag overlay
+controller.setOverlayRenderer((block: T) => {
+  const el = document.createElement('div')
+  el.className = 'custom-overlay'
+  el.textContent = block.label
+  return el
+})
+```
+
+### VanillaSensorConfig
+
+```typescript
+interface VanillaSensorConfig {
+  pointer?: boolean           // Enable pointer sensor (default: true)
+  touch?: boolean             // Enable touch sensor (default: true)
+  keyboard?: boolean          // Enable keyboard sensor (default: false)
+  activationDistance?: number  // Pointer movement threshold (default: 8)
+  longPressDelay?: number     // Touch hold duration (default: 200)
+  hapticFeedback?: boolean    // Vibrate on touch activation (default: true)
+}
+```
+
+### BlockTreeCallbacks
+
+```typescript
+interface BlockTreeCallbacks<T> {
+  onDragStart?: (event: DragStartEvent<T>) => boolean | void
+  onDragMove?: (event: DragMoveEvent<T>) => void
+  onDragEnd?: (event: DragEndEvent<T>) => void
+  onDragCancel?: (event: DragEndEvent<T>) => void
+  onBeforeMove?: (op: MoveOperation<T>) => boolean | { targetZone: string } | void
+  onBlockMove?: (event: BlockMoveEvent<T>) => void
+  onExpandChange?: (event: ExpandChangeEvent<T>) => void
+  onHoverChange?: (event: HoverChangeEvent<T>) => void
+}
+```
+
+### Full Example
+
+```typescript
+import { createBlockTreeController } from '@dnd-block-tree/vanilla'
+
+interface Task extends BaseBlock {
+  type: 'section' | 'task'
+  title: string
+}
+
+const controller = createBlockTreeController<Task>({
+  initialBlocks: [...],
+  containerTypes: ['section'],
+  maxDepth: 3,
+  sensors: { keyboard: true },
+  callbacks: {
+    onDragEnd: (e) => console.log('dropped:', e.block.title),
+    onBeforeMove: (op) => op.block.type !== 'section' || true,
+  },
+  onChange: (blocks) => saveToServer(blocks),
+})
+
+controller.enableHistory(50)
+
+controller.on('render', (blocks, expandedMap) => {
+  renderTree(blocks, expandedMap)
+})
+
+controller.mount(document.getElementById('tree')!)
+```

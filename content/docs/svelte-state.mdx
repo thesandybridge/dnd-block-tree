@@ -1,0 +1,165 @@
+## Svelte State Management
+
+The Svelte adapter provides three runes-based state factories for managing block data, UI state, and undo/redo history. These are useful when you need fine-grained control beyond what the `BlockTree` component provides.
+
+### createBlockState
+
+Manages the block data structure with CRUD operations. All properties are reactive via Svelte 5 runes.
+
+```typescript
+import { createBlockState } from '@dnd-block-tree/svelte'
+
+const state = createBlockState<MyBlock>({
+  initialBlocks: [...],
+  containerTypes: ['section'],
+  orderingStrategy: 'integer',
+  maxDepth: 3,
+  onChange: (blocks) => console.log('blocks changed'),
+})
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `initialBlocks` | `T[]` | `[]` | Starting block array |
+| `containerTypes` | `readonly string[]` | `[]` | Types that can have children |
+| `orderingStrategy` | `'integer' \| 'fractional'` | `'integer'` | Ordering method |
+| `maxDepth` | `number` | -- | Maximum nesting depth |
+| `onChange` | `(blocks: T[]) => void` | -- | Callback after mutations |
+| `onBlockAdd` | `(event: BlockAddEvent) => void` | -- | Callback when block is created |
+| `onBlockDelete` | `(event: BlockDeleteEvent) => void` | -- | Callback when block is deleted |
+
+#### Returned State
+
+| Property / Method | Type | Description |
+|-------------------|------|-------------|
+| `blocks` | `T[]` (readonly) | Current blocks computed from internal index |
+| `blockMap` | `Map<string, T>` (readonly) | Lookup by ID |
+| `childrenMap` | `Map<string \| null, T[]>` (readonly) | Children grouped by parentId |
+| `createItem(type, parentId?)` | `T` | Create and insert a new block |
+| `insertItem(type, refId, pos)` | `T` | Insert before/after a reference block |
+| `deleteItem(id)` | `void` | Delete a block and its descendants |
+| `moveItem(activeId, targetZone)` | `void` | Move a block to a drop zone |
+| `setAll(blocks)` | `void` | Replace all blocks |
+
+#### Context
+
+Share block state with child components:
+
+```svelte
+<!-- Parent -->
+<script>
+  import { setBlockStateContext, createBlockState } from '@dnd-block-tree/svelte'
+  const state = createBlockState({ initialBlocks })
+  setBlockStateContext(state)
+</script>
+
+<!-- Child -->
+<script>
+  import { getBlockStateContext } from '@dnd-block-tree/svelte'
+  const state = getBlockStateContext()
+  // state.blocks, state.createItem(), etc.
+</script>
+```
+
+### createTreeState
+
+Manages UI state for the tree: drag state, hover zones, expansion, and virtual preview.
+
+```typescript
+import { createTreeState } from '@dnd-block-tree/svelte'
+
+const treeState = createTreeState(
+  () => blockState.blocks,
+  () => blockState.blockMap,
+  {
+    previewDebounce: 150,
+    containerTypes: ['section'],
+  }
+)
+```
+
+#### Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `blocksGetter` | `() => T[]` | Reactive getter for current blocks |
+| `blockMapGetter` | `() => Map<string, T>` | Reactive getter for block map |
+| `options.previewDebounce` | `number` | Preview update debounce (default: 150ms) |
+| `options.containerTypes` | `readonly string[]` | Container type strings |
+| `options.orderingStrategy` | `'integer' \| 'fractional'` | Ordering method |
+
+#### Returned State
+
+| Property / Method | Type | Description |
+|-------------------|------|-------------|
+| `activeId` | `string \| null` (readonly) | Currently dragged block ID |
+| `activeBlock` | `T \| null` (readonly) | Currently dragged block object |
+| `hoverZone` | `string \| null` (readonly) | Current drop zone target |
+| `expandedMap` | `Record<string, boolean>` (readonly) | Expansion state map |
+| `effectiveBlocks` | `T[]` (readonly) | Preview state or real blocks |
+| `blocksByParent` | `Map<string \| null, T[]>` (readonly) | Children grouped by parent |
+| `isDragging` | `boolean` (readonly) | Whether a drag is in progress |
+| `setActiveId(id)` | `void` | Set the dragged block |
+| `setHoverZone(zone)` | `void` | Set the hover zone |
+| `toggleExpand(id)` | `void` | Toggle a block's expansion |
+| `setExpandAll(expanded)` | `void` | Expand or collapse all blocks |
+| `handleDragStart(id, blocks, draggedIds?)` | `void` | Start a drag operation |
+| `handleDragOver(targetZone)` | `void` | Update preview during drag |
+| `handleDragEnd()` | `object \| null` | Finalize drag, return result |
+| `cancelDrag()` | `void` | Cancel current drag |
+| `getInitialBlocks()` | `T[]` | Get snapshot from drag start |
+| `getDraggedIds()` | `string[]` | Get all dragged block IDs |
+
+### createBlockHistory
+
+Provides undo/redo with a configurable stack depth.
+
+```typescript
+import { createBlockHistory } from '@dnd-block-tree/svelte'
+
+const history = createBlockHistory<MyBlock>(initialBlocks, { maxSteps: 50 })
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `maxSteps` | `number` | `50` | Maximum undo steps |
+
+#### Returned State
+
+| Property / Method | Type | Description |
+|-------------------|------|-------------|
+| `blocks` | `T[]` (readonly) | Current block state |
+| `canUndo` | `boolean` (readonly) | Whether undo is available |
+| `canRedo` | `boolean` (readonly) | Whether redo is available |
+| `set(blocks)` | `void` | Push new state to history |
+| `undo()` | `void` | Revert to previous state |
+| `redo()` | `void` | Re-apply undone state |
+
+#### Example with BlockTree
+
+```svelte
+<script lang="ts">
+  import { BlockTree, createBlockHistory } from '@dnd-block-tree/svelte'
+
+  const history = createBlockHistory(initialBlocks, { maxSteps: 30 })
+</script>
+
+<div>
+  <button onclick={() => history.undo()} disabled={!history.canUndo}>Undo</button>
+  <button onclick={() => history.redo()} disabled={!history.canRedo}>Redo</button>
+</div>
+
+<BlockTree
+  blocks={history.blocks}
+  containerTypes={['section']}
+  onChange={(b) => history.set(b)}
+>
+  {#snippet renderBlock({ block, children, onToggleExpand, isExpanded })}
+    <!-- ... -->
+  {/snippet}
+</BlockTree>
+```

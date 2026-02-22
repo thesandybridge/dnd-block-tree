@@ -1,0 +1,56 @@
+{
+  "name": "@dnd-block-tree/svelte",
+  "version": "2.0.0",
+  "description": "Svelte 5 adapter for dnd-block-tree — drag-and-drop hierarchical block trees",
+  "svelte": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "svelte": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "!dist/**/*.test.*"],
+  "scripts": {
+    "build": "svelte-package -i src -o dist",
+    "dev": "svelte-package -i src -o dist --watch",
+    "test": "vitest run",
+    "typecheck": "svelte-check --tsconfig tsconfig.json"
+  },
+  "dependencies": {
+    "@dnd-block-tree/core": "^2.0.0"
+  },
+  "peerDependencies": {
+    "@dnd-kit/dom": "^0.3.0",
+    "@dnd-kit/svelte": "^0.3.0",
+    "svelte": "^5.29.0"
+  },
+  "devDependencies": {
+    "@dnd-kit/dom": "^0.3.2",
+    "@dnd-kit/svelte": "^0.3.2",
+    "@sveltejs/package": "^2.3.0",
+    "svelte": "^5.29.0",
+    "svelte-check": "^4.0.0",
+    "tslib": "^2.8.0",
+    "typescript": "^5.5.0",
+    "vitest": "^4.0.18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/thesandybridge/dnd-block-tree",
+    "directory": "packages/svelte"
+  },
+  "license": "MIT",
+  "keywords": [
+    "dnd",
+    "drag-and-drop",
+    "block",
+    "tree",
+    "svelte",
+    "svelte5",
+    "dnd-kit",
+    "hierarchical"
+  ]
+}

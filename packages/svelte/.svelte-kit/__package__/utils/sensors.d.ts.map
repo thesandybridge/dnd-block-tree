@@ -1,0 +1,1 @@
+{"version":3,"file":"sensors.d.ts","sourceRoot":"","sources":["../../src/utils/sensors.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,YAAY,EAAE,MAAM,sBAAsB,CAAA;AAExD,MAAM,WAAW,kBAAkB;IACjC,kBAAkB,EAAE,MAAM,CAAA;IAC1B,cAAc,EAAE,MAAM,CAAA;IACtB,cAAc,EAAE,OAAO,CAAA;CACxB;AAED;;GAEG;AACH,wBAAgB,eAAe,CAAC,MAAM,CAAC,EAAE,YAAY,GAAG,kBAAkB,CAMzE"}

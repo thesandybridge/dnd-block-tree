@@ -1,0 +1,104 @@
+## Svelte BlockTree Props
+
+The `BlockTree` component is the main orchestrator for the Svelte adapter. It wraps @dnd-kit/svelte's `DragDropProvider`, manages drag state, and renders the tree.
+
+### Required Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `blocks` | `BaseBlock[]` | Flat array of blocks with `id`, `type`, `parentId`, `order` |
+| `renderBlock` | `Snippet<[RenderBlockProps]>` | Svelte 5 snippet for rendering each block |
+
+### Optional Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `containerTypes` | `readonly string[]` | `[]` | Block types that can have children |
+| `onChange` | `(blocks: BaseBlock[]) => void` | -- | Called with updated blocks after drag-and-drop |
+| `dragOverlay` | `Snippet<[BaseBlock]>` | -- | Custom drag preview snippet |
+| `activationDistance` | `number` | `8` | Pixels to move before drag activates |
+| `previewDebounce` | `number` | `150` | Milliseconds to debounce preview updates |
+| `showDropPreview` | `boolean` | `true` | Show ghost preview at landing position |
+| `multiSelect` | `boolean` | `false` | Enable Cmd/Ctrl+Click and Shift+Click selection |
+| `selectedIds` | `Set<string>` | -- | Controlled selection state |
+| `onSelectionChange` | `(ids: Set<string>) => void` | -- | Selection change callback |
+| `class` | `string` | -- | CSS class for the tree container |
+| `dropZoneClass` | `string` | -- | CSS class for drop zones |
+| `dropZoneActiveClass` | `string` | -- | CSS class for the active drop zone |
+| `orderingStrategy` | `'integer' \| 'fractional'` | `'integer'` | Block ordering method |
+| `maxDepth` | `number` | -- | Maximum nesting depth |
+| `initialExpanded` | `string[] \| 'all' \| 'none'` | `'all'` | Initial expansion state |
+
+### Callback Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `onDragStart` | `(event: DragStartEvent) => boolean \| void` | Return `false` to cancel drag |
+| `onDragMove` | `(event: DragMoveEvent) => void` | Called on pointer move during drag |
+| `onDragEnd` | `(event: DragEndEvent) => void` | Called when drag completes |
+| `onDragCancel` | `(event: DragEndEvent) => void` | Called when drag is cancelled |
+| `onBeforeMove` | `(op: MoveOperation) => boolean \| { targetZone: string } \| void` | Validate or redirect moves |
+| `onBlockMove` | `(event: BlockMoveEvent) => void` | Called after a block is moved |
+| `onExpandChange` | `(event: ExpandChangeEvent) => void` | Called when expansion state changes |
+| `onHoverChange` | `(event: HoverChangeEvent) => void` | Called when hover zone changes |
+
+### Customization Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `canDrag` | `(block: BaseBlock) => boolean` | Control which blocks are draggable |
+| `canDrop` | `(dragging, zone, target) => boolean` | Control which drops are allowed |
+| `collisionDetection` | `CoreCollisionDetection` | Custom collision algorithm |
+| `sensors` | `SensorConfig` | Sensor configuration (activation distance, long-press delay) |
+| `animation` | `AnimationConfig` | Expand/collapse animation config |
+| `autoExpand` | `AutoExpandConfig` | Auto-expand on hover config |
+| `idGenerator` | `IdGeneratorFn` | Custom ID generator for new blocks |
+
+### renderBlock Snippet Props
+
+The `renderBlock` snippet receives a single object:
+
+```typescript
+interface RenderBlockProps {
+  block: BaseBlock
+  isDragging: boolean
+  depth: number
+  isExpanded: boolean
+  onToggleExpand: (() => void) | null  // null for leaf nodes
+  children: Snippet | null              // null if not expanded or leaf
+}
+```
+
+### Example
+
+```svelte
+<script lang="ts">
+  import { BlockTree, type BaseBlock } from '@dnd-block-tree/svelte'
+
+  interface MyBlock extends BaseBlock {
+    type: 'section' | 'task'
+    title: string
+  }
+
+  let blocks = $state<MyBlock[]>([...])
+</script>
+
+<BlockTree
+  {blocks}
+  containerTypes={['section']}
+  onChange={(b) => blocks = b}
+  maxDepth={3}
+  multiSelect
+  onDragEnd={(e) => console.log('dropped', e)}
+>
+  {#snippet renderBlock({ block, children, isExpanded, onToggleExpand, isDragging })}
+    <div class="block" class:dragging={isDragging}>
+      {#if onToggleExpand}
+        <button onclick={onToggleExpand}>{isExpanded ? '▼' : '▶'}</button>
+      {/if}
+      <span>{block.title}</span>
+      {#if children}{@render children()}{/if}
+    </div>
+  {/snippet}
+</BlockTree>
+```

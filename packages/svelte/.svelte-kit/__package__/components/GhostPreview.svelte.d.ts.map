@@ -1,0 +1,1 @@
+{"version":3,"file":"GhostPreview.svelte.d.ts","sourceRoot":"","sources":["../../src/components/GhostPreview.svelte.ts"],"names":[],"mappings":"AAGA,OAAO,KAAK,EAAE,OAAO,EAAE,MAAM,QAAQ,CAAC;AAGpC,UAAU,KAAK;IACb,QAAQ,EAAE,OAAO,CAAA;CAClB;AAcH,QAAA,MAAM,YAAY,2CAAwC,CAAC;AAC3D,KAAK,YAAY,GAAG,UAAU,CAAC,OAAO,YAAY,CAAC,CAAC;AACpD,eAAe,YAAY,CAAC"}

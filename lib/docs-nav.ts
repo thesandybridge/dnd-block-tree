@@ -34,6 +34,22 @@ export const DOC_NAV: DocNavGroup[] = [
     ],
   },
   {
+    title: 'Svelte API',
+    items: [
+      { id: 'svelte', title: 'Svelte Overview', icon: 'Hexagon', href: '/docs/svelte' },
+      { id: 'svelte-api', title: 'BlockTree Props', icon: 'Settings', href: '/docs/svelte-api' },
+      { id: 'svelte-state', title: 'State Management', icon: 'Database', href: '/docs/svelte-state' },
+    ],
+  },
+  {
+    title: 'Vanilla API',
+    items: [
+      { id: 'vanilla', title: 'Vanilla Overview', icon: 'Terminal', href: '/docs/vanilla' },
+      { id: 'vanilla-api', title: 'Controller API', icon: 'Settings', href: '/docs/vanilla-api' },
+      { id: 'vanilla-renderer', title: 'Default Renderer', icon: 'Layout', href: '/docs/vanilla-renderer' },
+    ],
+  },
+  {
     title: 'Features',
     items: [
       { id: 'undo-redo', title: 'Undo/Redo', icon: 'Undo2', href: '/docs/undo-redo' },

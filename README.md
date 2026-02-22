@@ -4,18 +4,22 @@
 [![CI](https://github.com/thesandybridge/dnd-block-tree/actions/workflows/ci.yml/badge.svg)](https://github.com/thesandybridge/dnd-block-tree/actions/workflows/ci.yml)
 [![demo](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://blocktree.sandybridge.io)
 
-A type-safe library for building hierarchical drag-and-drop interfaces. The framework-agnostic core (`@dnd-block-tree/core`) provides tree logic, reducers, and utilities with zero dependencies. The React adapter adds components, hooks, and @dnd-kit integration on top.
+A type-safe library for building hierarchical drag-and-drop interfaces. The framework-agnostic core (`@dnd-block-tree/core`) provides tree logic, reducers, and utilities with zero dependencies. Framework adapters for React, Svelte 5, and vanilla JS/TS add drag-and-drop integration on top.
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
 | [`@dnd-block-tree/core`](./packages/core) | Framework-agnostic core — types, collision detection, reducers, tree factory, utilities. Zero dependencies. |
-| [`@dnd-block-tree/react`](./packages/react) | React adapter — components, hooks, @dnd-kit integration. |
+| [`@dnd-block-tree/react`](./packages/react) | React adapter — components, hooks, @dnd-kit/core integration. |
+| [`@dnd-block-tree/svelte`](./packages/svelte) | Svelte 5 adapter — components, runes-based state, @dnd-kit/svelte integration. |
+| [`@dnd-block-tree/vanilla`](./packages/vanilla) | Vanilla JS/TS adapter — headless controller + optional default renderer. Zero framework deps. |
 
-Use `@dnd-block-tree/react` for the full React API, or `@dnd-block-tree/core` directly for framework-agnostic tree operations (server-side manipulation, testing, non-React frameworks).
+Choose the adapter for your framework, or use `@dnd-block-tree/core` directly for headless tree operations (server-side manipulation, testing, custom integrations).
 
 ## Installation
+
+### React
 
 ```bash
 npm install @dnd-block-tree/react @dnd-kit/core @dnd-kit/utilities
@@ -23,7 +27,25 @@ npm install @dnd-block-tree/react @dnd-kit/core @dnd-kit/utilities
 
 Requires **React 18+** and **@dnd-kit/core 6+**.
 
+### Svelte 5
+
+```bash
+npm install @dnd-block-tree/svelte @dnd-kit/svelte @dnd-kit/dom svelte
+```
+
+Requires **Svelte 5.29+**, **@dnd-kit/svelte 0.3+**, and **@dnd-kit/dom 0.3+**.
+
+### Vanilla JS/TS
+
+```bash
+npm install @dnd-block-tree/vanilla
+```
+
+Only dependency is `@dnd-block-tree/core`. No framework peer dependencies.
+
 ## Quick Start
+
+### React
 
 ```tsx
 import { BlockTree, type BaseBlock, type BlockRenderers } from '@dnd-block-tree/react'
@@ -53,6 +75,63 @@ function App() {
     />
   )
 }
+```
+
+### Svelte 5
+
+```svelte
+<script lang="ts">
+  import { BlockTree, type BaseBlock } from '@dnd-block-tree/svelte'
+
+  let blocks = $state([
+    { id: '1', type: 'section', title: 'Tasks', parentId: null, order: 0 },
+    { id: '2', type: 'task', title: 'Do something', parentId: '1', order: 0 },
+  ])
+</script>
+
+<BlockTree
+  {blocks}
+  containerTypes={['section']}
+  onChange={(b) => blocks = b}
+>
+  {#snippet renderBlock({ block, children, isExpanded, onToggleExpand })}
+    <div>
+      {#if onToggleExpand}
+        <button onclick={onToggleExpand}>{isExpanded ? '▼' : '▶'}</button>
+      {/if}
+      {block.title}
+      {#if children}{@render children()}{/if}
+    </div>
+  {/snippet}
+</BlockTree>
+```
+
+### Vanilla JS/TS
+
+```typescript
+import { createBlockTreeController, createDefaultRenderer, createElement } from '@dnd-block-tree/vanilla'
+
+const controller = createBlockTreeController({
+  initialBlocks: [
+    { id: '1', type: 'folder', label: 'Documents', parentId: null, order: 0 },
+    { id: '2', type: 'file', label: 'readme.txt', parentId: '1', order: 0 },
+  ],
+  containerTypes: ['folder'],
+})
+
+const container = document.getElementById('tree')!
+
+createDefaultRenderer(controller, {
+  container,
+  renderBlock: (block, ctx) => {
+    const el = createElement('div', { class: 'block' })
+    el.textContent = block.label
+    if (ctx.children) el.appendChild(ctx.children)
+    return el
+  },
+})
+
+controller.mount(container)
 ```
 
 ## Features
@@ -88,9 +167,10 @@ Check out the [live demo](https://blocktree.sandybridge.io) with two example use
 
 ## Built With
 
-- [dnd-kit](https://dndkit.com/) — drag and drop toolkit for React
+- [dnd-kit](https://dndkit.com/) — drag and drop toolkit (React via @dnd-kit/core, Svelte via @dnd-kit/svelte)
 - [Turborepo](https://turbo.build/) — monorepo build system
 - React 18+ / React 19
+- Svelte 5 (runes, `{@attach}`, `{#snippet}`)
 - TypeScript
 
 ## License

@@ -1,0 +1,168 @@
+## Vanilla Overview
+
+The `@dnd-block-tree/vanilla` package provides a vanilla JS/TS adapter with zero framework dependencies. It uses a two-layer architecture: a headless controller for state management and an optional default renderer for automatic DOM updates.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────┐
+│  Layer 2: Default Renderer (optional)       │
+│  - Subscribes to controller events          │
+│  - Builds/updates DOM automatically         │
+│  - Sets data attributes for styling         │
+│  - Registers draggables and drop zones      │
+├─────────────────────────────────────────────┤
+│  Layer 1: Headless Controller               │
+│  - Manages all tree state                   │
+│  - Handles drag logic and collision         │
+│  - Drives sensors (pointer, touch, keyboard)│
+│  - Emits events (render, drag, selection)   │
+├─────────────────────────────────────────────┤
+│  @dnd-block-tree/core                       │
+│  - Tree factory, reducers, utilities        │
+│  - Collision detection algorithms           │
+└─────────────────────────────────────────────┘
+```
+
+**Layer 1 (Controller)** manages all state without touching the DOM. Use it headless for complete rendering control, or pair it with the default renderer.
+
+**Layer 2 (Renderer)** is optional. It subscribes to controller events and automatically builds DOM, sets data attributes, and registers drag/drop targets. You provide a `renderBlock` callback for custom content.
+
+### Quick Start
+
+#### With Default Renderer
+
+```typescript
+import {
+  createBlockTreeController,
+  createDefaultRenderer,
+  createElement,
+} from '@dnd-block-tree/vanilla'
+
+const controller = createBlockTreeController({
+  initialBlocks: [
+    { id: '1', type: 'folder', label: 'Documents', parentId: null, order: 0 },
+    { id: '2', type: 'file', label: 'readme.txt', parentId: '1', order: 0 },
+  ],
+  containerTypes: ['folder'],
+})
+
+const container = document.getElementById('tree')!
+
+createDefaultRenderer(controller, {
+  container,
+  renderBlock: (block, ctx) => {
+    const el = createElement('div', { class: 'block' })
+    el.textContent = block.label
+    if (ctx.onToggleExpand) {
+      const btn = createElement('button')
+      btn.textContent = ctx.isExpanded ? '▼' : '▶'
+      btn.addEventListener('click', ctx.onToggleExpand)
+      el.prepend(btn)
+    }
+    if (ctx.children) el.appendChild(ctx.children)
+    return el
+  },
+})
+
+controller.mount(container)
+```
+
+#### Headless (Custom Rendering)
+
+```typescript
+import { createBlockTreeController } from '@dnd-block-tree/vanilla'
+
+const controller = createBlockTreeController({
+  initialBlocks: [...],
+  containerTypes: ['folder'],
+})
+
+controller.on('render', (blocks, expandedMap) => {
+  // Your custom rendering logic
+  renderMyCustomTree(blocks, expandedMap)
+})
+
+controller.on('drag:statechange', (state) => {
+  // Update drag indicators
+  updateDragUI(state.isDragging, state.activeId, state.hoverZone)
+})
+
+controller.mount(document.getElementById('tree')!)
+```
+
+### Sensors
+
+Three built-in sensors handle user input:
+
+| Sensor | Activation | Description |
+|--------|------------|-------------|
+| **Pointer** | 8px movement | Mouse/pointer drag with activation distance |
+| **Touch** | 200ms long-press | Touch input with haptic feedback |
+| **Keyboard** | Arrow keys | Navigation, Enter/Space for expand, Escape to cancel |
+
+Configure sensors via options:
+
+```typescript
+const controller = createBlockTreeController({
+  // ...
+  sensors: {
+    pointer: true,           // Default: true
+    touch: true,             // Default: true
+    keyboard: true,          // Default: false
+    activationDistance: 8,    // Pointer movement threshold
+    longPressDelay: 200,     // Touch hold duration
+    hapticFeedback: true,    // Vibrate on touch activation
+  },
+})
+```
+
+### Data Attributes
+
+The default renderer sets data attributes on DOM elements for CSS-based styling:
+
+| Attribute | Element | Description |
+|-----------|---------|-------------|
+| `data-block-id` | Block wrapper | Block's unique ID |
+| `data-block-type` | Block wrapper | Block's type string |
+| `data-depth` | Block wrapper | Nesting depth (0-based) |
+| `data-dragging="true"` | Block wrapper | Present when being dragged |
+| `data-selected="true"` | Block wrapper | Present when selected |
+| `data-zone-id` | Drop zone | Zone identifier (e.g. `before-{id}`) |
+| `data-zone-active="true"` | Drop zone | Present on active hover zone |
+| `data-drag-overlay="true"` | Overlay | Fixed-position drag ghost |
+| `data-dnd-ghost="true"` | Ghost | Semi-transparent landing preview |
+| `data-dnd-tree-root="true"` | Container | Root tree element |
+
+Style with CSS:
+
+```css
+[data-dragging="true"] { opacity: 0.4; }
+[data-selected="true"] { outline: 2px solid blue; }
+[data-zone-active="true"] { background: #3b82f6; height: 4px; }
+[data-depth="0"] { padding-left: 0; }
+[data-depth="1"] { padding-left: 24px; }
+[data-depth="2"] { padding-left: 48px; }
+```
+
+### SSR Safety
+
+The controller requires a DOM container, so it's safe to create on the server but must not be mounted until the DOM is available:
+
+```typescript
+// Safe: create controller at module level
+const controller = createBlockTreeController({ ... })
+
+// Mount only in browser
+if (typeof window !== 'undefined') {
+  controller.mount(document.getElementById('tree')!)
+}
+```
+
+### Installation
+
+```bash
+npm install @dnd-block-tree/vanilla
+```
+
+Only dependency is `@dnd-block-tree/core`. No framework peer dependencies.

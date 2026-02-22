@@ -66,3 +66,15 @@ jobs:
         working-directory: packages/react
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish svelte
+        run: npm publish --access public --provenance
+        working-directory: packages/svelte
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish vanilla
+        run: npm publish --access public --provenance
+        working-directory: packages/vanilla
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
