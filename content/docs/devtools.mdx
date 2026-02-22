@@ -1,0 +1,172 @@
+## DevTools
+
+A floating, draggable, resizable debug panel — similar to TanStack Query DevTools — that surfaces tree state, event logs, performance metrics, and a structure diff view. Ships with the package as a zero-dependency component using only inline styles.
+
+### Quick Start
+
+```tsx
+import {
+  BlockTree,
+  BlockTreeDevTools,
+  useDevToolsCallbacks,
+} from 'dnd-block-tree'
+
+function App() {
+  const [blocks, setBlocks] = useState(initialBlocks)
+  const { callbacks, events, clearEvents } = useDevToolsCallbacks()
+
+  return (
+    <>
+      <BlockTree
+        blocks={blocks}
+        renderers={renderers}
+        containerTypes={['section']}
+        onChange={setBlocks}
+        onDragStart={callbacks.onDragStart}
+        onDragEnd={callbacks.onDragEnd}
+        onBlockMove={callbacks.onBlockMove}
+        onExpandChange={callbacks.onExpandChange}
+        onHoverChange={callbacks.onHoverChange}
+      />
+      <BlockTreeDevTools
+        blocks={blocks}
+        containerTypes={['section']}
+        events={events}
+        onClearEvents={clearEvents}
+        getLabel={(block) => block.title}
+      />
+    </>
+  )
+}
+```
+
+A circular trigger button appears in the corner of the viewport. Click it to open the panel.
+
+### Panels
+
+The DevTools card has two columns: a **main column** (always visible) and a **diff column** (toggled via the "Diff" button in the title bar).
+
+#### Tree State
+
+Live snapshot of the block tree structure:
+
+| Metric | Description |
+|--------|-------------|
+| **Blocks** | Total number of blocks in the flat array |
+| **Containers** | Blocks whose type is in `containerTypes` (can have children) |
+| **Max Depth** | Deepest nesting level in the tree (root = 1) |
+| **Validation** | Checks for cycles, orphans, and stale parent refs via `validateBlockTree()` |
+
+#### Event Log
+
+Chronological log of tree events. Each entry shows a timestamp, a color-coded badge, and a summary. Event types:
+
+| Badge | Callback | Description |
+|-------|----------|-------------|
+| **DRAG** | `onDragStart` | A block was picked up |
+| **DROP** | `onDragEnd` | A block was dropped or drag was cancelled |
+| **MOVE** | `onBlockMove` | A block was reparented to a new position |
+| **EXPAND** | `onExpandChange` | A container was expanded or collapsed |
+| **HOVER** | `onHoverChange` | The pointer entered a drop zone |
+
+Up to 100 events are retained. Click **Clear** to reset.
+
+#### Performance
+
+Render metrics for the DevTools component itself:
+
+| Metric | Description |
+|--------|-------------|
+| **Render Count** | How many times the DevTools component has rendered |
+| **Last Render** | Time since the previous render |
+| **Block Count Delta** | Change in block count since the last render |
+
+#### Structure Diff
+
+Toggle with the **Diff** button. Shows the full tree with change indicators:
+
+- **+** (green) — block was added since the last render
+- **~** (amber) — block was moved (parentId or order changed)
+- No marker — unchanged
+
+Each row shows the block type, label (via `getLabel`), and current order value.
+
+### Interaction
+
+- **Open/close**: Click the trigger button or the × in the title bar
+- **Drag**: Grab the title bar to reposition the panel (clamped to viewport)
+- **Resize**: Drag any edge or corner to resize (min 280×200)
+- **Diff toggle**: Auto-widens the panel to accommodate the second column
+
+### `BlockTreeDevToolsProps`
+
+```typescript
+interface BlockTreeDevToolsProps<T extends BaseBlock = BaseBlock> {
+  blocks: T[]
+  containerTypes?: readonly string[]
+  events: DevToolsEventEntry[]
+  onClearEvents: () => void
+  getLabel?: (block: T) => string
+  initialOpen?: boolean
+  position?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right'
+  buttonStyle?: React.CSSProperties
+  panelStyle?: React.CSSProperties
+}
+```
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `blocks` | `T[]` | — | The current block array |
+| `containerTypes` | `readonly string[]` | `[]` | Block types that act as containers |
+| `events` | `DevToolsEventEntry[]` | — | Event log entries from `useDevToolsCallbacks` |
+| `onClearEvents` | `() => void` | — | Callback to clear the event log |
+| `getLabel` | `(block: T) => string` | `(b) => b.type` | Label function for the diff view |
+| `initialOpen` | `boolean` | `false` | Whether the panel starts open |
+| `position` | `string` | `'bottom-left'` | Corner for the trigger button |
+| `buttonStyle` | `CSSProperties` | — | Custom styles for the trigger button |
+| `panelStyle` | `CSSProperties` | — | Custom styles for the floating card |
+
+### `useDevToolsCallbacks`
+
+Returns pre-wired callback functions that log events for the DevTools panel.
+
+```typescript
+function useDevToolsCallbacks<T extends BaseBlock = BaseBlock>(): {
+  callbacks: DevToolsCallbacks<T>
+  events: DevToolsEventEntry[]
+  clearEvents: () => void
+}
+```
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `callbacks` | `DevToolsCallbacks<T>` | Object with `onDragStart`, `onDragEnd`, `onBlockMove`, `onExpandChange`, `onHoverChange` |
+| `events` | `DevToolsEventEntry[]` | Array of logged events (newest first, max 100) |
+| `clearEvents` | `() => void` | Clear all logged events |
+
+Spread the callbacks onto your `BlockTree`:
+
+```tsx
+const { callbacks, events, clearEvents } = useDevToolsCallbacks()
+
+<BlockTree
+  {...otherProps}
+  onDragStart={callbacks.onDragStart}
+  onDragEnd={callbacks.onDragEnd}
+  onBlockMove={callbacks.onBlockMove}
+  onExpandChange={callbacks.onExpandChange}
+  onHoverChange={callbacks.onHoverChange}
+/>
+```
+
+<CalloutCard title="Production builds">
+
+DevTools adds minimal overhead but is intended for development. You can conditionally render it:
+
+```tsx
+{process.env.NODE_ENV === 'development' && (
+  <BlockTreeDevTools blocks={blocks} events={events} onClearEvents={clearEvents} />
+)}
+```
+
+</CalloutCard>

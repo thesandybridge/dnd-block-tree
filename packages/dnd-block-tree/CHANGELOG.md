@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.2.0
+
+### Features
+
+- **Floating DevTools panel** — `BlockTreeDevTools` is now a self-contained floating UI (like TanStack Query DevTools) instead of an embedded tab. Circular trigger button in a configurable corner opens a draggable, resizable dark card with tree state, event log, and performance metrics.
+- **Built-in structure diff** — The diff view is now part of the DevTools panel, toggled via a "Diff" button in the title bar. Shows added/moved/unchanged blocks in a second column that auto-widens the panel. Accepts a `getLabel` prop for custom block labels.
+- **Resizable panel** — Drag any edge or corner to resize the DevTools card (min 280×200). Toggling the diff view auto-adjusts width.
+- **Tooltips throughout** — Hover any stat row, section heading, or event badge to see what it means.
+- **Trigger button tooltip** — Hovering the floating button shows "dnd-block-tree DevTools" when the panel is closed.
+
+### New Props
+
+- `getLabel?: (block: T) => string` — Label function for the diff view (default: `block.type`)
+- `initialOpen?: boolean` — Whether the panel starts open (default: `false`)
+- `position?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right'` — Corner for the trigger button
+- `buttonStyle?: CSSProperties` — Custom styles for the trigger button
+- `panelStyle?: CSSProperties` — Custom styles for the floating card
+
+### Breaking Changes
+
+- `BlockTreeDevToolsProps.className` and `BlockTreeDevToolsProps.style` removed — the component is now self-positioning with fixed layout. Use `buttonStyle` and `panelStyle` for customization.
+
+### Docs
+
+- New **DevTools** documentation page covering all panels, props, and usage patterns.
+
 ## 1.1.0
 
 ### Robustness

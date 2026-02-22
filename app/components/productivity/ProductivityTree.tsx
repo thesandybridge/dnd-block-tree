@@ -1,23 +1,21 @@
 'use client'
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
-import { BlockTree, useBlockHistory, useDevToolsCallbacks, type BlockRenderers, generateId, initFractionalOrder } from 'dnd-block-tree'
+import { BlockTree, useBlockHistory, useDevToolsCallbacks, BlockTreeDevTools, type BlockRenderers, generateId, initFractionalOrder } from 'dnd-block-tree'
 import type { ProductivityBlock } from './types'
 import { CONTAINER_TYPES } from './types'
 import { SectionBlock } from './blocks/SectionBlock'
 import { TaskBlock } from './blocks/TaskBlock'
 import { NoteBlock } from './blocks/NoteBlock'
-import { DiffView } from '../DiffView'
 import { SettingsPanel, type SettingsTab } from '../shared/SettingsPanel'
 import { DragDropTab } from '../shared/settings/DragDropTab'
 import { TreeTab } from '../shared/settings/TreeTab'
 import { AnimationTab } from '../shared/settings/AnimationTab'
 import { SensorsTab } from '../shared/settings/SensorsTab'
-import { DevToolsTab } from '../shared/settings/DevToolsTab'
 import { Toggle } from '../shared/settings/Toggle'
 import { DEFAULT_PRODUCTIVITY_SETTINGS, type ProductivitySettings } from '../shared/settings/types'
 import { Button } from '@thesandybridge/ui/components'
-import { GripVertical, Plus, RotateCcw, Trash2, Undo2, Redo2, GripHorizontal, Trees, Sparkles, Radio, Bug } from 'lucide-react'
+import { GripVertical, Plus, RotateCcw, Trash2, Undo2, Redo2, GripHorizontal, Trees, Sparkles, Radio } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const INITIAL_BLOCKS: ProductivityBlock[] = [
@@ -303,23 +301,17 @@ export function ProductivityTree() {
       icon: Radio,
       content: <SensorsTab settings={settings} onChange={updateSettings} />,
     },
-    {
-      id: 'devtools',
-      label: 'DevTools',
-      icon: Bug,
-      content: (
-        <DevToolsTab
-          blocks={blocks}
-          containerTypes={CONTAINER_TYPES}
-          events={devToolsEvents}
-          onClearEvents={clearEvents}
-        />
-      ),
-    },
-  ], [settings, updateSettings, blocks, devToolsEvents, clearEvents])
+  ], [settings, updateSettings])
 
   return (
     <div className="space-y-4 w-full max-w-full min-w-0 overflow-hidden">
+      <BlockTreeDevTools
+        blocks={blocks}
+        containerTypes={CONTAINER_TYPES}
+        events={devToolsEvents}
+        onClearEvents={clearEvents}
+        getLabel={getBlockLabel}
+      />
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1 p-1 bg-muted rounded-lg">
           <Button variant="ghost" size="sm" onClick={addSection} className="gap-1">
@@ -410,7 +402,6 @@ export function ProductivityTree() {
 
         <div className="space-y-4">
           <SettingsPanel tabs={settingsTabs} />
-          <DiffView blocks={blocks} getLabel={getBlockLabel} />
         </div>
       </div>
     </div>

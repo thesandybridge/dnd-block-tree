@@ -1,21 +1,19 @@
 'use client'
 
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react'
-import { BlockTree, useDevToolsCallbacks, type BlockRenderers, generateId, initFractionalOrder } from 'dnd-block-tree'
+import { BlockTree, useDevToolsCallbacks, BlockTreeDevTools, type BlockRenderers, generateId, initFractionalOrder } from 'dnd-block-tree'
 import type { FileSystemBlock } from './types'
 import { CONTAINER_TYPES } from './types'
 import { FolderBlock } from './blocks/FolderBlock'
 import { FileBlock } from './blocks/FileBlock'
-import { DiffView } from '../DiffView'
 import { SettingsPanel, type SettingsTab } from '../shared/SettingsPanel'
 import { DragDropTab } from '../shared/settings/DragDropTab'
 import { TreeTab } from '../shared/settings/TreeTab'
 import { AnimationTab } from '../shared/settings/AnimationTab'
 import { SensorsTab } from '../shared/settings/SensorsTab'
-import { DevToolsTab } from '../shared/settings/DevToolsTab'
 import { DEFAULT_SETTINGS, type BaseSettings } from '../shared/settings/types'
 import { Button } from '@thesandybridge/ui/components'
-import { Folder, File, GripVertical, Plus, RotateCcw, Trash2, GripHorizontal, Trees, Sparkles, Radio, Bug } from 'lucide-react'
+import { Folder, File, GripVertical, Plus, RotateCcw, Trash2, GripHorizontal, Trees, Sparkles, Radio } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const INITIAL_BLOCKS: FileSystemBlock[] = [
@@ -245,23 +243,17 @@ export function FileTree() {
       icon: Radio,
       content: <SensorsTab settings={settings} onChange={updateSettings} />,
     },
-    {
-      id: 'devtools',
-      label: 'DevTools',
-      icon: Bug,
-      content: (
-        <DevToolsTab
-          blocks={blocks}
-          containerTypes={CONTAINER_TYPES}
-          events={devToolsEvents}
-          onClearEvents={clearEvents}
-        />
-      ),
-    },
-  ], [settings, updateSettings, blocks, devToolsEvents, clearEvents])
+  ], [settings, updateSettings])
 
   return (
     <div className="space-y-4 w-full max-w-full min-w-0 overflow-hidden">
+      <BlockTreeDevTools
+        blocks={blocks}
+        containerTypes={CONTAINER_TYPES}
+        events={devToolsEvents}
+        onClearEvents={clearEvents}
+        getLabel={getBlockLabel}
+      />
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex gap-1 p-1 bg-muted rounded-lg">
           <Button variant="ghost" size="sm" onClick={addFolder} className="gap-1">
@@ -324,7 +316,6 @@ export function FileTree() {
 
         <div className="space-y-4">
           <SettingsPanel tabs={settingsTabs} />
-          <DiffView blocks={blocks} getLabel={getBlockLabel} />
         </div>
       </div>
     </div>
