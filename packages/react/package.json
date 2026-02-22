@@ -1,6 +1,6 @@
 {
   "name": "@dnd-block-tree/react",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "React adapter for dnd-block-tree — drag-and-drop hierarchical block trees",
   "repository": {
     "type": "git",
