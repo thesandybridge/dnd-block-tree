@@ -10,9 +10,6 @@ jobs:
     permissions:
       contents: read
       packages: read
-    defaults:
-      run:
-        working-directory: packages/dnd-block-tree
     steps:
       - uses: actions/checkout@v4
 
@@ -26,14 +23,14 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
+      - name: Build all packages
+        run: npm run lib:build
+
       - name: Typecheck
-        run: npm run typecheck
+        run: npx turbo run typecheck
 
       - name: Run tests
-        run: npm test
-
-      - name: Build
-        run: npm run build
+        run: npx turbo run test
 
   publish:
     needs: test
@@ -42,9 +39,6 @@ jobs:
       contents: read
       packages: read
       id-token: write
-    defaults:
-      run:
-        working-directory: packages/dnd-block-tree
     steps:
       - uses: actions/checkout@v4
 
@@ -58,10 +52,11 @@ jobs:
         env:
           NPM_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
-      - name: Build
-        run: npm run build
+      - name: Build all packages
+        run: npm run lib:build
 
       - name: Publish with provenance
         run: npm publish --access public --provenance
+        working-directory: packages/dnd-block-tree
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
