@@ -44,6 +44,7 @@ export { getDropZoneType, extractBlockId } from './core/types'
 
 // Collision detection
 export { weightedVerticalCollision, closestCenterCollision, createStickyCollision } from './core/collision'
+export type { SnapshotRectsRef } from './core/collision'
 
 // Sensors
 export { useConfiguredSensors, getSensorConfig } from './core/sensors'

@@ -141,8 +141,33 @@ export function reparentBlockIndex<T extends BaseBlock>(
   // Cannot drop on itself
   if (dragged.id === zoneTargetId) return state
 
-  // Remove dragged from old parent
+  // Compute target insert index (before any mutation) for no-op detection
   const oldList = byParent.get(oldParentId) ?? []
+  const currentIndexInOldParent = oldList.indexOf(dragged.id)
+
+  // Compute what the target index would be in the new parent's child list
+  const preNewList = byParent.get(newParentId) ?? []
+  let targetIndex: number
+  if (isInto) {
+    targetIndex = 0
+  } else if (isEnd) {
+    targetIndex = preNewList.length
+  } else {
+    const idx = preNewList.indexOf(zoneTargetId)
+    targetIndex = idx === -1 ? preNewList.length : isAfter ? idx + 1 : idx
+  }
+
+  // No-op detection: if same parent, adjust target for removal
+  if (oldParentId === newParentId && currentIndexInOldParent !== -1) {
+    const adjustedTarget = targetIndex > currentIndexInOldParent
+      ? targetIndex - 1
+      : targetIndex
+    if (adjustedTarget === currentIndexInOldParent) {
+      return state
+    }
+  }
+
+  // Remove dragged from old parent
   const filtered = oldList.filter(id => id !== dragged.id)
   byParent.set(oldParentId, filtered)
 
@@ -151,20 +176,12 @@ export function reparentBlockIndex<T extends BaseBlock>(
   let insertIndex: number
 
   if (isInto) {
-    // into-{parentId} or root-start means insert at position 0
     insertIndex = 0
   } else if (isEnd) {
-    // end-{parentId} or root-end means insert at the end
     insertIndex = newList.length
   } else {
     const idx = newList.indexOf(zoneTargetId)
     insertIndex = idx === -1 ? newList.length : isAfter ? idx + 1 : idx
-  }
-
-  // Check if already at correct position
-  const currentIndex = newList.indexOf(dragged.id)
-  if (dragged.parentId === newParentId && currentIndex === insertIndex) {
-    return state
   }
 
   newList.splice(insertIndex, 0, dragged.id)

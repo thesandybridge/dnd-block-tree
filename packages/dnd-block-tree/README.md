@@ -13,8 +13,9 @@ A headless React library for building hierarchical drag-and-drop interfaces. Bri
 ## Features
 
 - **Stable Drop Zones** - Zones render based on original block positions, not preview state, ensuring consistent drop targets during drag
-- **Ghost Preview** - Semi-transparent preview shows where blocks will land without affecting zone positions
-- **Depth-Aware Collision** - Smart algorithm prefers nested zones when cursor is at indented levels, with hysteresis to prevent flickering
+- **Ghost Preview** - In-flow semi-transparent preview shows where blocks will land with accurate layout
+- **Snapshotted Collision** - Zone rects are frozen on drag start and re-measured after each ghost commit, preventing layout-shift feedback loops
+- **Depth-Aware Collision** - Smart algorithm prefers nested zones when cursor is at indented levels, with cross-depth-aware hysteresis
 - **Mobile & Touch Support** - Separate touch/pointer activation constraints with configurable `longPressDelay` and optional `hapticFeedback`
 - **Snapshot-Based Computation** - State captured at drag start. All preview computations use snapshot, ensuring consistent behavior
 - **Debounced Preview** - 150ms debounced virtual state for smooth drag previews without jitter
@@ -627,6 +628,31 @@ const collision = createStickyCollision(20)
 
 You can also pass any `CollisionDetection` function from `@dnd-kit/core`.
 
+### Snapshotted Zone Rects
+
+`createStickyCollision` accepts an optional `SnapshotRectsRef` — a ref to a `Map<string, DOMRect>` of frozen zone positions. When provided, collision detection uses these snapshots instead of live DOM measurements, preventing feedback loops caused by the in-flow ghost preview shifting zone positions.
+
+```typescript
+import { createStickyCollision, type SnapshotRectsRef } from 'dnd-block-tree'
+
+const snapshotRef: SnapshotRectsRef = { current: null }
+const collision = createStickyCollision(20, snapshotRef)
+
+// Snapshot all zone rects after drag starts:
+snapshotRef.current = new Map(
+  [...document.querySelectorAll('[data-zone-id]')].map(el => [
+    el.getAttribute('data-zone-id')!,
+    el.getBoundingClientRect(),
+  ])
+)
+```
+
+`BlockTree` handles this lifecycle automatically — zones are snapshotted on drag start and re-measured via `requestAnimationFrame` after each ghost position commit.
+
+### Cross-Depth Hysteresis
+
+The sticky collision uses a reduced threshold (25% of normal) when switching between zones at different indentation levels. This makes it easy to drag blocks in and out of containers while still preventing flickering between same-depth adjacent zones.
+
 ## Type Safety
 
 The library provides automatic type inference for container vs non-container renderers:
@@ -687,7 +713,8 @@ import {
   // Collision detection
   weightedVerticalCollision,  // Edge-distance collision, depth-aware
   closestCenterCollision,     // Simple closest-center collision
-  createStickyCollision,      // Hysteresis wrapper to prevent flickering
+  createStickyCollision,      // Hysteresis wrapper with snapshot support
+  type SnapshotRectsRef,      // Ref type for frozen zone rects
 
   // Hooks
   useBlockHistory,            // Undo/redo state management

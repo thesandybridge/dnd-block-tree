@@ -27,7 +27,7 @@ import type {
   DropZoneType,
 } from '../core/types'
 import { getDropZoneType, extractBlockId } from '../core/types'
-import { createStickyCollision } from '../core/collision'
+import { createStickyCollision, type SnapshotRectsRef } from '../core/collision'
 import { useConfiguredSensors } from '../core/sensors'
 import { TreeRenderer } from './TreeRenderer'
 import { DragOverlay } from './DragOverlay'
@@ -233,13 +233,31 @@ export function BlockTree<
   // IDs being dragged (for multi-select, sorted by visible order)
   const draggedIdsRef = useRef<string[]>([])
 
+  // Snapshotted drop zone rects — collision detection reads from this instead
+  // of live DOM to prevent feedback loops caused by in-flow ghost previews.
+  const snapshotRectsRef = useRef<Map<string, DOMRect> | null>(null) as SnapshotRectsRef
+  const needsResnapshot = useRef(false)
+
   // Sticky collision with hysteresis to prevent flickering between adjacent zones
-  const stickyCollisionRef = useRef(createStickyCollision(20))
+  const stickyCollisionRef = useRef(createStickyCollision(20, snapshotRectsRef))
+
+  // Snapshot all drop zone rects from the DOM
+  const snapshotZoneRects = useCallback(() => {
+    const root = rootRef.current
+    if (!root) return
+    const zones = root.querySelectorAll('[data-zone-id]')
+    const map = new Map<string, DOMRect>()
+    zones.forEach(el => {
+      const id = el.getAttribute('data-zone-id')
+      if (id) map.set(id, el.getBoundingClientRect())
+    })
+    snapshotRectsRef.current = map
+  }, [])
 
   // Force re-render
   const [, forceRender] = useReducer((x: number) => x + 1, 0)
 
-  // Debounced virtual state setter
+  // Debounced virtual state setter — also flags re-snapshot after ghost moves
   const debouncedSetVirtual = useRef(
     debounce((newBlocks: T[] | null) => {
       if (newBlocks) {
@@ -247,6 +265,7 @@ export function BlockTree<
       } else {
         stateRef.current.virtualState = null
       }
+      needsResnapshot.current = true
       forceRender()
     }, previewDebounce)
   ).current
@@ -410,6 +429,16 @@ export function BlockTree<
     lastClickedIdRef.current = blockId
   }, [multiSelect, selectedIds, setSelectedIds, visibleBlockIds])
 
+  // Re-snapshot zone rects after DOM settles (ghost moved to new position)
+  useEffect(() => {
+    if (!needsResnapshot.current || !stateRef.current.isDragging) return
+    needsResnapshot.current = false
+    // Wait for browser to paint the new ghost position before measuring
+    requestAnimationFrame(() => {
+      snapshotZoneRects()
+    })
+  })
+
   // Focus management via useEffect
   useEffect(() => {
     if (!keyboardNavigation || !focusedIdRef.current || !rootRef.current) return
@@ -492,6 +521,7 @@ export function BlockTree<
     stateRef.current.isDragging = true
     initialBlocksRef.current = [...blocks]
     cachedReorderRef.current = null
+    needsResnapshot.current = true
     forceRender()
   }, [blocks, canDrag, onDragStart, multiSelect, selectedIds, setSelectedIds, visibleBlockIds, sensorConfig?.hapticFeedback])
 
@@ -602,6 +632,7 @@ export function BlockTree<
         cachedReorderRef.current = null
         initialBlocksRef.current = []
         fromPositionRef.current = null
+        snapshotRectsRef.current = null
         forceRender()
         return
       }
@@ -653,6 +684,7 @@ export function BlockTree<
     initialBlocksRef.current = []
     fromPositionRef.current = null
     draggedIdsRef.current = []
+    snapshotRectsRef.current = null
 
     // Notify parent of change
     if (cached && onChange) {
@@ -691,6 +723,7 @@ export function BlockTree<
     initialBlocksRef.current = []
     fromPositionRef.current = null
     draggedIdsRef.current = []
+    snapshotRectsRef.current = null
 
     forceRender()
   }, [blocks, debouncedSetVirtual, debouncedDragMove, onDragCancel, onDragEnd])

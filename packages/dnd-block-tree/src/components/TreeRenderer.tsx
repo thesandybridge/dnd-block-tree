@@ -38,6 +38,19 @@ export interface TreeRendererProps<T extends BaseBlock> {
 }
 
 /**
+ * Ghost preview wrapper — renders in normal document flow so the user sees
+ * an accurate preview of the final layout. Collision detection uses
+ * snapshotted zone rects to avoid feedback loops from the ghost's displacement.
+ */
+function GhostPreview({ children }: { children: ReactNode }) {
+  return (
+    <div data-dnd-ghost className="opacity-50" style={{ pointerEvents: 'none' }}>
+      {children}
+    </div>
+  )
+}
+
+/**
  * Draggable wrapper for individual blocks
  */
 function DraggableBlock<T extends BaseBlock>({
@@ -156,15 +169,15 @@ export function TreeRenderer<T extends BaseBlock>({
 
         return (
           <Fragment key={block.id}>
-            {/* Ghost preview before this block */}
+            {/* Ghost preview before this block — out-of-flow so it doesn't shift zones */}
             {ghostBeforeThis && GhostRenderer && (
-              <div className="opacity-50 pointer-events-none" style={{ minWidth: 0 }}>
+              <GhostPreview>
                 {GhostRenderer({
                   block: draggedBlock as T & { type: typeof draggedBlock.type },
                   isDragging: true,
                   depth,
                 })}
-              </div>
+              </GhostPreview>
             )}
 
             {/* Render the block */}
@@ -246,17 +259,17 @@ export function TreeRenderer<T extends BaseBlock>({
         )
       })}
 
-      {/* Ghost at end of container if index equals length */}
+      {/* Ghost at end of container — out-of-flow so it doesn't shift the end zone */}
       {showGhostHere && previewPosition!.index >= filteredBlocks.length && draggedBlock && (() => {
         const GhostRenderer = renderers[draggedBlock.type as keyof typeof renderers]
         return GhostRenderer ? (
-          <div className="opacity-50 pointer-events-none" style={{ minWidth: 0 }}>
+          <GhostPreview>
             {GhostRenderer({
               block: draggedBlock as T & { type: typeof draggedBlock.type },
               isDragging: true,
               depth,
             })}
-          </div>
+          </GhostPreview>
         ) : null
       })()}
 

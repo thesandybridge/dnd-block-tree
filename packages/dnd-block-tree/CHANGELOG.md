@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.6.0
+
+### Features
+
+- **Snapshotted collision detection** — Zone rects are frozen on drag start and re-measured via `requestAnimationFrame` after each ghost commit. Collision detection uses these snapshots instead of live DOM measurements, preventing feedback loops caused by the in-flow ghost preview shifting zone positions. New `SnapshotRectsRef` type exported.
+- **Cross-depth hysteresis** — The sticky collision threshold is reduced to 25% when switching between zones at different indentation levels (detected via `left` edge comparison). Makes it responsive to drag blocks in and out of containers while preventing flickering between same-depth adjacent zones.
+- **Stronger horizontal scoring** — The within-bounds horizontal factor increased from 0.05 to 0.3, so zones at different indentation levels are clearly differentiated even when both are within the pointer's horizontal range.
+- **In-flow ghost preview** — Ghost preview renders in normal document flow for accurate visual layout instead of absolute positioning.
+
+### Fixes
+
+- Fixed feedback loop where ghost preview shifting layout caused collision detection to oscillate between zones
+- Fixed difficulty dragging blocks below expanded containers (end-zone competing with parent-level zones)
+- Fixed difficulty dragging blocks into the last position of a container from below
+- Fixed same-parent move no-op detection in `reparentBlockIndex` (block was removed before index lookup)
+
+### CI
+
+- Added typecheck step to CI pipeline
+- Install from workspace root for proper dependency resolution
+
 ## 0.5.0
 
 ### Features

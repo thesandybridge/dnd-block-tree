@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/dnd-block-tree
     steps:
       - uses: actions/checkout@v4
 
@@ -18,13 +21,14 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
-        working-directory: packages/dnd-block-tree
+        run: npm ci
+        working-directory: .
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Run tests
         run: npm test
-        working-directory: packages/dnd-block-tree
 
       - name: Build
         run: npm run build
-        working-directory: packages/dnd-block-tree

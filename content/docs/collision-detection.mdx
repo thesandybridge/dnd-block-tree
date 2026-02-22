@@ -6,7 +6,7 @@ Custom algorithms that determine which drop zone the pointer is closest to durin
 
 #### weightedVerticalCollision (Default)
 
-Scores drop zones by distance to nearest edge with bottom bias. Prevents flickering at zone boundaries.
+Scores drop zones by distance to nearest edge with bottom bias and depth-aware horizontal scoring.
 
 ```typescript
 import { weightedVerticalCollision } from 'dnd-block-tree'
@@ -16,7 +16,8 @@ How it works:
 
 - Calculates distance from pointer to nearest edge (top or bottom) of each zone
 - Applies -5px bias to zones below the pointer midpoint
-- Includes horizontal scoring (prefers zones within pointer X-range)
+- Horizontal scoring prefers zones whose left edge matches the pointer's X position (factor 0.3)
+- Zones outside the pointer's horizontal bounds receive a strong penalty (2x distance)
 - Returns single winner (lowest score)
 
 #### closestCenterCollision
@@ -29,7 +30,7 @@ import { closestCenterCollision } from 'dnd-block-tree'
 
 #### createStickyCollision
 
-Creates a collision detector with hysteresis -- the active zone doesn't change unless a new zone scores significantly better than the current one.
+Creates a collision detector with hysteresis -- the active zone doesn't change unless a new zone scores significantly better than the current one. Supports snapshotted zone rects.
 
 ```typescript
 import { createStickyCollision } from 'dnd-block-tree'
@@ -42,6 +43,7 @@ const stickyCollision = createStickyCollision(15) // threshold in pixels
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `threshold` | `number` | `15` | Minimum score improvement (in pixels) needed to switch zones |
+| `snapshotRef` | `SnapshotRectsRef` | - | Optional ref to frozen zone rects (see below) |
 
 The returned object also has a `reset()` method to clear state between drags:
 
@@ -51,6 +53,34 @@ const stickyCollision = createStickyCollision(15)
 // Reset sticky state when a drag ends
 stickyCollision.reset()
 ```
+
+### Snapshotted Zone Rects
+
+The in-flow ghost preview shifts drop zone positions during drag. Without mitigation, this creates a feedback loop: the ghost appears at the target zone, pushing nearby zones down, which changes which zone is closest, which moves the ghost, and so on.
+
+To prevent this, `createStickyCollision` accepts a `SnapshotRectsRef` -- a ref to a `Map` of frozen zone positions. When provided, collision detection uses the snapshot instead of live DOM measurements.
+
+```typescript
+import { createStickyCollision, type SnapshotRectsRef } from 'dnd-block-tree'
+
+const snapshotRef: SnapshotRectsRef = { current: null }
+const collision = createStickyCollision(20, snapshotRef)
+```
+
+**Snapshot lifecycle** (handled automatically by `BlockTree`):
+
+1. **Drag start** -- after the dragged block is removed from flow, snapshot all zone `getBoundingClientRect()` values
+2. **Pointer moves** -- collision detection runs against frozen snapshot rects
+3. **Ghost commits** -- when the preview target changes (after debounce + hysteresis), the ghost renders at its new position. After `requestAnimationFrame` (browser has painted), re-snapshot all zones
+4. **Drag end** -- clear the snapshot
+
+Between snapshots, the zone rects are stable. The ghost can shift layout freely without affecting collision scoring. Re-snapshotting after each commit keeps the positions accurate as the ghost moves.
+
+### Cross-Depth Hysteresis
+
+When switching between zones at different indentation levels (e.g., `end-{container}` at depth 2 vs `after-{container}` at depth 1), the sticky threshold is reduced to 25% of normal. This makes it responsive to move blocks in and out of containers, while same-depth transitions keep the full threshold to prevent flickering.
+
+The depth change is detected by comparing the `left` edge of the current zone with the best candidate. If they differ by more than 20px, a reduced threshold is applied.
 
 ### Custom Collision Detection
 
@@ -72,6 +102,6 @@ const myCollision: CollisionDetection = (args) => {
 
 <CalloutCard title="Choosing a Collision Algorithm">
 
-The default `weightedVerticalCollision` is optimized for vertical tree layouts. Use `createStickyCollision` if you experience flickering at zone boundaries.
+The default `createStickyCollision` with snapshotted rects handles most cases well. The horizontal scoring and cross-depth hysteresis make it easy to target both nested container zones and parent-level zones. Use a custom algorithm only if you have specialized layout requirements.
 
 </CalloutCard>

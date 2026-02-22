@@ -1,19 +1,26 @@
 import type { CollisionDetection, CollisionDescriptor, UniqueIdentifier } from '@dnd-kit/core'
 
+export type SnapshotRectsRef = { current: Map<UniqueIdentifier, DOMRect> | null }
+
 /**
  * Compute collision scores for drop zones
  * Considers both vertical distance and horizontal containment
+ *
+ * When snapshotRects is provided, uses snapshotted rects instead of live DOM
+ * rects. This prevents feedback loops caused by in-flow ghost previews
+ * shifting zone positions during drag.
  */
 function computeCollisionScores(
   droppableContainers: Parameters<CollisionDetection>[0]['droppableContainers'],
-  collisionRect: NonNullable<Parameters<CollisionDetection>[0]['collisionRect']>
+  collisionRect: NonNullable<Parameters<CollisionDetection>[0]['collisionRect']>,
+  snapshotRects?: Map<UniqueIdentifier, DOMRect> | null
 ): CollisionDescriptor[] {
   const pointerX = collisionRect.left + collisionRect.width / 2
   const pointerY = collisionRect.top + collisionRect.height / 2
 
   const candidates: CollisionDescriptor[] = droppableContainers
     .map((container) => {
-      const rect = container.rect.current
+      const rect = snapshotRects?.get(container.id) ?? container.rect.current
       if (!rect) return null
 
       const distanceToTop = Math.abs(pointerY - rect.top)
@@ -26,20 +33,20 @@ function computeCollisionScores(
       const isBelowCenter = pointerY > rect.top + rect.height / 2
       const bias = isBelowCenter ? -5 : 0
 
-      // Horizontal scoring: prefer zones that match pointer's indentation level
+      // Horizontal scoring: prefer zones whose indentation matches the pointer.
+      // The factor (0.3) is tuned so a typical indentation gap (~48px) produces
+      // a score difference (~14) that can overcome a reduced sticky threshold
+      // for cross-depth transitions.
       const isWithinX = pointerX >= rect.left && pointerX <= rect.right
 
       let horizontalScore = 0
       if (isWithinX) {
-        // BONUS for zones whose left edge is further right (more indented)
-        // This makes inner/nested zones win over outer zones when pointer is inside both
-        horizontalScore = -rect.left * 0.1
+        horizontalScore = Math.abs(pointerX - rect.left) * 0.3
       } else {
-        // Penalty based on horizontal distance, capped at 50
         const distanceToZone = pointerX < rect.left
           ? rect.left - pointerX
           : pointerX - rect.right
-        horizontalScore = Math.min(distanceToZone, 50)
+        horizontalScore = distanceToZone * 2
       }
 
       return {
@@ -47,6 +54,7 @@ function computeCollisionScores(
         data: {
           droppableContainer: container,
           value: edgeDistance + bias + horizontalScore,
+          left: rect.left,
         },
       } as CollisionDescriptor
     })
@@ -86,8 +94,14 @@ export const weightedVerticalCollision: CollisionDetection = ({
  * between adjacent drop zones.
  *
  * @param threshold - Minimum score improvement required to switch zones (default: 15px)
+ * @param snapshotRef - Optional ref to snapshotted zone rects. When populated,
+ *   collision detection uses these frozen rects instead of live DOM measurements,
+ *   preventing layout-shift feedback loops from in-flow ghost previews.
  */
-export function createStickyCollision(threshold = 15): CollisionDetection & { reset: () => void } {
+export function createStickyCollision(
+  threshold = 15,
+  snapshotRef?: SnapshotRectsRef
+): CollisionDetection & { reset: () => void } {
   let currentZoneId: UniqueIdentifier | null = null
 
   const detector: CollisionDetection = ({
@@ -96,7 +110,7 @@ export function createStickyCollision(threshold = 15): CollisionDetection & { re
   }) => {
     if (!collisionRect) return []
 
-    const candidates = computeCollisionScores(droppableContainers, collisionRect)
+    const candidates = computeCollisionScores(droppableContainers, collisionRect, snapshotRef?.current)
     if (candidates.length === 0) return []
 
     const bestCandidate = candidates[0]
@@ -109,8 +123,16 @@ export function createStickyCollision(threshold = 15): CollisionDetection & { re
       if (currentCandidate) {
         const currentScore = (currentCandidate.data as { value: number }).value
 
+        // Use reduced threshold for cross-depth transitions (different indentation
+        // levels). Same-depth zones get full stickiness to prevent flickering;
+        // cross-depth zones are responsive so users can move in/out of containers.
+        const currentLeft = (currentCandidate.data as unknown as { left: number }).left
+        const bestLeft = (bestCandidate.data as unknown as { left: number }).left
+        const crossDepth = Math.abs(currentLeft - bestLeft) > 20
+        const effectiveThreshold = crossDepth ? threshold * 0.25 : threshold
+
         // Only switch if new winner is significantly better (by threshold)
-        if (currentScore - bestScore < threshold) {
+        if (currentScore - bestScore < effectiveThreshold) {
           // Stick with current zone
           return [currentCandidate]
         }
