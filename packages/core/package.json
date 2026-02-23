@@ -1,6 +1,6 @@
 {
   "name": "@dnd-block-tree/core",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Framework-agnostic core for dnd-block-tree — zero dependencies, pure TypeScript",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

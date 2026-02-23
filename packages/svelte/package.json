@@ -1,6 +1,6 @@
 {
   "name": "@dnd-block-tree/svelte",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "Svelte 5 adapter for dnd-block-tree — drag-and-drop hierarchical block trees",
   "svelte": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,7 +12,10 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "!dist/**/*.test.*"],
+  "files": [
+    "dist",
+    "!dist/**/*.test.*"
+  ],
   "scripts": {
     "build": "svelte-package -i src -o dist",
     "dev": "svelte-package -i src -o dist --watch",
