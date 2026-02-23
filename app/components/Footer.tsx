@@ -25,7 +25,7 @@ export function Footer() {
             <ul className="text-muted-foreground space-y-2 text-sm">
               <li>
                 <a
-                  href="https://www.npmjs.com/package/dnd-block-tree"
+                  href="https://www.npmjs.com/package/@dnd-block-tree/core"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-foreground transition-colors"
