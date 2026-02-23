@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import { generateThemeScript } from "@thesandybridge/themes";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Favicon } from "@/components/favicon";
@@ -26,11 +27,22 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const umamiUrl = process.env.NEXT_PUBLIC_UMAMI_URL;
+  const umamiId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="darkreader-lock" />
         <script dangerouslySetInnerHTML={{ __html: generateThemeScript() }} />
+        {umamiUrl && umamiId && (
+          <Script
+            async
+            src={umamiUrl}
+            data-website-id={umamiId}
+            strategy="afterInteractive"
+          />
+        )}
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <ThemeProvider>
