@@ -6,5 +6,4 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   treeshake: true,
-  external: ['@dnd-block-tree/core'],
 })
