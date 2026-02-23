@@ -26,6 +26,7 @@
     "svelte": "^5.29.0"
   },
   "devDependencies": {
+    "@dnd-block-tree/core": "^2.0.0",
     "@dnd-kit/dom": "^0.3.2",
     "@dnd-kit/svelte": "^0.3.2",
     "@sveltejs/package": "^2.3.0",

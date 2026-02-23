@@ -28,6 +28,7 @@
     "@dnd-block-tree/core": "^2.0.0"
   },
   "devDependencies": {
+    "@dnd-block-tree/core": "^2.0.0",
     "jsdom": "^25.0.0",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
