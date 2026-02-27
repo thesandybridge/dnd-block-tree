@@ -261,7 +261,8 @@ pre.shiki code {
   transition: box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.selection-ring.selected {
+.selection-ring.selected,
+.selection-ring[data-selected="true"] {
   box-shadow:
     0 0 0 2px var(--primary),
     0 0 0 4px rgba(var(--secondary-fg-rgb), 0.20);

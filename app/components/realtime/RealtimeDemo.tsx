@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react'
 import { SyncChannelProvider, type BusyReason } from './SyncChannelProvider'
 import { RealtimePane } from './RealtimePane'
+import { VanillaRealtimePane } from './VanillaRealtimePane'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { Radio, Pencil, GripVertical } from 'lucide-react'
 
@@ -24,7 +25,11 @@ const BUSY_CONFIG: Record<BusyReason, { icon: typeof Radio; color: string; text:
   },
 }
 
-export function RealtimeDemo() {
+interface RealtimeDemoProps {
+  framework?: 'react' | 'vanilla'
+}
+
+export function RealtimeDemo({ framework = 'react' }: RealtimeDemoProps) {
   const isMobile = useIsMobile()
   const [remoteBusy, setRemoteBusy] = useState<{ peerId: string; reason: BusyReason } | null>(null)
 
@@ -56,18 +61,37 @@ export function RealtimeDemo() {
           )}
         </div>
         <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'grid-cols-2'}`}>
-          <RealtimePane
-            peerId="user-a"
-            label="User A"
-            accentColor="bg-blue-500"
-            onRemoteBusy={handleRemoteBusy}
-          />
-          <RealtimePane
-            peerId="user-b"
-            label="User B"
-            accentColor="bg-green-500"
-            onRemoteBusy={handleRemoteBusy}
-          />
+          {framework === 'vanilla' ? (
+            <>
+              <VanillaRealtimePane
+                peerId="user-a"
+                label="User A"
+                accentColor="bg-blue-500"
+                onRemoteBusy={handleRemoteBusy}
+              />
+              <VanillaRealtimePane
+                peerId="user-b"
+                label="User B"
+                accentColor="bg-green-500"
+                onRemoteBusy={handleRemoteBusy}
+              />
+            </>
+          ) : (
+            <>
+              <RealtimePane
+                peerId="user-a"
+                label="User A"
+                accentColor="bg-blue-500"
+                onRemoteBusy={handleRemoteBusy}
+              />
+              <RealtimePane
+                peerId="user-b"
+                label="User B"
+                accentColor="bg-green-500"
+                onRemoteBusy={handleRemoteBusy}
+              />
+            </>
+          )}
         </div>
       </div>
     </SyncChannelProvider>

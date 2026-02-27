@@ -5,13 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } fro
 import { ThemePicker } from './components/ThemePicker'
 import { CodeBlock } from './components/CodeBlock'
 import { ProductivityTree } from './components/productivity/ProductivityTree'
+import { VanillaProductivityTree } from './components/productivity/VanillaProductivityTree'
 import { FileTree } from './components/filesystem/FileTree'
+import { VanillaFileTree } from './components/filesystem/VanillaFileTree'
 import { RealtimeDemo } from './components/realtime/RealtimeDemo'
 import { Footer } from './components/Footer'
 import { Layers, FolderTree, Github, BookOpen, Radio } from 'lucide-react'
 import Link from 'next/link'
 
 type DemoTab = 'productivity' | 'filesystem' | 'realtime'
+type Framework = 'react' | 'vanilla'
 
 const FEATURES = [
   {
@@ -66,10 +69,13 @@ const BADGES = [
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<DemoTab>('productivity')
+  const [framework, setFramework] = useState<Framework>('react')
 
   const setProductivityTab = useCallback(() => setActiveTab('productivity'), [])
   const setFilesystemTab = useCallback(() => setActiveTab('filesystem'), [])
   const setRealtimeTab = useCallback(() => setActiveTab('realtime'), [])
+  const setReactFramework = useCallback(() => setFramework('react'), [])
+  const setVanillaFramework = useCallback(() => setFramework('vanilla'), [])
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -140,47 +146,65 @@ export default function Home() {
                     <CardTitle className="text-xl">Interactive Demo</CardTitle>
                     <CardDescription>Try dragging blocks to reorder them</CardDescription>
                   </div>
-                  <div className="flex gap-1 p-1 bg-muted rounded-lg self-start sm:self-auto">
-                    <Button
-                      variant={activeTab === 'productivity' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={setProductivityTab}
-                      className="gap-2"
-                    >
-                      <Layers className="h-4 w-4" />
-                      <span className="hidden sm:inline">Productivity</span>
-                      <span className="sm:hidden">Tasks</span>
-                    </Button>
-                    <Button
-                      variant={activeTab === 'filesystem' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={setFilesystemTab}
-                      className="gap-2"
-                    >
-                      <FolderTree className="h-4 w-4" />
-                      <span className="hidden sm:inline">File System</span>
-                      <span className="sm:hidden">Files</span>
-                    </Button>
-                    <Button
-                      variant={activeTab === 'realtime' ? 'default' : 'ghost'}
-                      size="sm"
-                      onClick={setRealtimeTab}
-                      className="gap-2"
-                    >
-                      <Radio className="h-4 w-4" />
-                      <span className="hidden sm:inline">Realtime</span>
-                      <span className="sm:hidden">Sync</span>
-                    </Button>
+                  <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                    <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                      <Button
+                        variant={framework === 'react' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={setReactFramework}
+                      >
+                        React
+                      </Button>
+                      <Button
+                        variant={framework === 'vanilla' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={setVanillaFramework}
+                      >
+                        Vanilla JS
+                      </Button>
+                    </div>
+                    <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                      <Button
+                        variant={activeTab === 'productivity' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={setProductivityTab}
+                        className="gap-2"
+                      >
+                        <Layers className="h-4 w-4" />
+                        <span className="hidden sm:inline">Productivity</span>
+                        <span className="sm:hidden">Tasks</span>
+                      </Button>
+                      <Button
+                        variant={activeTab === 'filesystem' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={setFilesystemTab}
+                        className="gap-2"
+                      >
+                        <FolderTree className="h-4 w-4" />
+                        <span className="hidden sm:inline">File System</span>
+                        <span className="sm:hidden">Files</span>
+                      </Button>
+                      <Button
+                        variant={activeTab === 'realtime' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={setRealtimeTab}
+                        className="gap-2"
+                      >
+                        <Radio className="h-4 w-4" />
+                        <span className="hidden sm:inline">Realtime</span>
+                        <span className="sm:hidden">Sync</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 {activeTab === 'productivity' ? (
-                  <ProductivityTree />
+                  framework === 'vanilla' ? <VanillaProductivityTree /> : <ProductivityTree />
                 ) : activeTab === 'filesystem' ? (
-                  <FileTree />
+                  framework === 'vanilla' ? <VanillaFileTree /> : <FileTree />
                 ) : (
-                  <RealtimeDemo />
+                  <RealtimeDemo framework={framework} />
                 )}
               </CardContent>
             </Card>

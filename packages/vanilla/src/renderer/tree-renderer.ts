@@ -9,6 +9,9 @@ export interface TreeRendererOptions<T extends BaseBlock> {
   renderBlock: (block: T, ctx: RenderBlockContext) => HTMLElement
   containerTypes: readonly string[]
   dropZoneHeight?: number
+  dropZoneClassName?: string
+  rootClassName?: string
+  indentClassName?: string
 }
 
 /**
@@ -23,13 +26,16 @@ export function renderTree<T extends BaseBlock>(
   parentId: string | null = null,
   depth = 0
 ): HTMLElement {
-  const { renderBlock, containerTypes, dropZoneHeight } = options
+  const { renderBlock, containerTypes, dropZoneHeight, dropZoneClassName, rootClassName, indentClassName } = options
 
   const container = createElement('div', {
     role: parentId === null ? 'tree' : 'group',
   })
   if (parentId === null) {
     container.setAttribute('data-dnd-tree-root', 'true')
+    if (rootClassName) container.className = rootClassName
+  } else {
+    if (indentClassName) container.className = indentClassName
   }
 
   const children = blocks.filter(b => b.parentId === parentId)
@@ -39,11 +45,11 @@ export function renderTree<T extends BaseBlock>(
 
   // Start zone for container
   if (parentId !== null) {
-    const startZone = createDropZoneElement({ id: `into-${parentId}`, height: dropZoneHeight })
+    const startZone = createDropZoneElement({ id: `into-${parentId}`, height: dropZoneHeight, className: dropZoneClassName })
     controller.registerDropZone(`into-${parentId}`, startZone)
     container.appendChild(startZone)
   } else {
-    const rootStart = createDropZoneElement({ id: 'root-start', height: dropZoneHeight })
+    const rootStart = createDropZoneElement({ id: 'root-start', height: dropZoneHeight, className: dropZoneClassName })
     controller.registerDropZone('root-start', rootStart)
     container.appendChild(rootStart)
   }
@@ -53,7 +59,7 @@ export function renderTree<T extends BaseBlock>(
     if (block.id === activeId) continue
 
     // Before zone
-    const beforeZone = createDropZoneElement({ id: `before-${block.id}`, height: dropZoneHeight })
+    const beforeZone = createDropZoneElement({ id: `before-${block.id}`, height: dropZoneHeight, className: dropZoneClassName })
     controller.registerDropZone(`before-${block.id}`, beforeZone)
     container.appendChild(beforeZone)
 
@@ -101,11 +107,11 @@ export function renderTree<T extends BaseBlock>(
 
   // End zone
   if (parentId !== null) {
-    const endZone = createDropZoneElement({ id: `end-${parentId}`, height: dropZoneHeight })
+    const endZone = createDropZoneElement({ id: `end-${parentId}`, height: dropZoneHeight, className: dropZoneClassName })
     controller.registerDropZone(`end-${parentId}`, endZone)
     container.appendChild(endZone)
   } else {
-    const rootEnd = createDropZoneElement({ id: 'root-end', height: dropZoneHeight })
+    const rootEnd = createDropZoneElement({ id: 'root-end', height: dropZoneHeight, className: dropZoneClassName })
     controller.registerDropZone('root-end', rootEnd)
     container.appendChild(rootEnd)
   }

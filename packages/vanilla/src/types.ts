@@ -87,8 +87,13 @@ export interface RenderBlockContext {
 /** DefaultRenderer options */
 export interface DefaultRendererOptions<T extends BaseBlock = BaseBlock> {
   container: HTMLElement
+  containerTypes?: readonly string[]
   renderBlock: (block: T, ctx: RenderBlockContext) => HTMLElement
   dropZoneHeight?: number
+  dropZoneClassName?: string
+  dropZoneActiveClassName?: string
+  rootClassName?: string
+  indentClassName?: string
   animateExpand?: boolean
 }
 

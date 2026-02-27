@@ -114,6 +114,7 @@ export function createBlockTreeController<T extends BaseBlock>(
   const draggableElements = new Map<string, HTMLElement>()
   const dropZoneElements = new Map<string, HTMLElement>()
   let snapshotRects: Map<string, Rect> | null = null
+  let dragFromPosition: { parentId: string | null; index: number } | null = null
 
   // Selection state
   const selectedIds = new Set<string>()
@@ -123,7 +124,7 @@ export function createBlockTreeController<T extends BaseBlock>(
   const activeSensors: Sensor[] = []
 
   // Overlay
-  const overlay = new DragOverlay()
+  let overlay = new DragOverlay()
   let overlayRenderer: ((block: T) => HTMLElement) | null = null
 
   // History (opt-in)
@@ -166,8 +167,22 @@ export function createBlockTreeController<T extends BaseBlock>(
         ? [...selectedIds]
         : [blockId]
 
+      // Capture from position before drag starts
+      const blocks = tree.getBlocks()
+      const dragBlock = blocks.find(b => b.id === blockId)
+      if (dragBlock) {
+        const siblings = blocks.filter(b => b.parentId === dragBlock.parentId)
+        dragFromPosition = {
+          parentId: dragBlock.parentId,
+          index: siblings.findIndex(b => b.id === blockId),
+        }
+      }
+
       const started = tree.startDrag(blockId, draggedIds)
-      if (!started) return
+      if (!started) {
+        dragFromPosition = null
+        return
+      }
 
       stickyCollision.reset()
       snapshotRects = measureDropZoneRects(dropZoneElements)
@@ -176,11 +191,7 @@ export function createBlockTreeController<T extends BaseBlock>(
       const block = tree.getBlock(blockId)
       const el = draggableElements.get(blockId)
       if (block && el) {
-        if (overlayRenderer) {
-          overlay.show(block, el, x, y)
-        } else {
-          overlay.show(block, el, x, y)
-        }
+        overlay.show(block, el, x, y)
       }
 
       emitter.emit('drag:statechange', getDragState())
@@ -196,26 +207,38 @@ export function createBlockTreeController<T extends BaseBlock>(
 
       const targetZone = detectCollision(detector, snapshotRects, x, y)
       if (targetZone) {
+        const prevHover = tree.getHoverZone()
         tree.updateDrag(targetZone)
+        if (tree.getHoverZone() !== prevHover) {
+          emitter.emit('drag:statechange', getDragState())
+        }
       }
     },
 
     onDragEnd(_x: number, _y: number) {
+      const draggedBlockIds = selectedIds.size > 1 ? [...selectedIds] : []
+      const activeDragId = tree.getActiveId()
       const result = tree.endDrag()
       overlay.hide()
       snapshotRects = null
 
-      if (result && callbacks?.onBlockMove) {
-        // Fire block move callback
-        callbacks.onBlockMove({
-          block: tree.getBlock(tree.getBlocks()[0]?.id) as any,
-          from: { parentId: null, index: 0 },
-          to: { parentId: null, index: 0 },
-          blocks: result.blocks as T[],
-          movedIds: [],
-        })
+      if (result && callbacks?.onBlockMove && activeDragId) {
+        const movedBlock = result.blocks.find(b => b.id === activeDragId) as T | undefined
+        const movedIds = draggedBlockIds.length > 0 ? draggedBlockIds : (activeDragId ? [activeDragId] : [])
+        if (movedBlock) {
+          const siblings = result.blocks.filter(b => b.parentId === movedBlock.parentId)
+          const toIndex = siblings.findIndex(b => b.id === activeDragId)
+          callbacks.onBlockMove({
+            block: movedBlock,
+            from: dragFromPosition ?? { parentId: null, index: 0 },
+            to: { parentId: movedBlock.parentId, index: toIndex },
+            blocks: result.blocks as T[],
+            movedIds,
+          })
+        }
       }
 
+      dragFromPosition = null
       emitter.emit('drag:statechange', getDragState())
       emitter.emit('render', tree.getBlocks(), tree.getExpandedMap())
     },
@@ -450,6 +473,7 @@ export function createBlockTreeController<T extends BaseBlock>(
 
     setOverlayRenderer(render: (block: T) => HTMLElement) {
       overlayRenderer = render
+      overlay = new DragOverlay({ renderOverlay: render as (block: BaseBlock) => HTMLElement })
     },
 
     getTree: () => tree,

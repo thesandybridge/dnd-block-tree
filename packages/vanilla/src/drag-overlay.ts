@@ -23,6 +23,8 @@ export class DragOverlay {
     const overlay = document.createElement('div')
     overlay.setAttribute('data-drag-overlay', 'true')
     overlay.style.position = 'fixed'
+    overlay.style.left = '0'
+    overlay.style.top = '0'
     overlay.style.zIndex = '9999'
     overlay.style.pointerEvents = 'none'
     overlay.style.opacity = '0.7'
