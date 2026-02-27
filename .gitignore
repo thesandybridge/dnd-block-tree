@@ -42,3 +42,6 @@ next-env.d.ts
 # testing
 /test-results/
 /screenshots
+
+# local docs/plans
+/docs/

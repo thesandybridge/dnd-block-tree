@@ -6,11 +6,12 @@ import { ThemePicker } from './components/ThemePicker'
 import { CodeBlock } from './components/CodeBlock'
 import { ProductivityTree } from './components/productivity/ProductivityTree'
 import { FileTree } from './components/filesystem/FileTree'
+import { RealtimeDemo } from './components/realtime/RealtimeDemo'
 import { Footer } from './components/Footer'
-import { Layers, FolderTree, Github, BookOpen } from 'lucide-react'
+import { Layers, FolderTree, Github, BookOpen, Radio } from 'lucide-react'
 import Link from 'next/link'
 
-type DemoTab = 'productivity' | 'filesystem'
+type DemoTab = 'productivity' | 'filesystem' | 'realtime'
 
 const FEATURES = [
   {
@@ -68,6 +69,7 @@ export default function Home() {
 
   const setProductivityTab = useCallback(() => setActiveTab('productivity'), [])
   const setFilesystemTab = useCallback(() => setActiveTab('filesystem'), [])
+  const setRealtimeTab = useCallback(() => setActiveTab('realtime'), [])
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -159,11 +161,27 @@ export default function Home() {
                       <span className="hidden sm:inline">File System</span>
                       <span className="sm:hidden">Files</span>
                     </Button>
+                    <Button
+                      variant={activeTab === 'realtime' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={setRealtimeTab}
+                      className="gap-2"
+                    >
+                      <Radio className="h-4 w-4" />
+                      <span className="hidden sm:inline">Realtime</span>
+                      <span className="sm:hidden">Sync</span>
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                {activeTab === 'productivity' ? <ProductivityTree /> : <FileTree />}
+                {activeTab === 'productivity' ? (
+                  <ProductivityTree />
+                ) : activeTab === 'filesystem' ? (
+                  <FileTree />
+                ) : (
+                  <RealtimeDemo />
+                )}
               </CardContent>
             </Card>
           </div>
