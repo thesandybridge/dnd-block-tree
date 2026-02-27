@@ -12,11 +12,29 @@ export interface TreeRendererOptions<T extends BaseBlock> {
   dropZoneClassName?: string
   rootClassName?: string
   indentClassName?: string
+  /** Internal: element cache for DOM reuse across renders */
+  blockCache?: BlockCache
+}
+
+/** Cached block element with a fingerprint for change detection */
+export interface BlockCache {
+  elements: Map<string, { fingerprint: string; el: HTMLElement }>
+  /** Track which block IDs were used this render cycle for cleanup */
+  rendered: Set<string>
+}
+
+export function createBlockCache(): BlockCache {
+  return { elements: new Map(), rendered: new Set() }
+}
+
+function blockFingerprint(block: BaseBlock, isDragging: boolean, isSelected: boolean): string {
+  // Fast fingerprint: serialize only the fields that affect rendering
+  return JSON.stringify(block) + (isDragging ? '|d' : '') + (isSelected ? '|s' : '')
 }
 
 /**
  * Recursive DOM tree builder. Creates the full tree DOM from blocks.
- * Keyed by data-block-id for efficient reconciliation.
+ * Reuses cached elements for leaf blocks that haven't changed.
  */
 export function renderTree<T extends BaseBlock>(
   blocks: T[],
@@ -26,7 +44,7 @@ export function renderTree<T extends BaseBlock>(
   parentId: string | null = null,
   depth = 0
 ): HTMLElement {
-  const { renderBlock, containerTypes, dropZoneHeight, dropZoneClassName, rootClassName, indentClassName } = options
+  const { renderBlock, containerTypes, dropZoneHeight, dropZoneClassName, rootClassName, indentClassName, blockCache } = options
 
   const container = createElement('div', {
     role: parentId === null ? 'tree' : 'group',
@@ -66,29 +84,59 @@ export function renderTree<T extends BaseBlock>(
     const isContainer = containerTypes.includes(block.type)
     const isExpanded = expandedMap[block.id] !== false
     const blockDepth = getBlockDepth(index, block.id)
+    const isDragging = block.id === activeId
+    const isSelected = selectedIds.has(block.id)
 
-    // Build children for containers
-    let childrenEl: HTMLElement | null = null
-    if (isContainer && isExpanded) {
-      childrenEl = renderTree(blocks, expandedMap, controller, options, block.id, depth + 1)
+    let blockEl: HTMLElement
+
+    // For leaf blocks, reuse cached DOM elements when data hasn't changed.
+    // This prevents CSS transition resets and visual flicker.
+    if (!isContainer && blockCache) {
+      const fp = blockFingerprint(block, isDragging, isSelected)
+      const cached = blockCache.elements.get(block.id)
+
+      if (cached && cached.fingerprint === fp) {
+        // Reuse existing DOM node — no flicker
+        blockEl = cached.el
+      } else {
+        // Data changed or new block — render fresh
+        const ctx: RenderBlockContext = {
+          children: null,
+          depth: blockDepth,
+          isExpanded: false,
+          isDragging,
+          isSelected,
+          onToggleExpand: null,
+        }
+        blockEl = renderBlock(block, ctx)
+        blockCache.elements.set(block.id, { fingerprint: fp, el: blockEl })
+      }
+      blockCache.rendered.add(block.id)
+    } else {
+      // Container blocks: always re-render (children subtree may have changed)
+      let childrenEl: HTMLElement | null = null
+      if (isContainer && isExpanded) {
+        childrenEl = renderTree(blocks, expandedMap, controller, options, block.id, depth + 1)
+      }
+
+      const ctx: RenderBlockContext = {
+        children: childrenEl,
+        depth: blockDepth,
+        isExpanded,
+        isDragging,
+        isSelected,
+        onToggleExpand: isContainer ? () => controller.toggleExpand(block.id) : null,
+      }
+      blockEl = renderBlock(block, ctx)
     }
 
-    const ctx: RenderBlockContext = {
-      children: childrenEl,
-      depth: blockDepth,
-      isExpanded,
-      isDragging: block.id === activeId,
-      isSelected: selectedIds.has(block.id),
-      onToggleExpand: isContainer ? () => controller.toggleExpand(block.id) : null,
-    }
-
-    const blockEl = renderBlock(block, ctx)
+    // Always update data attributes (selection can change without block data changing)
     setDataAttributes(blockEl, {
       'block-id': block.id,
       'block-type': block.type,
       depth: String(blockDepth),
-      dragging: block.id === activeId,
-      selected: selectedIds.has(block.id),
+      dragging: isDragging,
+      selected: isSelected,
     })
 
     // Register as draggable

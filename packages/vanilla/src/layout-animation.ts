@@ -1,5 +1,3 @@
-import type { Rect } from '@dnd-block-tree/core'
-
 export interface LayoutAnimationOptions {
   duration?: number
   easing?: string
@@ -52,17 +50,19 @@ export class LayoutAnimation {
 
       el.style.transform = `translate(${deltaX}px, ${deltaY}px)`
       el.style.transition = 'none'
+    }
 
-      requestAnimationFrame(() => {
-        el.style.transition = `transform ${this.duration}ms ${this.easing}`
-        el.style.transform = ''
+    // Force reflow so the browser registers the initial transforms,
+    // then enable transitions in the same frame (no visible jump).
+    void container.offsetHeight
 
-        const onEnd = () => {
-          el.style.transition = ''
-          el.removeEventListener('transitionend', onEnd)
-        }
-        el.addEventListener('transitionend', onEnd, { once: true })
-      })
+    for (const el of blocks) {
+      if (!el.style.transform) continue
+      el.style.transition = `transform ${this.duration}ms ${this.easing}`
+      el.style.transform = ''
+      el.addEventListener('transitionend', () => {
+        el.style.transition = ''
+      }, { once: true })
     }
 
     this.snapshots.clear()

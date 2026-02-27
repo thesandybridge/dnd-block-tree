@@ -1,7 +1,7 @@
 import type { BaseBlock } from '@dnd-block-tree/core'
 import type { BlockTreeController } from '../controller'
 import type { DefaultRendererOptions, Unsubscribe, DragState } from '../types'
-import { renderTree } from './tree-renderer'
+import { renderTree, createBlockCache } from './tree-renderer'
 import { setDropZoneActive } from './drop-zone'
 
 export interface DefaultRenderer extends Unsubscribe {
@@ -21,11 +21,18 @@ export function createDefaultRenderer<T extends BaseBlock>(
   const containerTypes = explicitContainerTypes ?? (controller.getTree() as any).containerTypes ?? []
   const activeClasses = dropZoneActiveClassName?.split(/\s+/).filter(Boolean) ?? []
 
+  // Element cache: reuses leaf block DOM nodes across renders to prevent flicker
+  const blockCache = createBlockCache()
+
   function render(blocks: T[], expandedMap: Record<string, boolean>): void {
-    // Clear existing DOM — safe because we only append our own rendered tree elements
+    // Clear existing DOM — safe because we only append our own rendered tree elements.
+    // Cached elements are detached here and re-attached by renderTree.
     while (container.firstChild) container.removeChild(container.firstChild)
 
-    // Build fresh tree DOM
+    // Reset the rendered set for this cycle
+    blockCache.rendered.clear()
+
+    // Build tree DOM, reusing cached leaf elements
     const tree = renderTree(blocks, expandedMap, controller, {
       renderBlock,
       containerTypes,
@@ -33,9 +40,17 @@ export function createDefaultRenderer<T extends BaseBlock>(
       dropZoneClassName,
       rootClassName: options.rootClassName,
       indentClassName: options.indentClassName,
+      blockCache,
     })
 
     container.appendChild(tree)
+
+    // Clean up cache entries for blocks that no longer exist
+    for (const id of blockCache.elements.keys()) {
+      if (!blockCache.rendered.has(id)) {
+        blockCache.elements.delete(id)
+      }
+    }
   }
 
   // Track active drop zone for highlighting
@@ -74,6 +89,7 @@ export function createDefaultRenderer<T extends BaseBlock>(
   const renderer: DefaultRenderer = () => {
     unsubRender()
     unsubDrag()
+    blockCache.elements.clear()
   }
   renderer.refresh = () => {
     render(controller.getBlocks(), controller.getExpandedMap())
