@@ -42,6 +42,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# TanStack Router (auto-generated)
+src/routeTree.gen.ts
+
 # testing
 /test-results/
 /screenshots
