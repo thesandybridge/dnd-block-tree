@@ -94,3 +94,7 @@ export {
   initFractionalOrder,
   compareFractionalKeys,
 } from './utils/fractional'
+
+// Merge
+export { mergeBlockVersions } from './utils/merge'
+export type { MergeBlockVersionsOptions } from './utils/merge'

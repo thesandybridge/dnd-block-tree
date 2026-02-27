@@ -163,3 +163,69 @@ const history = createBlockHistory<MyBlock>(initialBlocks, { maxSteps: 50 })
   {/snippet}
 </BlockTree>
 ```
+
+### createDeferredSync
+
+Defers remote sync updates during blocking actions (editing, dragging). Remote changes queue while busy and resolve on exit. See [Deferred Sync](/docs/deferred-sync) for the full concept and strategy guide.
+
+```typescript
+import { createDeferredSync } from '@dnd-block-tree/svelte'
+
+const sync = createDeferredSync<MyBlock>({
+  onResolve: (blocks) => history.set(blocks),
+})
+```
+
+#### Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `onResolve` | `(blocks: T[]) => void` | Called when remote data is applied (only when not busy) |
+| `mergeOptions` | `MergeBlockVersionsOptions` | Options for `mergeBlockVersions` when using `'merge'` strategy |
+
+#### Returned State
+
+| Property / Method | Type | Description |
+|-------------------|------|-------------|
+| `isBusy` | `boolean` (readonly) | Whether sync is deferred (reactive via `$derived`) |
+| `apply(remoteBlocks)` | `void` | Queue if busy, call `onResolve` if idle |
+| `enterBusy()` | `void` | Enter busy state before a blocking action |
+| `exitBusy(local, strategy)` | `T[] \| null` | Exit busy and resolve queue. Returns merged result or `null` |
+
+#### Example
+
+```svelte
+<script lang="ts">
+  import { createDeferredSync, createBlockHistory, BlockTree } from '@dnd-block-tree/svelte'
+
+  const history = createBlockHistory(initialBlocks)
+  const sync = createDeferredSync<MyBlock>({
+    onResolve: (blocks) => history.set(blocks),
+  })
+
+  function handleDragStart() {
+    sync.enterBusy()
+  }
+
+  function handleDragEnd() {
+    const result = sync.exitBusy(history.blocks, 'lww')
+    if (result) channel.publish(result)
+  }
+</script>
+
+{#if sync.isBusy}
+  <span>Syncing paused...</span>
+{/if}
+
+<BlockTree
+  blocks={history.blocks}
+  containerTypes={['section']}
+  onChange={(b) => { history.set(b); channel.publish(b) }}
+  onDragStart={handleDragStart}
+  onDragEnd={handleDragEnd}
+>
+  {#snippet renderBlock({ block })}
+    <div>{block.title}</div>
+  {/snippet}
+</BlockTree>
+```

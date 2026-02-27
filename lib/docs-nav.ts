@@ -62,6 +62,7 @@ export const DOC_NAV: DocNavGroup[] = [
       { id: 'ssr', title: 'SSR Compatibility', icon: 'Server', href: '/docs/ssr' },
       { id: 'animation', title: 'Animation', icon: 'Play', href: '/docs/animation' },
       { id: 'virtual-scrolling', title: 'Virtual Scrolling', icon: 'List', href: '/docs/virtual-scrolling' },
+      { id: 'deferred-sync', title: 'Deferred Sync', icon: 'RefreshCw', href: '/docs/deferred-sync' },
       { id: 'devtools', title: 'DevTools', icon: 'Bug', href: '/docs/devtools' },
     ],
   },

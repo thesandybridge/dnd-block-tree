@@ -72,6 +72,8 @@ Fractional indexing is inherently conflict-free for concurrent edits. Two users 
 
 This makes fractional indexing a natural fit for real-time collaborative tree editing. Pair it with a CRDT framework (e.g., Yjs, Automerge) to synchronize block content, and let fractional keys handle ordering without merge conflicts.
 
+For concurrent edits that affect different fields (e.g. one user edits text while another reorders), use `mergeBlockVersions` to combine content and structural changes. See [Deferred Sync](/docs/deferred-sync) for the full busy/queue/flush pattern.
+
 ```tsx
 // User A inserts between "a" and "c" → gets "b"
 // User B inserts between "c" and "e" → gets "d"

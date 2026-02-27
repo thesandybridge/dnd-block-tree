@@ -277,6 +277,20 @@ function flatToNested<T extends BaseBlock>(blocks: T[]): NestedBlock<T>[]
 function nestedToFlat<T extends BaseBlock>(nested: NestedBlock<T>[]): T[]
 ```
 
+### Merge
+
+**Core** export. Merge two concurrent versions of a block array where each version owns different fields. See [Deferred Sync](/docs/deferred-sync) for full usage details.
+
+```typescript
+function mergeBlockVersions<T extends BaseBlock>(
+  content: T[],      // owns content fields (title, etc.)
+  structure: T[],    // owns structural fields + determines membership
+  options?: MergeBlockVersionsOptions
+): T[]
+```
+
+`structure` determines array membership and ordering. Default structural fields: `['parentId', 'order']`. Customizable via `options.structuralFields`.
+
 ### Fractional Indexing
 
 **Core** exports. See [Fractional Indexing](/docs/fractional-indexing) for details.

@@ -50,6 +50,8 @@ export type {
   // Util types
   TreeValidationResult,
   NestedBlock,
+  // Merge types
+  MergeBlockVersionsOptions,
 } from '@dnd-block-tree/core'
 
 // Re-export core functions
@@ -92,6 +94,8 @@ export {
   generateInitialKeys,
   initFractionalOrder,
   compareFractionalKeys,
+  // Merge
+  mergeBlockVersions,
 } from '@dnd-block-tree/core'
 
 // ============================================================================
@@ -156,6 +160,9 @@ export { createBlockState } from './hooks/useBlockState'
 export { createTreeState } from './hooks/useTreeState'
 export { useBlockHistory } from './hooks/useBlockHistory'
 export type { UseBlockHistoryOptions, UseBlockHistoryResult } from './hooks/useBlockHistory'
+
+export { useDeferredSync } from './hooks/useDeferredSync'
+export type { UseDeferredSyncOptions, UseDeferredSyncResult } from './hooks/useDeferredSync'
 
 export { useLayoutAnimation } from './hooks/useLayoutAnimation'
 export type { UseLayoutAnimationOptions } from './hooks/useLayoutAnimation'

@@ -1,0 +1,279 @@
+## Deferred Sync
+
+Primitives for deferring remote sync updates during blocking actions like inline editing or dragging. Remote changes queue while the user is busy and resolve when the action completes, using either a field-level merge or last-write-wins strategy.
+
+### Overview
+
+In collaborative tree editing, remote updates can arrive while the local user is mid-action (editing text, dragging a block). Applying those updates immediately would disrupt the interaction. Deferred sync solves this by:
+
+1. **Entering busy state** when a blocking action starts (edit, drag)
+2. **Queuing** incoming remote updates instead of applying them
+3. **Resolving** the queue when the action ends, using either:
+   - **Merge** — non-conflicting fields are combined (e.g. local content + remote ordering)
+   - **LWW** (Last Write Wins) — local state wins, remote queue is discarded
+
+### Concept
+
+```
+Remote update arrives
+        │
+        ▼
+   ┌─────────┐     No      ┌──────────┐
+   │ isBusy? │────────────▶│ onResolve │ (apply immediately)
+   └────┬────┘             └──────────┘
+        │ Yes
+        ▼
+   ┌──────────┐
+   │  Queue   │ (store latest remote state)
+   └────┬─────┘
+        │
+   Action ends (exitBusy)
+        │
+        ▼
+   ┌────────────┐
+   │  Strategy  │
+   └──┬─────┬───┘
+      │     │
+   merge   lww
+      │     │
+      ▼     ▼
+   Merged  Local
+   result  wins
+```
+
+### React API
+
+#### useDeferredSync
+
+```typescript
+import { useDeferredSync } from '@dnd-block-tree/react'
+
+interface UseDeferredSyncOptions<T extends BaseBlock> {
+  onResolve?: (blocks: T[]) => void
+  mergeOptions?: MergeBlockVersionsOptions
+}
+
+interface UseDeferredSyncResult<T extends BaseBlock> {
+  readonly isBusy: boolean
+  apply: (remoteBlocks: T[]) => void
+  enterBusy: () => void
+  exitBusy: (localBlocks: T[], strategy: 'merge' | 'lww') => T[] | null
+}
+
+function useDeferredSync<T extends BaseBlock>(
+  options?: UseDeferredSyncOptions<T>
+): UseDeferredSyncResult<T>
+```
+
+#### Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `onResolve` | `(blocks: T[]) => void` | Called when remote data is applied (only when not busy) |
+| `mergeOptions` | `MergeBlockVersionsOptions` | Options passed to `mergeBlockVersions` when using `'merge'` strategy |
+
+#### Return Value
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `isBusy` | `boolean` (readonly) | Whether sync is currently deferred |
+| `apply` | `(remoteBlocks: T[]) => void` | Queue remote blocks if busy, or call `onResolve` if idle |
+| `enterBusy` | `() => void` | Enter busy state before a blocking action |
+| `exitBusy` | `(local: T[], strategy) => T[] \| null` | Exit busy state and resolve queue. Returns merged result if queue existed, `null` otherwise |
+
+#### React Usage
+
+```tsx
+import { BlockTree, useBlockHistory, useDeferredSync } from '@dnd-block-tree/react'
+
+function CollaborativeTree({ channel }) {
+  const history = useBlockHistory(initialBlocks)
+  const sync = useDeferredSync<MyBlock>({
+    onResolve: (blocks) => history.set(blocks),
+  })
+
+  // Subscribe to remote updates
+  useEffect(() => {
+    return channel.subscribe((remoteBlocks) => {
+      sync.apply(remoteBlocks)
+    })
+  }, [channel, sync.apply])
+
+  const handleDragStart = () => {
+    sync.enterBusy()
+  }
+
+  const handleDragEnd = () => {
+    // Drag is LWW — local drag result wins over remote reorders
+    const result = sync.exitBusy(history.blocks, 'lww')
+    channel.publish(result ?? history.blocks)
+  }
+
+  const handleCommitEdit = (id: string, title: string) => {
+    const edited = history.blocks.map(b =>
+      b.id === id ? { ...b, title } : b
+    )
+    // Edit is merge — local content + remote structure
+    const merged = sync.exitBusy(edited, 'merge')
+    if (merged) {
+      history.set(merged)
+      channel.publish(merged)
+    } else {
+      history.set(edited)
+      channel.publish(edited)
+    }
+  }
+
+  return (
+    <BlockTree
+      blocks={history.blocks}
+      onChange={(blocks) => {
+        history.set(blocks)
+        channel.publish(blocks)
+      }}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      renderers={renderers}
+      containerTypes={['section']}
+    />
+  )
+}
+```
+
+### Vanilla API
+
+#### createDeferredSync
+
+```typescript
+import { createDeferredSync } from '@dnd-block-tree/vanilla'
+
+interface DeferredSyncOptions<T extends BaseBlock> {
+  onResolve?: (blocks: T[]) => void
+  mergeOptions?: MergeBlockVersionsOptions
+}
+
+interface DeferredSync<T extends BaseBlock> {
+  isBusy(): boolean
+  apply(remoteBlocks: T[]): void
+  enterBusy(): void
+  exitBusy(localBlocks: T[], strategy: 'merge' | 'lww'): T[] | null
+}
+
+function createDeferredSync<T extends BaseBlock>(
+  options?: DeferredSyncOptions<T>
+): DeferredSync<T>
+```
+
+#### Vanilla Usage
+
+```typescript
+const controller = createBlockTreeController<MyBlock>({ ... })
+const sync = createDeferredSync<MyBlock>({
+  onResolve: (blocks) => controller.setBlocks(blocks),
+})
+
+// Remote subscription
+socket.on('blocks', (blocks) => sync.apply(blocks))
+
+// Drag lifecycle
+controller.on('drag:statechange', ({ isDragging }) => {
+  if (isDragging) {
+    sync.enterBusy()
+  } else {
+    const result = sync.exitBusy(controller.getBlocks(), 'lww')
+    if (result) socket.emit('blocks', result)
+  }
+})
+```
+
+### Svelte API
+
+#### createDeferredSync
+
+```typescript
+import { createDeferredSync } from '@dnd-block-tree/svelte'
+
+interface DeferredSyncState<T extends BaseBlock> {
+  readonly isBusy: boolean  // reactive via $derived
+  apply(remoteBlocks: T[]): void
+  enterBusy(): void
+  exitBusy(localBlocks: T[], strategy: 'merge' | 'lww'): T[] | null
+}
+```
+
+#### Svelte Usage
+
+```svelte
+<script lang="ts">
+  import { createDeferredSync, createBlockHistory } from '@dnd-block-tree/svelte'
+
+  const history = createBlockHistory(initialBlocks)
+  const sync = createDeferredSync<MyBlock>({
+    onResolve: (blocks) => history.set(blocks),
+  })
+</script>
+
+{#if sync.isBusy}
+  <span class="text-muted">Syncing paused...</span>
+{/if}
+```
+
+### mergeBlockVersions
+
+The core merge utility used by the `'merge'` strategy. Combines two concurrent versions of a block array where each version owns different fields.
+
+```typescript
+import { mergeBlockVersions } from '@dnd-block-tree/core'
+
+interface MergeBlockVersionsOptions {
+  structuralFields?: string[]  // default: ['parentId', 'order']
+}
+
+function mergeBlockVersions<T extends BaseBlock>(
+  content: T[],     // owns content fields (title, etc.)
+  structure: T[],   // owns structural fields (parentId, order) + membership
+  options?: MergeBlockVersionsOptions
+): T[]
+```
+
+- `structure` determines array membership and ordering
+- Blocks only in `content` are dropped (remote deletions)
+- Blocks only in `structure` are kept as-is (remote additions)
+- Default structural fields: `parentId`, `order`
+
+```typescript
+// Local user edited a title while remote user reordered
+const local = [{ id: '1', type: 'task', title: 'Edited!', parentId: null, order: 0 }]
+const remote = [{ id: '1', type: 'task', title: 'Original', parentId: 'p1', order: 'k' }]
+
+const merged = mergeBlockVersions(local, remote)
+// => [{ id: '1', type: 'task', title: 'Edited!', parentId: 'p1', order: 'k' }]
+```
+
+### Conflict Resolution Strategies
+
+#### Merge
+
+Use `'merge'` when the local action modifies content fields (title, description, completed) while remote changes affect structure (parentId, order). This is the case for **inline editing** — the local user changes text while a remote user reorders blocks.
+
+```typescript
+const result = sync.exitBusy(editedBlocks, 'merge')
+// Local content fields preserved, remote ordering applied
+```
+
+#### Last Write Wins (LWW)
+
+Use `'lww'` when the local action modifies structure fields (drag-and-drop). Since both local and remote are changing the same fields, there is no safe merge — the local result takes priority.
+
+```typescript
+const result = sync.exitBusy(draggedBlocks, 'lww')
+// Local drag result kept, remote queue discarded
+```
+
+<CalloutCard title="Choosing a Strategy">
+
+**Editing text?** Use `'merge'` — content and structure are different fields, both changes survive.
+
+**Dragging blocks?** Use `'lww'` — both sides change ordering, local drag result wins.
+
+</CalloutCard>

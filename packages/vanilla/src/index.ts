@@ -39,6 +39,7 @@ export type {
   BlockTreeInstance,
   TreeValidationResult,
   NestedBlock,
+  MergeBlockVersionsOptions,
 } from '@dnd-block-tree/core'
 
 export {
@@ -73,6 +74,7 @@ export {
   generateInitialKeys,
   initFractionalOrder,
   compareFractionalKeys,
+  mergeBlockVersions,
 } from '@dnd-block-tree/core'
 
 // Vanilla-specific types
@@ -106,6 +108,10 @@ export type { DragOverlayOptions } from './drag-overlay'
 // History
 export { createBlockHistory } from './history'
 export type { BlockHistory, BlockHistoryOptions } from './history'
+
+// Deferred sync
+export { createDeferredSync } from './deferred-sync'
+export type { DeferredSync, DeferredSyncOptions } from './deferred-sync'
 
 // Layout animation
 export { LayoutAnimation } from './layout-animation'

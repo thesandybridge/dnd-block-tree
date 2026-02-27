@@ -39,6 +39,7 @@ export type {
   BlockTreeInstance,
   TreeValidationResult,
   NestedBlock,
+  MergeBlockVersionsOptions,
 } from '@dnd-block-tree/core'
 
 // Re-export core functions
@@ -74,6 +75,7 @@ export {
   generateInitialKeys,
   initFractionalOrder,
   compareFractionalKeys,
+  mergeBlockVersions,
 } from '@dnd-block-tree/core'
 
 // Svelte-specific types
@@ -113,6 +115,9 @@ export type { TreeState, TreeStateOptions } from './state/tree-state.svelte'
 
 export { createBlockHistory } from './state/block-history.svelte'
 export type { BlockHistoryOptions, BlockHistoryState } from './state/block-history.svelte'
+
+export { createDeferredSync } from './state/deferred-sync.svelte'
+export type { DeferredSyncOptions, DeferredSyncState } from './state/deferred-sync.svelte'
 
 // Components
 export { default as BlockTree } from './components/BlockTree.svelte'

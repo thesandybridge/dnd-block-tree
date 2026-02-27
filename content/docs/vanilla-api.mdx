@@ -115,6 +115,55 @@ controller.canUndo(): boolean
 controller.canRedo(): boolean
 ```
 
+### Deferred Sync
+
+The `createDeferredSync` factory defers remote updates during blocking actions. See [Deferred Sync](/docs/deferred-sync) for the full concept and strategy guide.
+
+```typescript
+import { createDeferredSync } from '@dnd-block-tree/vanilla'
+
+const sync = createDeferredSync<MyBlock>({
+  onResolve: (blocks) => controller.setBlocks(blocks),
+})
+```
+
+#### Options
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `onResolve` | `(blocks: T[]) => void` | Called when remote data is applied (only when not busy) |
+| `mergeOptions` | `MergeBlockVersionsOptions` | Options for `mergeBlockVersions` when using `'merge'` strategy |
+
+#### Returned Interface
+
+| Method | Type | Description |
+|--------|------|-------------|
+| `isBusy()` | `boolean` | Whether sync is currently deferred |
+| `apply(remoteBlocks)` | `void` | Queue if busy, call `onResolve` if idle |
+| `enterBusy()` | `void` | Enter busy state |
+| `exitBusy(local, strategy)` | `T[] \| null` | Exit busy and resolve queue |
+
+#### Example
+
+```typescript
+const sync = createDeferredSync<MyBlock>({
+  onResolve: (blocks) => controller.setBlocks(blocks),
+})
+
+// Remote subscription
+socket.on('blocks', (blocks) => sync.apply(blocks))
+
+// Drag lifecycle
+controller.on('drag:statechange', ({ isDragging }) => {
+  if (isDragging) {
+    sync.enterBusy()
+  } else {
+    const result = sync.exitBusy(controller.getBlocks(), 'lww')
+    if (result) socket.emit('blocks', result)
+  }
+})
+```
+
 ### Events
 
 Subscribe to controller events with `on()`. Returns an unsubscribe function.
