@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { TanStackRouterVite } from '@tanstack/router-plugin/vite'
+import tailwindcss from '@tailwindcss/vite'
 import mdx from '@mdx-js/rollup'
 import remarkGfm from 'remark-gfm'
 import rehypeSlug from 'rehype-slug'
@@ -12,6 +13,7 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [
+    tailwindcss(),
     TanStackRouterVite({ routesDirectory: './src/routes' }),
     mdx({
       remarkPlugins: [remarkGfm],
