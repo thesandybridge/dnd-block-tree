@@ -6,7 +6,7 @@ export function SvelteProductivityTree() {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const component = mount(ProductivityTreeDemo, { target: ref.current! })
-    return () => unmount(component)
+    return () => { void unmount(component) }
   }, [])
   return <div ref={ref} />
 }

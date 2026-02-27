@@ -15,8 +15,8 @@ export function SvelteRealtimeDemo() {
       props: { label: 'User B', accentColor: 'bg-green-500' },
     })
     return () => {
-      unmount(compA)
-      unmount(compB)
+      void unmount(compA)
+      void unmount(compB)
     }
   }, [])
   return (
