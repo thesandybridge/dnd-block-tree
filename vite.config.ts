@@ -11,13 +11,26 @@ import rehypeShiki from '@shikijs/rehype'
 import { shikiConfig } from './src/lib/shiki-config'
 import path from 'path'
 
+const rehypeRawWithMdx = [
+  rehypeRaw,
+  {
+    passThrough: [
+      'mdxFlowExpression',
+      'mdxJsxFlowElement',
+      'mdxJsxTextElement',
+      'mdxTextExpression',
+      'mdxjsEsm',
+    ],
+  },
+] as const
+
 export default defineConfig({
   plugins: [
     tailwindcss(),
     TanStackRouterVite({ routesDirectory: './src/routes' }),
     mdx({
       remarkPlugins: [remarkGfm],
-      rehypePlugins: [rehypeSlug, rehypeRaw, [rehypeShiki, shikiConfig]],
+      rehypePlugins: [rehypeSlug, rehypeRawWithMdx, [rehypeShiki, shikiConfig]],
     }),
     react(),
     svelte(),
