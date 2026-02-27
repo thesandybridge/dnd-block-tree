@@ -8,9 +8,11 @@ import {
 } from 'react'
 import type { ProductivityBlock } from '../productivity/types'
 
+export type BusyReason = 'editing' | 'dragging'
+
 export type SyncMessage =
   | { type: 'blocks'; peerId: string; blocks: ProductivityBlock[] }
-  | { type: 'editing'; peerId: string; blockId: string | null }
+  | { type: 'busy'; peerId: string; reason: BusyReason; active: boolean }
 
 type SyncHandler = (msg: SyncMessage) => void
 

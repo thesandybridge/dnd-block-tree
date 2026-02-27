@@ -1,36 +1,52 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { SyncChannelProvider } from './SyncChannelProvider'
+import { SyncChannelProvider, type BusyReason } from './SyncChannelProvider'
 import { RealtimePane } from './RealtimePane'
 import { useIsMobile } from '@/hooks/use-mobile'
-import { Radio, Pencil } from 'lucide-react'
+import { Radio, Pencil, GripVertical } from 'lucide-react'
 
 const PEER_LABELS: Record<string, string> = {
   'user-a': 'User A',
   'user-b': 'User B',
 }
 
+const BUSY_CONFIG: Record<BusyReason, { icon: typeof Radio; color: string; text: string }> = {
+  editing: {
+    icon: Pencil,
+    color: 'text-amber-500',
+    text: 'is editing — the other pane is simulating remote reorders (queued until edit finishes)',
+  },
+  dragging: {
+    icon: GripVertical,
+    color: 'text-blue-500',
+    text: 'is dragging — the other pane is simulating remote reorders (queued until drop)',
+  },
+}
+
 export function RealtimeDemo() {
   const isMobile = useIsMobile()
-  const [remoteEditing, setRemoteEditing] = useState<{ peerId: string; blockId: string } | null>(null)
+  const [remoteBusy, setRemoteBusy] = useState<{ peerId: string; reason: BusyReason } | null>(null)
 
-  const handleRemoteEditing = useCallback((peerId: string, blockId: string | null) => {
-    if (blockId) {
-      setRemoteEditing({ peerId, blockId })
+  const handleRemoteBusy = useCallback((peerId: string, reason: BusyReason | null) => {
+    if (reason) {
+      setRemoteBusy({ peerId, reason })
     } else {
-      setRemoteEditing(null)
+      setRemoteBusy(null)
     }
   }, [])
+
+  const config = remoteBusy ? BUSY_CONFIG[remoteBusy.reason] : null
+  const BusyIcon = config?.icon
 
   return (
     <SyncChannelProvider>
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {remoteEditing ? (
+          {remoteBusy && config && BusyIcon ? (
             <>
-              <Pencil className="h-3 w-3 text-amber-500 animate-pulse" />
-              <span>{PEER_LABELS[remoteEditing.peerId] ?? remoteEditing.peerId} is editing — the other pane is simulating remote reorders (queued until edit finishes)</span>
+              <BusyIcon className={`h-3 w-3 ${config.color} animate-pulse`} />
+              <span>{PEER_LABELS[remoteBusy.peerId] ?? remoteBusy.peerId} {config.text}</span>
             </>
           ) : (
             <>
@@ -44,13 +60,13 @@ export function RealtimeDemo() {
             peerId="user-a"
             label="User A"
             accentColor="bg-blue-500"
-            onRemoteEditing={handleRemoteEditing}
+            onRemoteBusy={handleRemoteBusy}
           />
           <RealtimePane
             peerId="user-b"
             label="User B"
             accentColor="bg-green-500"
-            onRemoteEditing={handleRemoteEditing}
+            onRemoteBusy={handleRemoteBusy}
           />
         </div>
       </div>

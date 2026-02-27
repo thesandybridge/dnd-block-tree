@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useMemo, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useMemo, useState } from 'react'
 import { BlockTree, useBlockHistory, useLayoutAnimation, initFractionalOrder, generateKeyBetween } from '@dnd-block-tree/react'
 import type { ProductivityBlock } from '../productivity/types'
 import { CONTAINER_TYPES } from '../productivity/types'
 import { GripVertical } from 'lucide-react'
-import { useSyncChannel, type SyncMessage } from './SyncChannelProvider'
+import { useSyncChannel, type SyncMessage, type BusyReason } from './SyncChannelProvider'
 import { createRealtimeRenderers } from './blocks'
 
 const INITIAL_BLOCKS: ProductivityBlock[] = initFractionalOrder([
@@ -41,7 +41,6 @@ function simulateReorder(blocks: ProductivityBlock[]): ProductivityBlock[] | nul
   const leaves = blocks.filter(b => b.type !== 'section')
   if (leaves.length < 2) return null
 
-  // Pick a random leaf to move
   const target = leaves[Math.floor(Math.random() * leaves.length)]
   const siblings = blocks
     .filter(b => b.parentId === target.parentId && b.id !== target.id)
@@ -49,7 +48,6 @@ function simulateReorder(blocks: ProductivityBlock[]): ProductivityBlock[] | nul
 
   if (siblings.length === 0) return null
 
-  // Pick a random insertion point among siblings
   const insertIdx = Math.floor(Math.random() * (siblings.length + 1))
   const lo = insertIdx > 0 ? String(siblings[insertIdx - 1].order) : null
   const hi = insertIdx < siblings.length ? String(siblings[insertIdx].order) : null
@@ -61,26 +59,41 @@ function simulateReorder(blocks: ProductivityBlock[]): ProductivityBlock[] | nul
   )
 }
 
+/**
+ * Merge non-conflicting changes: local owns content (title, completed, etc.),
+ * remote owns ordering (parentId, order). Used when edit + reorder happen
+ * concurrently — they affect different fields so both survive.
+ */
+function mergeBlocks(local: ProductivityBlock[], remote: ProductivityBlock[]): ProductivityBlock[] {
+  const localById = new Map(local.map(b => [b.id, b]))
+  return remote.map(r => {
+    const l = localById.get(r.id)
+    if (!l) return r
+    return { ...l, parentId: r.parentId, order: r.order }
+  })
+}
+
 interface RealtimePaneProps {
   peerId: string
   label: string
   accentColor: string
-  onRemoteEditing?: (peerId: string, blockId: string | null) => void
+  onRemoteBusy?: (peerId: string, reason: BusyReason | null) => void
 }
 
-export function RealtimePane({ peerId, label, accentColor, onRemoteEditing }: RealtimePaneProps) {
+export function RealtimePane({ peerId, label, accentColor, onRemoteBusy }: RealtimePaneProps) {
   const history = useBlockHistory<ProductivityBlock>(INITIAL_BLOCKS)
   const { subscribe, publish } = useSyncChannel()
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null)
   const queueRef = useRef<ProductivityBlock[] | null>(null)
-  const editingRef = useRef<string | null>(null)
-  editingRef.current = editingBlockId
+
+  // Track whether this pane is "busy" (editing or dragging) — queue remote changes
+  const busyRef = useRef(false)
 
   // Keep a ref to current blocks for the simulation interval
   const blocksRef = useRef(history.blocks)
   blocksRef.current = history.blocks
 
-  // Auto-simulation: when the remote peer is editing, periodically
+  // Auto-simulation: when the remote peer is busy, periodically
   // reorder a random block in THIS pane and publish the change.
   const simulationRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -102,16 +115,14 @@ export function RealtimePane({ peerId, label, accentColor, onRemoteEditing }: Re
     }
   }, [])
 
-  // Cleanup on unmount
   useEffect(() => stopSimulation, [stopSimulation])
 
-  // Subscribe to remote changes — queue if currently editing
+  // Subscribe to remote changes — queue if this pane is busy
   useEffect(() => {
     return subscribe(peerId, (msg: SyncMessage) => {
-      if (msg.type === 'editing') {
-        onRemoteEditing?.(msg.peerId, msg.blockId)
-        // Start/stop auto-simulation based on remote editing state
-        if (msg.blockId) {
+      if (msg.type === 'busy') {
+        onRemoteBusy?.(msg.peerId, msg.active ? msg.reason : null)
+        if (msg.active) {
           startSimulation()
         } else {
           stopSimulation()
@@ -119,71 +130,93 @@ export function RealtimePane({ peerId, label, accentColor, onRemoteEditing }: Re
         return
       }
       // type === 'blocks'
-      if (editingRef.current) {
-        // Queue: keep only the latest state
+      if (busyRef.current) {
         queueRef.current = msg.blocks
       } else {
         history.set(msg.blocks)
       }
     })
-  }, [peerId, subscribe, history.set, onRemoteEditing, startSimulation, stopSimulation])
+  }, [peerId, subscribe, history.set, onRemoteBusy, startSimulation, stopSimulation])
 
-  // Publish local block changes
+  // --- Helpers to enter/exit busy state ---
+
+  const publishBusy = useCallback((reason: BusyReason, active: boolean) => {
+    publish({ type: 'busy', peerId, reason, active })
+  }, [publish, peerId])
+
+  // Last write wins: discard queued remote changes and publish local state
+  const discardQueueAndPublish = useCallback((localBlocks: ProductivityBlock[]) => {
+    queueRef.current = null
+    publish({ type: 'blocks', peerId, blocks: localBlocks })
+  }, [publish, peerId])
+
+  // --- Publish local block changes (non-busy path) ---
+
   const handleChange = useCallback((newBlocks: ProductivityBlock[]) => {
     history.set(newBlocks)
     publish({ type: 'blocks', peerId, blocks: newBlocks })
   }, [history.set, publish, peerId])
 
-  // Inline editing handlers
+  // --- Drag handlers ---
+
+  const handleDragStart = useCallback(() => {
+    busyRef.current = true
+    publishBusy('dragging', true)
+  }, [publishBusy])
+
+  const handleDragEnd = useCallback(() => {
+    busyRef.current = false
+    publishBusy('dragging', false)
+    // onChange fires before onDragEnd, so history.blocks already
+    // has the drop result — that's the latest write, discard the queue.
+    queueMicrotask(() => {
+      discardQueueAndPublish(blocksRef.current)
+    })
+  }, [publishBusy, discardQueueAndPublish])
+
+  // --- Inline editing handlers ---
+
   const handleStartEdit = useCallback((id: string) => {
+    busyRef.current = true
     setEditingBlockId(id)
-    publish({ type: 'editing', peerId, blockId: id })
-  }, [publish, peerId])
+    publishBusy('editing', true)
+  }, [publishBusy])
 
   const handleCommitEdit = useCallback((id: string, title: string) => {
-    // Apply title edit to current blocks
     const edited = history.blocks.map(b =>
       b.id === id ? { ...b, title } : b
     )
 
+    busyRef.current = false
     setEditingBlockId(null)
-    publish({ type: 'editing', peerId, blockId: null })
+    publishBusy('editing', false)
 
-    // Merge edit + queued remote reorders in one atomic step
+    // Edit + reorder are non-conflicting: merge local content with remote ordering
     const queued = queueRef.current
     if (queued) {
       queueRef.current = null
-      const localById = new Map(edited.map(b => [b.id, b]))
-      const merged = queued.map(remote => {
-        const local = localById.get(remote.id)
-        if (!local) return remote
-        return { ...local, parentId: remote.parentId, order: remote.order }
-      })
+      const merged = mergeBlocks(edited, queued)
       history.set(merged)
       publish({ type: 'blocks', peerId, blocks: merged })
     } else {
       handleChange(edited)
     }
-  }, [history.blocks, handleChange, publish, peerId, history.set])
+  }, [history.blocks, handleChange, publishBusy, publish, peerId, history.set])
 
   const handleCancelEdit = useCallback(() => {
+    busyRef.current = false
     setEditingBlockId(null)
-    publish({ type: 'editing', peerId, blockId: null })
+    publishBusy('editing', false)
 
-    // Flush queued reorders, keeping current local content
+    // No local content changes — just apply remote ordering if queued
     const queued = queueRef.current
     if (queued) {
       queueRef.current = null
-      const localById = new Map(history.blocks.map(b => [b.id, b]))
-      const merged = queued.map(remote => {
-        const local = localById.get(remote.id)
-        if (!local) return remote
-        return { ...local, parentId: remote.parentId, order: remote.order }
-      })
+      const merged = mergeBlocks(history.blocks, queued)
       history.set(merged)
       publish({ type: 'blocks', peerId, blocks: merged })
     }
-  }, [publish, peerId, history.blocks, history.set])
+  }, [publishBusy, history.blocks, history.set, publish, peerId])
 
   const toggleTask = useCallback((id: string) => {
     const newBlocks = history.blocks.map(b =>
@@ -192,7 +225,7 @@ export function RealtimePane({ peerId, label, accentColor, onRemoteEditing }: Re
     handleChange(newBlocks)
   }, [history.blocks, handleChange])
 
-  // FLIP-based reorder animation for smooth transitions
+  // FLIP-based reorder animation
   const treeContainerRef = useRef<HTMLDivElement>(null)
   useLayoutAnimation(treeContainerRef, { duration: 250, easing: 'ease-out' })
 
@@ -224,6 +257,8 @@ export function RealtimePane({ peerId, label, accentColor, onRemoteEditing }: Re
           orderingStrategy="fractional"
           initialExpanded="all"
           animation={{ expandDuration: 200, easing: 'ease-out' }}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
         />
       </div>
     </div>
