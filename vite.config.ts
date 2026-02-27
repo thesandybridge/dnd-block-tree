@@ -17,7 +17,7 @@ export default defineConfig({
       remarkPlugins: [remarkGfm],
       rehypePlugins: [rehypeSlug, rehypeRaw, [rehypeShiki, shikiConfig]],
     }),
-    react({ include: /\.(tsx|ts|jsx|js|mdx|md)$/ }),
+    react(),
     svelte(),
   ],
   resolve: {
