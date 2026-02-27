@@ -1,15 +1,19 @@
-name: Publish to npm
+name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  test:
+  release:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: read
+      id-token: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -17,6 +21,7 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
         run: npm install
@@ -32,65 +37,15 @@ jobs:
       - name: Run tests
         run: npx turbo run test
 
-  publish-core:
-    needs: test
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - name: Create Release Pull Request or Publish
+        id: changesets
+        uses: changesets/action@v1
         with:
-          node-version: '20'
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: npm install
+          publish: npx changeset publish
+          version: npx changeset version
+          title: 'chore: version packages'
+          commit: 'chore: version packages'
         env:
-          NPM_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
-
-      - name: Build all packages
-        run: npm run lib:build
-
-      - name: Publish core
-        run: npm publish --access public --provenance
-        working-directory: packages/core
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-  publish-adapters:
-    needs: publish-core
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    strategy:
-      matrix:
-        package: [react, svelte, vanilla]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: npm install
-        env:
-          NPM_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
-
-      - name: Build all packages
-        run: npm run lib:build
-
-      - name: Publish ${{ matrix.package }}
-        run: npm publish --access public --provenance
-        working-directory: packages/${{ matrix.package }}
-        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
