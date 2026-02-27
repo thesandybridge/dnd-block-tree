@@ -50,5 +50,9 @@
     "vanilla",
     "headless",
     "hierarchical"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }

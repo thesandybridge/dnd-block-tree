@@ -36,5 +36,9 @@
     "url": "https://github.com/thesandybridge/dnd-block-tree",
     "directory": "packages/core"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }

@@ -62,5 +62,9 @@
     "dnd-kit",
     "headless",
     "hierarchical"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
 }
