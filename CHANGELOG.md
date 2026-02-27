@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2026-02-26
+
+### Features
+
+- Add `mergeBlockVersions` core utility for non-conflicting concurrent edits (content vs structural fields)
+- Add `useDeferredSync` React hook — busy/queue/flush pattern for collaborative editing
+- Add `createDeferredSync` vanilla factory — imperative deferred sync for vanilla JS/TS
+- Add `createDeferredSync` Svelte state factory — rune-based reactive deferred sync
+
+### Refactor
+
+- Refactor `RealtimePane` demo to use new `useDeferredSync` hook (removes inline merge/busy/queue logic)
+
+### Docs
+
+- Add Deferred Sync feature docs page with concept diagram, API reference, and strategy guide
+- Add `mergeBlockVersions` to utilities reference
+- Add `createDeferredSync` sections to Svelte state and Vanilla API docs
+- Expand Fractional Indexing CRDT section with link to deferred sync
+- Add Deferred Sync to docs navigation
+
 ## [2.2.0] - 2026-02-22
 
 ### Build
