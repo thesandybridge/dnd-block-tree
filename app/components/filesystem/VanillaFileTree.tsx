@@ -209,7 +209,7 @@ export function VanillaFileTree() {
 
     // Animate after DOM rebuild
     const unsubRenderAnim = controller.on('render', () => {
-      requestAnimationFrame(() => anim.animate(el))
+      anim.animate(el)
     })
 
     const unsubSelection = controller.on('selection:change', (ids) => {

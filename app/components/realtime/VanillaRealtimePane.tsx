@@ -52,8 +52,10 @@ function renderSection(block: ProductivityBlock, ctx: RenderBlockContext): HTMLE
   header.appendChild(chevronBtn)
 
   const title = document.createElement('span')
-  title.className = 'font-semibold text-foreground flex-1 min-w-0 truncate'
+  title.className = 'font-semibold text-foreground flex-1 min-w-0 truncate cursor-text select-none'
   title.textContent = block.title
+  title.setAttribute('data-title-id', block.id)
+  title.title = 'Double-click to edit'
   header.appendChild(title)
 
   header.appendChild(createKeyBadge(block.order))
@@ -91,8 +93,10 @@ function renderTask(block: ProductivityBlock, ctx: RenderBlockContext): HTMLElem
   wrapper.appendChild(checkBtn)
 
   const title = document.createElement('span')
-  title.className = `flex-1 min-w-0 truncate transition-all duration-200${block.completed ? ' line-through text-muted-foreground/60' : ''}`
+  title.className = `flex-1 min-w-0 truncate transition-all duration-200 cursor-text select-none${block.completed ? ' line-through text-muted-foreground/60' : ''}`
   title.textContent = block.title
+  title.setAttribute('data-title-id', block.id)
+  title.title = 'Double-click to edit'
   wrapper.appendChild(title)
 
   wrapper.appendChild(createKeyBadge(block.order))
@@ -107,8 +111,10 @@ function renderNote(block: ProductivityBlock, ctx: RenderBlockContext): HTMLElem
   wrapper.appendChild(createStickyNoteIcon('h-4 w-4 shrink-0 text-primary/80 mt-0.5 transition-colors group-hover:text-primary'))
 
   const text = document.createElement('span')
-  text.className = 'flex-1 min-w-0 text-sm text-muted-foreground leading-relaxed break-words'
+  text.className = 'flex-1 min-w-0 text-sm text-muted-foreground leading-relaxed break-words cursor-text select-none'
   text.textContent = block.title
+  text.setAttribute('data-title-id', block.id)
+  text.title = 'Double-click to edit'
   wrapper.appendChild(text)
 
   wrapper.appendChild(createKeyBadge(block.order))
@@ -205,12 +211,14 @@ export function VanillaRealtimePane({ peerId, label, accentColor, onRemoteBusy }
       renderBlock,
       rootClassName: 'flex flex-col gap-1',
       indentClassName: 'tree-indent-compact',
+      dropZoneClassName: 'h-0.5 rounded transition-all duration-150',
+      dropZoneActiveClassName: 'bg-primary h-1',
     })
 
     // Track blocks + animate AFTER renderer rebuilds DOM
     const unsubRender = controller.on('render', (blocks) => {
       blocksRef.current = blocks
-      requestAnimationFrame(() => anim.animate(el))
+      anim.animate(el)
     })
 
     // Drag lifecycle — deferred sync
@@ -242,6 +250,97 @@ export function VanillaRealtimePane({ peerId, label, accentColor, onRemoteBusy }
     }
     el.addEventListener('toggle-task', handleToggle)
 
+    // Inline editing via double-click on title spans
+    let editingBlockId: string | null = null
+
+    function commitEdit(input: HTMLInputElement, blockId: string, originalTitle: string) {
+      if (!editingBlockId) return
+      editingBlockId = null
+      const trimmed = input.value.trim()
+
+      if (trimmed && trimmed !== originalTitle) {
+        // Content changed — update block and merge with queued remote changes
+        const edited = blocksRef.current.map(b =>
+          b.id === blockId ? { ...b, title: trimmed } : b
+        )
+        publishRef.current({ type: 'busy', peerId, reason: 'editing' as BusyReason, active: false })
+        const merged = sync.exitBusy(edited, 'merge')
+        if (merged) {
+          controller.setBlocks(merged)
+          blocksRef.current = merged
+          publishRef.current({ type: 'blocks', peerId, blocks: merged })
+        } else {
+          controller.setBlocks(edited)
+          blocksRef.current = edited
+          publishRef.current({ type: 'blocks', peerId, blocks: edited })
+        }
+      } else {
+        // No change — just apply any queued remote ordering
+        publishRef.current({ type: 'busy', peerId, reason: 'editing' as BusyReason, active: false })
+        const merged = sync.exitBusy(blocksRef.current, 'merge')
+        if (merged) {
+          controller.setBlocks(merged)
+          blocksRef.current = merged
+          publishRef.current({ type: 'blocks', peerId, blocks: merged })
+        }
+      }
+    }
+
+    function cancelEdit() {
+      if (!editingBlockId) return
+      editingBlockId = null
+      publishRef.current({ type: 'busy', peerId, reason: 'editing' as BusyReason, active: false })
+      const merged = sync.exitBusy(blocksRef.current, 'merge')
+      if (merged) {
+        controller.setBlocks(merged)
+        blocksRef.current = merged
+        publishRef.current({ type: 'blocks', peerId, blocks: merged })
+      }
+    }
+
+    const handleDblClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      const blockId = target.getAttribute('data-title-id')
+      if (!blockId || editingBlockId) return
+
+      e.stopPropagation()
+      editingBlockId = blockId
+
+      // Enter busy state for deferred sync
+      sync.enterBusy()
+      publishRef.current({ type: 'busy', peerId, reason: 'editing' as BusyReason, active: true })
+
+      // Swap span for input
+      const originalTitle = target.textContent || ''
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.value = originalTitle
+      input.className = 'bg-transparent border-b border-primary outline-none w-full min-w-0 ' + target.className.replace('cursor-text select-none', '').trim()
+
+      let committed = false
+      input.addEventListener('keydown', (ke) => {
+        ke.stopPropagation() // Prevent drag sensor from intercepting
+        if (ke.key === 'Enter') {
+          ke.preventDefault()
+          committed = true
+          commitEdit(input, blockId, originalTitle)
+        } else if (ke.key === 'Escape') {
+          ke.preventDefault()
+          committed = true
+          cancelEdit()
+        }
+      })
+      input.addEventListener('blur', () => {
+        if (!committed) {
+          commitEdit(input, blockId, originalTitle)
+        }
+      })
+
+      target.replaceWith(input)
+      requestAnimationFrame(() => input.select())
+    }
+    el.addEventListener('dblclick', handleDblClick)
+
     // Subscribe to remote changes
     const unsubChannel = subscribe(peerId, (msg: SyncMessage) => {
       if (msg.type === 'busy') {
@@ -262,6 +361,7 @@ export function VanillaRealtimePane({ peerId, label, accentColor, onRemoteBusy }
     return () => {
       stopSimulation()
       el.removeEventListener('toggle-task', handleToggle)
+      el.removeEventListener('dblclick', handleDblClick)
       unsubAnimSnapshot()
       unsubRender()
       unsubDrag()

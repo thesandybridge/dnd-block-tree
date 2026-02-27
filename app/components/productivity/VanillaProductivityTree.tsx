@@ -256,7 +256,7 @@ export function VanillaProductivityTree() {
       setCanUndo(controller.canUndo())
       setCanRedo(controller.canRedo())
       setBlockCount(blocks.length)
-      requestAnimationFrame(() => anim.animate(el))
+      anim.animate(el)
     })
 
     const unsubSelection = controller.on('selection:change', (ids) => {
