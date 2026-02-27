@@ -93,16 +93,22 @@
 
   // Sticky collision detection bridged from core
   const coreStickyDetector = createStickyCollision(20)
-  const adaptedCollision = adaptCollisionDetection(
-    userCollisionDetection ?? coreStickyDetector
+  const adaptedCollision = $derived(
+    adaptCollisionDetection(userCollisionDetection ?? coreStickyDetector)
   )
 
   // Internal state
   let activeId = $state<string | null>(null)
   let hoverZone = $state<string | null>(null)
-  let expandedMap = $state<Record<string, boolean>>(
-    computeInitialExpanded(blocks, containerTypes, initialExpanded)
-  )
+  let expandedMap = $state<Record<string, boolean>>({})
+  let prevInitialExpanded: typeof initialExpanded = undefined
+
+  $effect.pre(() => {
+    if (initialExpanded !== prevInitialExpanded) {
+      prevInitialExpanded = initialExpanded
+      expandedMap = computeInitialExpanded(blocks, containerTypes, initialExpanded)
+    }
+  })
   let virtualState = $state<ReturnType<typeof computeNormalizedIndex> | null>(null)
   let isDragging = $state(false)
 
@@ -150,13 +156,15 @@
     return { parentId, index }
   })
 
-  const debouncedSetVirtual = debounce((newBlocks: BaseBlock[] | null) => {
-    if (newBlocks) {
-      virtualState = computeNormalizedIndex(newBlocks)
-    } else {
-      virtualState = null
-    }
-  }, previewDebounce)
+  const debouncedSetVirtual = $derived(
+    debounce((newBlocks: BaseBlock[] | null) => {
+      if (newBlocks) {
+        virtualState = computeNormalizedIndex(newBlocks)
+      } else {
+        virtualState = null
+      }
+    }, previewDebounce)
+  )
 
   // Event handlers
   function handleDragStart(event: any) {

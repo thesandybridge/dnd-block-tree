@@ -17,7 +17,11 @@
     open = false,
   }: Props = $props()
 
-  let isOpen = $state(open)
+  let isOpen = $state(false)
+
+  $effect.pre(() => {
+    isOpen = open
+  })
 </script>
 
 {#if isOpen}
