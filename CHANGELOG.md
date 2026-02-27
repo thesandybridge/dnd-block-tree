@@ -1,3 +1,5 @@
+> **Note:** This changelog covers releases up to v2.3.0 when all packages shared a single version. For newer releases, see per-package changelogs in `packages/*/CHANGELOG.md`.
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
