@@ -14,7 +14,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "turbo run test",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "changeset": "changeset"
   },
   "dependencies": {
     "@dnd-block-tree/react": "*",
