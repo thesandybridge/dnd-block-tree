@@ -8,6 +8,9 @@ import { VanillaProductivityTree } from '@/components/productivity/VanillaProduc
 import { FileTree } from '@/components/filesystem/FileTree'
 import { VanillaFileTree } from '@/components/filesystem/VanillaFileTree'
 import { RealtimeDemo } from '@/components/realtime/RealtimeDemo'
+import { SvelteProductivityTree } from '@/components/svelte/SvelteProductivityTree'
+import { SvelteFileTree } from '@/components/svelte/SvelteFileTree'
+import { SvelteRealtimeDemo } from '@/components/svelte/SvelteRealtimeDemo'
 import { Footer } from '@/components/Footer'
 import { Layers, FolderTree, Github, BookOpen, Radio } from 'lucide-react'
 
@@ -16,7 +19,7 @@ export const Route = createFileRoute('/')({
 })
 
 type DemoTab = 'productivity' | 'filesystem' | 'realtime'
-type Framework = 'react' | 'vanilla'
+type Framework = 'react' | 'svelte' | 'vanilla'
 
 const FEATURES = [
   {
@@ -77,6 +80,7 @@ function Home() {
   const setFilesystemTab = useCallback(() => setActiveTab('filesystem'), [])
   const setRealtimeTab = useCallback(() => setActiveTab('realtime'), [])
   const setReactFramework = useCallback(() => setFramework('react'), [])
+  const setSvelteFramework = useCallback(() => setFramework('svelte'), [])
   const setVanillaFramework = useCallback(() => setFramework('vanilla'), [])
 
   return (
@@ -158,6 +162,13 @@ function Home() {
                         React
                       </Button>
                       <Button
+                        variant={framework === 'svelte' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={setSvelteFramework}
+                      >
+                        Svelte
+                      </Button>
+                      <Button
                         variant={framework === 'vanilla' ? 'default' : 'ghost'}
                         size="sm"
                         onClick={setVanillaFramework}
@@ -202,11 +213,17 @@ function Home() {
               </CardHeader>
               <CardContent>
                 {activeTab === 'productivity' ? (
-                  framework === 'vanilla' ? <VanillaProductivityTree /> : <ProductivityTree />
+                  framework === 'vanilla' ? <VanillaProductivityTree /> :
+                  framework === 'svelte' ? <SvelteProductivityTree /> :
+                  <ProductivityTree />
                 ) : activeTab === 'filesystem' ? (
-                  framework === 'vanilla' ? <VanillaFileTree /> : <FileTree />
+                  framework === 'vanilla' ? <VanillaFileTree /> :
+                  framework === 'svelte' ? <SvelteFileTree /> :
+                  <FileTree />
                 ) : (
-                  <RealtimeDemo framework={framework} />
+                  framework === 'vanilla' ? <RealtimeDemo framework="vanilla" /> :
+                  framework === 'svelte' ? <SvelteRealtimeDemo /> :
+                  <RealtimeDemo framework="react" />
                 )}
               </CardContent>
             </Card>
