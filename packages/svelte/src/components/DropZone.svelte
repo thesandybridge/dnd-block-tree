@@ -7,6 +7,7 @@
     parentId: string | null
     onHover: (zoneId: string, parentId: string | null) => void
     activeId: string | null
+    hoverZone?: string | null
     height?: number
     class?: string
     activeClass?: string
@@ -17,24 +18,25 @@
     parentId,
     onHover,
     activeId,
+    hoverZone = null,
     height = 4,
     class: className = '',
     activeClass = '',
   }: Props = $props()
 
-  const droppable = createDroppable({ get id() { return id } })
+  // We still register as a droppable so @dnd-kit/dom tracks the element,
+  // but collision detection is handled by BlockTree's own snapshot system.
+  const droppable = createDroppable({
+    get id() { return id },
+  })
 
   // Hide "into-" zones for the active block (can't drop a container into itself)
   const zoneBlockId = $derived(extractUUID(id))
   const isIntoZone = $derived(id.startsWith('into-'))
   const shouldHide = $derived(isIntoZone && activeId != null && zoneBlockId === activeId)
 
-  // Fire hover callback when drop target is active
-  $effect(() => {
-    if (droppable.isDropTarget) {
-      onHover(id, parentId)
-    }
-  })
+  // Visual active state driven by BlockTree's hoverZone (our own collision detection)
+  const isActive = $derived(hoverZone === id)
 </script>
 
 {#if !shouldHide}
@@ -42,9 +44,9 @@
     {@attach droppable.attach}
     data-zone-id={id}
     data-parent-id={parentId ?? ''}
-    style:height="{droppable.isDropTarget ? height * 2 : height}px"
+    style:height="{isActive ? height * 2 : height}px"
     style:transition="height 150ms ease, background-color 150ms ease"
-    class={droppable.isDropTarget ? `${className} ${activeClass}` : className}
-    data-zone-active={droppable.isDropTarget || undefined}
+    class={isActive ? `${className} ${activeClass}` : className}
+    data-zone-active={isActive || undefined}
   ></div>
 {/if}

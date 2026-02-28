@@ -164,7 +164,8 @@ export function VanillaProductivityTree() {
   const containerRef = useRef<HTMLDivElement>(null)
   const controllerRef = useRef<BlockTreeController<ProductivityBlock> | null>(null)
 
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null)
   const [canUndo, setCanUndo] = useState(false)
   const [canRedo, setCanRedo] = useState(false)
   const [blockCount, setBlockCount] = useState(INITIAL_BLOCKS.length)
@@ -258,8 +259,12 @@ export function VanillaProductivityTree() {
     })
 
     const unsubSelection = controller.on('selection:change', (ids) => {
-      const arr = Array.from(ids)
-      setSelectedId(arr.length > 0 ? arr[0] : null)
+      setSelectedIds(new Set(ids))
+      if (ids.size === 1) {
+        setLastSelectedId([...ids][0])
+      } else if (ids.size === 0) {
+        setLastSelectedId(null)
+      }
     })
 
     // Listen for task toggle custom events
@@ -281,8 +286,8 @@ export function VanillaProductivityTree() {
       if (target) {
         const blockId = target.getAttribute('data-block-id')
         if (blockId) {
-          e.stopPropagation()
-          controller.select(blockId, 'single')
+          const mode = (e.metaKey || e.ctrlKey) ? 'toggle' : 'single'
+          controller.select(blockId, mode)
         }
       }
     }
@@ -320,8 +325,8 @@ export function VanillaProductivityTree() {
     let parentId: string | null = null
     let order = 0
 
-    if (selectedId) {
-      const selected = blocks.find(b => b.id === selectedId)
+    if (lastSelectedId) {
+      const selected = blocks.find(b => b.id === lastSelectedId)
       if (selected) {
         if (type === 'section') {
           parentId = null
@@ -332,7 +337,7 @@ export function VanillaProductivityTree() {
         } else {
           parentId = selected.parentId
           const siblings = blocks.filter(b => b.parentId === selected.parentId)
-          order = siblings.findIndex(b => b.id === selectedId) + 1
+          order = siblings.findIndex(b => b.id === lastSelectedId) + 1
         }
       }
     } else {
@@ -357,7 +362,7 @@ export function VanillaProductivityTree() {
 
     controller.setBlocks([...blocks, newBlock])
     controller.select(newBlock.id, 'single')
-  }, [selectedId])
+  }, [lastSelectedId])
 
   const addSection = useCallback(() => addItem('section'), [addItem])
   const addTask = useCallback(() => addItem('task'), [addItem])
@@ -365,11 +370,11 @@ export function VanillaProductivityTree() {
 
   const deleteSelected = useCallback(() => {
     const controller = controllerRef.current
-    if (!selectedId || !controller) return
+    if (selectedIds.size === 0 || !controller) return
 
     const blocks = controller.getBlocks()
     const toDelete = new Set<string>()
-    const stack = [selectedId]
+    const stack = [...selectedIds]
     while (stack.length > 0) {
       const id = stack.pop()!
       toDelete.add(id)
@@ -378,14 +383,15 @@ export function VanillaProductivityTree() {
 
     controller.setBlocks(blocks.filter(b => !toDelete.has(b.id)))
     controller.clearSelection()
-  }, [selectedId])
+  }, [selectedIds])
 
   const reset = useCallback(() => {
     controllerRef.current?.setBlocks(INITIAL_BLOCKS)
     controllerRef.current?.clearSelection()
   }, [])
 
-  const handleClearSelection = useCallback(() => {
+  const handleClearSelection = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('[data-block-id]')) return
     controllerRef.current?.clearSelection()
   }, [])
 
@@ -451,7 +457,7 @@ export function VanillaProductivityTree() {
             variant="outline"
             size="sm"
             onClick={deleteSelected}
-            disabled={!selectedId}
+            disabled={selectedIds.size === 0}
             className="gap-1"
           >
             <Trash2 className="h-3 w-3" />

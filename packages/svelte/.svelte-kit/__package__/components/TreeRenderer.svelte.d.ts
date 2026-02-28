@@ -9,11 +9,13 @@ interface Props {
     containerTypes: readonly string[];
     onHover: (zoneId: string, parentId: string | null) => void;
     onToggleExpand: (id: string) => void;
+    onBlockClick?: (blockId: string, event: MouseEvent) => void;
     renderBlock: Snippet<[{
         block: BaseBlock;
         isDragging: boolean;
         depth: number;
         isExpanded: boolean;
+        isSelected: boolean;
         onToggleExpand: (() => void) | null;
         children: Snippet | null;
     }]>;
@@ -21,6 +23,7 @@ interface Props {
     dropZoneClass?: string;
     dropZoneActiveClass?: string;
     canDrag?: CanDragFn<BaseBlock>;
+    hoverZone?: string | null;
     previewPosition?: {
         parentId: string | null;
         index: number;

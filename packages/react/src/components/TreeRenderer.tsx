@@ -93,7 +93,7 @@ function DraggableBlock<T extends BaseBlock>({
       {...listeners}
       data-block-id={block.id}
       tabIndex={isFocused ? 0 : -1}
-      onClick={onBlockClick ? (e: React.MouseEvent) => onBlockClick(block.id, e) : undefined}
+      onClick={onBlockClick ? (e: React.MouseEvent) => { e.stopPropagation(); onBlockClick(block.id, e) } : undefined}
       data-selected={isSelected || undefined}
       style={{ touchAction: 'none', minWidth: 0, outline: 'none' }}
       role="treeitem"

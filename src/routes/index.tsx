@@ -44,7 +44,10 @@ const FEATURES = [
   },
 ] as const
 
-const USAGE_CODE = `import { BlockTree } from '@dnd-block-tree/react'
+const USAGE_CODE: Record<Framework, { code: string; language: string }> = {
+  react: {
+    language: 'tsx',
+    code: `import { BlockTree } from '@dnd-block-tree/react'
 
 const renderers = {
   section: (props) => <SectionBlock {...props} />,
@@ -63,7 +66,52 @@ function App() {
       onChange={setBlocks}
     />
   )
-}`
+}`,
+  },
+  svelte: {
+    language: 'svelte',
+    code: `<script>
+  import { BlockTree, createBlockHistory } from '@dnd-block-tree/svelte'
+
+  const history = createBlockHistory(initialBlocks)
+</script>
+
+<BlockTree
+  blocks={history.blocks}
+  containerTypes={['section']}
+  onChange={(blocks) => history.set(blocks)}
+  {renderBlock}
+/>
+
+{#snippet renderBlock({ block, isExpanded, onToggleExpand, children })}
+  {#if block.type === 'section'}
+    <SectionBlock {block} {isExpanded} {onToggleExpand}>
+      {#if isExpanded && children}{@render children()}{/if}
+    </SectionBlock>
+  {:else}
+    <TaskBlock {block} />
+  {/if}
+{/snippet}`,
+  },
+  vanilla: {
+    language: 'ts',
+    code: `import {
+  createBlockTreeController,
+  createDefaultRenderer,
+} from '@dnd-block-tree/vanilla'
+
+const controller = createBlockTreeController({
+  initialBlocks,
+  containerTypes: ['section'],
+})
+
+createDefaultRenderer(controller, document.getElementById('tree'))
+
+controller.on('change', (blocks) => {
+  console.log('Updated:', blocks)
+})`,
+  },
+}
 
 const BADGES = [
   '8px activation distance',
@@ -238,7 +286,7 @@ function Home() {
                 <CardDescription>Simple API for complex interactions</CardDescription>
               </CardHeader>
               <CardContent>
-                <CodeBlock language="tsx" code={USAGE_CODE} />
+                <CodeBlock language={USAGE_CODE[framework].language} code={USAGE_CODE[framework].code} />
               </CardContent>
             </Card>
           </div>

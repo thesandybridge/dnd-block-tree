@@ -12,13 +12,10 @@
     ExpandChangeEvent,
     HoverChangeEvent,
     DropZoneType,
-    Rect,
-    SnapshotRectsRef,
   } from '@dnd-block-tree/core'
   import {
     getDropZoneType,
     extractBlockId,
-    createStickyCollision,
     computeNormalizedIndex,
     reparentBlockIndex,
     reparentMultipleBlocks,
@@ -26,7 +23,6 @@
     debounce,
   } from '@dnd-block-tree/core'
   import type { BlockTreeCustomization } from '../types'
-  import { adaptCollisionDetection } from '../bridge'
   import { triggerHaptic } from '../utils/haptic'
   import TreeRenderer from './TreeRenderer.svelte'
   import DragOverlay from './DragOverlay.svelte'
@@ -41,6 +37,7 @@
       isDragging: boolean
       depth: number
       isExpanded: boolean
+      isSelected: boolean
       onToggleExpand: (() => void) | null
       children: Snippet | null
     }]>
@@ -91,11 +88,58 @@
     onSelectionChange,
   }: Props = $props()
 
-  // Sticky collision detection bridged from core
-  const coreStickyDetector = createStickyCollision(20)
-  const adaptedCollision = $derived(
-    adaptCollisionDetection(userCollisionDetection ?? coreStickyDetector)
-  )
+  // ---------- Snapshot-based collision detection ----------
+  // @dnd-kit/dom uses per-droppable collision that re-measures element rects
+  // continuously, causing feedback loops when the ghost preview shifts layout.
+  // We bypass it entirely: snapshot zone rects at drag start and run our own
+  // nearest-zone detection on every pointermove. This mirrors the React
+  // adapter's snapshotRects pattern.
+
+  const STICKY_THRESHOLD = 20
+  let stickyTargetId: string | null = null
+  let snapshotRects: Map<string, { top: number; bottom: number }> | null = null
+  let containerEl: HTMLDivElement | undefined = undefined
+
+  function captureZoneRects() {
+    const rects = new Map<string, { top: number; bottom: number }>()
+    // Scope to this tree's container so multiple BlockTree instances
+    // on the same page (e.g. realtime demo) don't interfere.
+    const root = containerEl ?? document
+    const zones = root.querySelectorAll('[data-zone-id]')
+    for (const zone of zones) {
+      const id = zone.getAttribute('data-zone-id')
+      if (id) {
+        const rect = zone.getBoundingClientRect()
+        rects.set(id, { top: rect.top, bottom: rect.bottom })
+      }
+    }
+    return rects
+  }
+
+  function findNearestZone(pointerY: number): string | null {
+    if (!snapshotRects || snapshotRects.size === 0) return null
+
+    let bestId: string | null = null
+    let bestDist = Infinity
+
+    for (const [id, rect] of snapshotRects) {
+      const distTop = Math.abs(pointerY - rect.top)
+      const distBottom = Math.abs(pointerY - rect.bottom)
+      const edgeDist = Math.min(distTop, distBottom)
+
+      // Sticky hysteresis: reduce distance for current target
+      const effectiveDist = (stickyTargetId === id)
+        ? Math.max(0, edgeDist - STICKY_THRESHOLD)
+        : edgeDist
+
+      if (effectiveDist < bestDist) {
+        bestDist = effectiveDist
+        bestId = id
+      }
+    }
+
+    return bestId
+  }
 
   // Internal state
   let activeId = $state<string | null>(null)
@@ -111,6 +155,30 @@
   })
   let virtualState = $state<ReturnType<typeof computeNormalizedIndex> | null>(null)
   let isDragging = $state(false)
+  let dragPosition = $state<{ x: number; y: number } | null>(null)
+
+  // Track cursor position during drag for overlay positioning AND collision detection.
+  // Must use capture phase: @dnd-kit/dom's PointerSensor calls stopPropagation()
+  // on pointermove during drag, so bubble-phase listeners on document never fire.
+  $effect(() => {
+    if (!isDragging) {
+      dragPosition = null
+      return
+    }
+    function onPointerMove(e: PointerEvent) {
+      dragPosition = { x: e.clientX, y: e.clientY }
+
+      // Run our own collision detection on every pointer move
+      if (snapshotRects && activeId) {
+        const nearestZone = findNearestZone(e.clientY)
+        if (nearestZone && nearestZone !== hoverZone) {
+          processHover(nearestZone)
+        }
+      }
+    }
+    document.addEventListener('pointermove', onPointerMove, true)
+    return () => document.removeEventListener('pointermove', onPointerMove, true)
+  })
 
   // Non-reactive refs
   let initialBlocksRef: BaseBlock[] = []
@@ -177,7 +245,7 @@
     const result = onDragStart?.(dragEvent)
     if (result === false) return
 
-    coreStickyDetector.reset()
+    stickyTargetId = null
     fromPositionRef = getBlockPosition(blocks, id)
 
     if (multiSelect && selectedIds.has(id)) {
@@ -188,16 +256,30 @@
 
     if (sensorConfig?.hapticFeedback) triggerHaptic()
 
+    // Set initial position from the activator event so overlay appears immediately
+    const nativeEvent = event.nativeEvent ?? event.operation?.activatorEvent
+    if (nativeEvent && 'clientX' in nativeEvent) {
+      dragPosition = { x: nativeEvent.clientX, y: nativeEvent.clientY }
+    }
+
     activeId = id
     isDragging = true
     initialBlocksRef = [...blocks]
     cachedReorderRef = null
+
+    // Capture zone rects after DOM reflows (dragged block hidden).
+    // Uses rAF to ensure layout has settled before measuring.
+    requestAnimationFrame(() => {
+      if (isDragging) {
+        snapshotRects = captureZoneRects()
+      }
+    })
   }
 
-  function handleDragOver(event: any) {
-    const targetId = String(event.operation?.target?.id ?? event.over?.id ?? '')
-    if (!targetId || !activeId) return
-    processHover(targetId)
+  function handleDragOver(_event: any) {
+    // Collision detection is handled by our own pointermove-based system.
+    // We keep this handler registered to satisfy DragDropProvider's API
+    // but don't use @dnd-kit's collision results.
   }
 
   function processHover(targetZone: string) {
@@ -213,6 +295,7 @@
     }
 
     hoverZone = targetZone
+    stickyTargetId = targetZone
 
     const baseIndex = computeNormalizedIndex(initialBlocksRef, orderingStrategy)
     const ids = draggedIdsRef
@@ -290,6 +373,24 @@
     initialBlocksRef = []
     fromPositionRef = null
     draggedIdsRef = []
+    stickyTargetId = null
+    snapshotRects = null
+  }
+
+  function handleBlockClick(blockId: string, event: MouseEvent) {
+    if (!multiSelect) return
+
+    if (event.metaKey || event.ctrlKey) {
+      const next = new Set(selectedIds)
+      if (next.has(blockId)) {
+        next.delete(blockId)
+      } else {
+        next.add(blockId)
+      }
+      setSelectedIds(next)
+    } else {
+      setSelectedIds(new Set([blockId]))
+    }
   }
 
   function handleToggleExpand(id: string) {
@@ -346,7 +447,7 @@
   onDragOver={handleDragOver}
   onDragEnd={handleDragEnd}
 >
-  <div class={className} style:min-width="0">
+  <div bind:this={containerEl} class={className} style:min-width="0">
     <TreeRenderer
       {blocks}
       {blocksByParent}
@@ -356,17 +457,19 @@
       {containerTypes}
       onHover={handleHover}
       onToggleExpand={handleToggleExpand}
+      onBlockClick={multiSelect ? handleBlockClick : undefined}
       {renderBlock}
       {dropZoneClass}
       {dropZoneActiveClass}
       {canDrag}
+      {hoverZone}
       {previewPosition}
       draggedBlock={activeBlock}
       {selectedIds}
       {animation}
     />
   </div>
-  <DragOverlay {activeBlock} selectedCount={multiSelect ? selectedIds.size : 0}>
+  <DragOverlay {activeBlock} position={dragPosition} selectedCount={multiSelect ? selectedIds.size : 0}>
     {#snippet children(block)}
       {#if dragOverlay}
         {@render dragOverlay(block)}

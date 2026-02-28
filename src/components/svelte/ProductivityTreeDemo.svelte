@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { BlockTree, createBlockHistory, generateId } from '@dnd-block-tree/svelte'
-  import type { BaseBlock } from '@dnd-block-tree/svelte'
+  import { BlockTree, createBlockHistory, generateId, initFractionalOrder } from '@dnd-block-tree/svelte'
+  import type { BaseBlock, AnimationConfig } from '@dnd-block-tree/svelte'
   import type { Snippet } from 'svelte'
 
   interface ProductivityBlock extends BaseBlock {
@@ -8,6 +8,19 @@
     title: string
     completed?: boolean
     dueDate?: string
+  }
+
+  interface Settings {
+    showDropPreview: boolean
+    activationDistance: number
+    previewDebounce: number
+    multiSelect: boolean
+    orderingStrategy: 'integer' | 'fractional'
+    maxDepth: number
+    initialExpanded: 'all' | 'none'
+    expandDuration: number
+    easing: string
+    lockCompletedTasks: boolean
   }
 
   const CONTAINER_TYPES = ['section'] as const
@@ -32,9 +45,71 @@
     note: 'New Note',
   }
 
+  interface Props {
+    onSettingsSubscribe?: (handler: (settings: Settings) => void) => (() => void)
+  }
+
+  let { onSettingsSubscribe }: Props = $props()
+
   const history = createBlockHistory<ProductivityBlock>(INITIAL_BLOCKS)
 
-  let selectedId = $state<string | null>(null)
+  let selectedIds = $state(new Set<string>())
+  let lastSelectedId = $state<string | null>(null)
+  let treeKey = $state(0)
+
+  // --- Settings state (synced from React wrapper) ---
+  let settings = $state<Settings>({
+    showDropPreview: true,
+    activationDistance: 8,
+    previewDebounce: 150,
+    multiSelect: false,
+    orderingStrategy: 'integer',
+    maxDepth: 0,
+    initialExpanded: 'all',
+    expandDuration: 0,
+    easing: 'ease',
+    lockCompletedTasks: false,
+  })
+
+  let prevOrderingStrategy = $state(settings.orderingStrategy)
+
+  $effect(() => {
+    if (!onSettingsSubscribe) return
+    return onSettingsSubscribe((s) => {
+      settings = s
+    })
+  })
+
+  // Re-key blocks when ordering strategy changes
+  $effect(() => {
+    if (settings.orderingStrategy !== prevOrderingStrategy) {
+      prevOrderingStrategy = settings.orderingStrategy
+      if (settings.orderingStrategy === 'fractional') {
+        history.set(initFractionalOrder(history.blocks))
+      } else {
+        const blocks = history.blocks
+        history.set(blocks.map((b) => ({
+          ...b,
+          order: blocks.filter(s => s.parentId === b.parentId).findIndex(s => s.id === b.id),
+        })))
+      }
+    }
+  })
+
+  // Derived settings for BlockTree
+  const effectiveMaxDepth = $derived(settings.maxDepth > 0 ? settings.maxDepth : undefined)
+  const animationConfig = $derived<AnimationConfig | undefined>(
+    settings.expandDuration > 0
+      ? { expandDuration: settings.expandDuration, easing: settings.easing }
+      : undefined
+  )
+
+  function canDrag(block: ProductivityBlock): boolean {
+    if (settings.lockCompletedTasks && block.type === 'task' && block.completed) {
+      return false
+    }
+    return true
+  }
 
   function handleChange(newBlocks: ProductivityBlock[]) {
     history.set(newBlocks as ProductivityBlock[])
@@ -53,8 +128,8 @@
     let parentId: string | null = null
     let order = 0
 
-    if (selectedId) {
-      const selected = blocks.find(b => b.id === selectedId)
+    if (lastSelectedId) {
+      const selected = blocks.find(b => b.id === lastSelectedId)
       if (selected) {
         if (type === 'section') {
           parentId = null
@@ -65,7 +140,7 @@
         } else {
           parentId = selected.parentId
           const siblings = blocks.filter(b => b.parentId === selected.parentId)
-          order = siblings.findIndex(b => b.id === selectedId) + 1
+          order = siblings.findIndex(b => b.id === lastSelectedId) + 1
         }
       }
     } else {
@@ -89,14 +164,15 @@
     }
 
     history.set([...blocks, newBlock])
-    selectedId = newBlock.id
+    selectedIds = new Set([newBlock.id])
+    lastSelectedId = newBlock.id
   }
 
   function deleteSelected() {
-    if (!selectedId) return
+    if (selectedIds.size === 0) return
     const blocks = history.blocks
     const toDelete = new Set<string>()
-    const stack = [selectedId]
+    const stack = [...selectedIds]
 
     while (stack.length > 0) {
       const id = stack.pop()!
@@ -105,20 +181,37 @@
     }
 
     history.set(blocks.filter(b => !toDelete.has(b.id)))
-    selectedId = null
+    selectedIds = new Set()
+    lastSelectedId = null
   }
 
   function reset() {
     history.set(INITIAL_BLOCKS)
-    selectedId = null
+    selectedIds = new Set()
+    lastSelectedId = null
+    treeKey++
   }
 
   function selectBlock(id: string) {
-    selectedId = id
+    if (!settings.multiSelect) {
+      selectedIds = new Set([id])
+    }
+    lastSelectedId = id
   }
 
-  function clearSelection() {
-    selectedId = null
+  function handleSelectionChange(ids: Set<string>) {
+    selectedIds = ids
+    if (ids.size === 1) {
+      lastSelectedId = [...ids][0]
+    } else if (ids.size === 0) {
+      lastSelectedId = null
+    }
+  }
+
+  function clearSelection(e: MouseEvent) {
+    if ((e.target as HTMLElement).closest('[data-block-id]')) return
+    selectedIds = new Set()
+    lastSelectedId = null
   }
 </script>
 
@@ -152,7 +245,7 @@
     <div class="flex gap-1">
       <button
         onclick={deleteSelected}
-        disabled={!selectedId}
+        disabled={selectedIds.size === 0}
         class="inline-flex items-center gap-1 px-2 py-1 text-sm rounded-md border border-border hover:bg-muted transition-colors disabled:opacity-50 disabled:pointer-events-none"
       >
         <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -190,35 +283,44 @@
   <!-- Tree -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div onclick={clearSelection} class="min-w-0 w-full max-w-full overflow-x-hidden">
-    <BlockTree
-      blocks={history.blocks}
-      containerTypes={CONTAINER_TYPES}
-      onChange={handleChange}
-      class="flex flex-col gap-1 w-full"
-      dropZoneClass="h-0.5 rounded transition-all duration-150"
-      dropZoneActiveClass="bg-primary h-1"
-      activationDistance={8}
-      initialExpanded="all"
-      {renderBlock}
-      {dragOverlay}
-    />
+  <div onclick={(e: MouseEvent) => clearSelection(e)} class="min-w-0 w-full max-w-full overflow-x-hidden">
+    {#key treeKey}
+      <BlockTree
+        blocks={history.blocks}
+        containerTypes={CONTAINER_TYPES}
+        onChange={handleChange}
+        class="flex flex-col gap-1 w-full"
+        dropZoneClass="h-0.5 rounded transition-all duration-150"
+        dropZoneActiveClass="bg-primary h-1"
+        showDropPreview={settings.showDropPreview}
+        activationDistance={settings.activationDistance}
+        previewDebounce={settings.previewDebounce}
+        multiSelect={settings.multiSelect}
+        {selectedIds}
+        onSelectionChange={handleSelectionChange}
+        orderingStrategy={settings.orderingStrategy}
+        maxDepth={effectiveMaxDepth}
+        initialExpanded={settings.initialExpanded}
+        animation={animationConfig}
+        {canDrag}
+        {renderBlock}
+        {dragOverlay}
+      />
+    {/key}
   </div>
 </div>
 
-{#snippet renderBlock({ block, isDragging, depth, isExpanded, onToggleExpand, children }: { block: ProductivityBlock, isDragging: boolean, depth: number, isExpanded: boolean, onToggleExpand: (() => void) | null, children: Snippet | null })}
+{#snippet renderBlock({ block, isDragging, depth, isExpanded, isSelected, onToggleExpand, children }: { block: ProductivityBlock, isDragging: boolean, depth: number, isExpanded: boolean, isSelected: boolean, onToggleExpand: (() => void) | null, children: Snippet | null })}
   {#if block.type === 'section'}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      onclick={(e: MouseEvent) => { e.stopPropagation(); selectBlock(block.id) }}
+      onclick={() => selectBlock(block.id)}
       class="selection-ring cursor-pointer w-full min-w-0 max-w-full rounded-xl"
-      class:selected={selectedId === block.id}
+      class:selected={isSelected}
     >
       <div
-        class="rounded-xl border border-border/50 bg-card w-full min-w-0 max-w-full transition-all duration-200"
-        class:opacity-40={isDragging}
-        class:scale-[0.98]={isDragging}
+        class="rounded-xl border border-border/50 bg-card w-full min-w-0 max-w-full transition-all duration-200 {isDragging ? 'opacity-40 scale-[0.98]' : ''}"
       >
         <div class="flex items-center gap-2 p-2 folder-header group min-w-0">
           <svg class="h-4 w-4 shrink-0 text-muted-foreground cursor-grab drag-handle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
@@ -256,14 +358,12 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      onclick={(e: MouseEvent) => { e.stopPropagation(); selectBlock(block.id) }}
+      onclick={() => selectBlock(block.id)}
       class="selection-ring cursor-pointer w-full min-w-0 max-w-full rounded-lg"
-      class:selected={selectedId === block.id}
+      class:selected={isSelected}
     >
       <div
-        class="flex items-center gap-2 p-2 rounded-lg border border-border/30 bg-card/50 block-item group w-full min-w-0 max-w-full transition-all duration-200"
-        class:opacity-40={isDragging}
-        class:scale-[0.98]={isDragging}
+        class="flex items-center gap-2 p-2 rounded-lg border border-border/30 bg-card/50 block-item group w-full min-w-0 max-w-full transition-all duration-200 {isDragging ? 'opacity-40 scale-[0.98]' : ''}"
       >
         <svg class="h-4 w-4 shrink-0 text-muted-foreground cursor-grab drag-handle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
 
@@ -296,14 +396,12 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      onclick={(e: MouseEvent) => { e.stopPropagation(); selectBlock(block.id) }}
+      onclick={() => selectBlock(block.id)}
       class="selection-ring cursor-pointer w-full min-w-0 max-w-full rounded-lg"
-      class:selected={selectedId === block.id}
+      class:selected={isSelected}
     >
       <div
-        class="flex items-start gap-2 p-2 rounded-lg border border-border/30 bg-card/50 block-item group w-full min-w-0 max-w-full transition-all duration-200"
-        class:opacity-40={isDragging}
-        class:scale-[0.98]={isDragging}
+        class="flex items-start gap-2 p-2 rounded-lg border border-border/30 bg-card/50 block-item group w-full min-w-0 max-w-full transition-all duration-200 {isDragging ? 'opacity-40 scale-[0.98]' : ''}"
       >
         <svg class="h-4 w-4 shrink-0 text-muted-foreground cursor-grab drag-handle mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>
 

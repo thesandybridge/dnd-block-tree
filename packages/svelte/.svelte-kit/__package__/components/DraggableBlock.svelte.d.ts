@@ -7,6 +7,7 @@ interface Props {
     isExpanded?: boolean;
     isSelected?: boolean;
     depth?: number;
+    onBlockClick?: (blockId: string, event: MouseEvent) => void;
     children: Snippet<[{
         isDragging: boolean;
     }]>;

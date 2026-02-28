@@ -15,11 +15,13 @@
     containerTypes: readonly string[]
     onHover: (zoneId: string, parentId: string | null) => void
     onToggleExpand: (id: string) => void
-    renderBlock: Snippet<[{ block: BaseBlock; isDragging: boolean; depth: number; isExpanded: boolean; onToggleExpand: (() => void) | null; children: Snippet | null }]>
+    onBlockClick?: (blockId: string, event: MouseEvent) => void
+    renderBlock: Snippet<[{ block: BaseBlock; isDragging: boolean; depth: number; isExpanded: boolean; isSelected: boolean; onToggleExpand: (() => void) | null; children: Snippet | null }]>
     depth?: number
     dropZoneClass?: string
     dropZoneActiveClass?: string
     canDrag?: CanDragFn<BaseBlock>
+    hoverZone?: string | null
     previewPosition?: { parentId: string | null; index: number } | null
     draggedBlock?: BaseBlock | null
     selectedIds?: Set<string>
@@ -35,11 +37,13 @@
     containerTypes,
     onHover,
     onToggleExpand,
+    onBlockClick,
     renderBlock,
     depth = 0,
     dropZoneClass = '',
     dropZoneActiveClass = '',
     canDrag,
+    hoverZone = null,
     previewPosition = null,
     draggedBlock = null,
     selectedIds,
@@ -58,6 +62,7 @@
     {parentId}
     {onHover}
     {activeId}
+    {hoverZone}
     class={dropZoneClass}
     activeClass={dropZoneActiveClass}
   />
@@ -80,6 +85,7 @@
             isDragging: true,
             depth,
             isExpanded: false,
+            isSelected: false,
             onToggleExpand: null,
             children: null,
           })}
@@ -95,6 +101,7 @@
       {isExpanded}
       {isSelected}
       {depth}
+      {onBlockClick}
     >
       {#snippet children({ isDragging })}
         {#if isContainer}
@@ -112,11 +119,13 @@
               {containerTypes}
               {onHover}
               {onToggleExpand}
+              {onBlockClick}
               {renderBlock}
               depth={depth + 1}
               {dropZoneClass}
               {dropZoneActiveClass}
               {canDrag}
+              {hoverZone}
               {previewPosition}
               {draggedBlock}
               {selectedIds}
@@ -130,6 +139,7 @@
               isDragging,
               depth,
               isExpanded,
+              isSelected,
               onToggleExpand: () => onToggleExpand(block.id),
               children: childContent,
             })}
@@ -139,6 +149,7 @@
               isDragging,
               depth,
               isExpanded,
+              isSelected,
               onToggleExpand: () => onToggleExpand(block.id),
               children: isExpanded ? childContent : null,
             })}
@@ -149,6 +160,7 @@
             isDragging,
             depth,
             isExpanded: false,
+            isSelected,
             onToggleExpand: null,
             children: null,
           })}
@@ -163,6 +175,7 @@
         parentId={block.parentId}
         {onHover}
         {activeId}
+        {hoverZone}
         class={dropZoneClass}
         activeClass={dropZoneActiveClass}
       />
@@ -178,6 +191,7 @@
           isDragging: true,
           depth,
           isExpanded: false,
+          isSelected: false,
           onToggleExpand: null,
           children: null,
         })}
@@ -191,6 +205,7 @@
     {parentId}
     {onHover}
     {activeId}
+    {hoverZone}
     class={dropZoneClass}
     activeClass={dropZoneActiveClass}
   />

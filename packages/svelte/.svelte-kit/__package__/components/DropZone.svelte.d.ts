@@ -3,6 +3,7 @@ interface Props {
     parentId: string | null;
     onHover: (zoneId: string, parentId: string | null) => void;
     activeId: string | null;
+    hoverZone?: string | null;
     height?: number;
     class?: string;
     activeClass?: string;

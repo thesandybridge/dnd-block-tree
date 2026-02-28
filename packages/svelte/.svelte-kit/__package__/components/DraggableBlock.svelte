@@ -10,6 +10,7 @@
     isExpanded?: boolean
     isSelected?: boolean
     depth?: number
+    onBlockClick?: (blockId: string, event: MouseEvent) => void
     children: Snippet<[{ isDragging: boolean }]>
   }
 
@@ -20,14 +21,23 @@
     isExpanded = false,
     isSelected = false,
     depth = 0,
+    onBlockClick,
     children,
   }: Props = $props()
+
+  function handleClick(event: MouseEvent) {
+    if (onBlockClick) {
+      event.stopPropagation()
+      onBlockClick(block.id, event)
+    }
+  }
 
   const draggable = createDraggable({ get id() { return block.id }, get disabled() { return disabled } })
 </script>
 
 <div
   {@attach draggable.attach}
+  onclick={handleClick}
   data-block-id={block.id}
   style:touch-action="none"
   style:min-width="0"

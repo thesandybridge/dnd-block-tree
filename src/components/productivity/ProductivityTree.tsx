@@ -65,8 +65,7 @@ interface SelectableBlockProps {
 
 function SelectableBlock({ id, isSelected, onSelect, variant, children }: SelectableBlockProps) {
   const handleClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation()
+    () => {
       onSelect(id)
     },
     [id, onSelect]
@@ -91,7 +90,8 @@ export function ProductivityTree() {
   const blocks = history.blocks
   const setBlocks = history.set
 
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [lastSelectedId, setLastSelectedId] = useState<string | null>(null)
   const [settings, setSettings] = useState<ProductivitySettings>(DEFAULT_PRODUCTIVITY_SETTINGS)
   const [treeKey, setTreeKey] = useState(0)
   const isMobile = useIsMobile()
@@ -106,11 +106,25 @@ export function ProductivityTree() {
   }, [])
 
   const handleSelect = useCallback((id: string) => {
-    setSelectedId(id)
+    if (!settingsRef.current.multiSelect) {
+      setSelectedIds(new Set([id]))
+    }
+    setLastSelectedId(id)
   }, [])
 
-  const handleClearSelection = useCallback(() => {
-    setSelectedId(null)
+  const handleSelectionChange = useCallback((ids: Set<string>) => {
+    setSelectedIds(ids)
+    if (ids.size === 1) {
+      setLastSelectedId([...ids][0])
+    } else if (ids.size === 0) {
+      setLastSelectedId(null)
+    }
+  }, [])
+
+  const handleClearSelection = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('[data-block-id]')) return
+    setSelectedIds(new Set())
+    setLastSelectedId(null)
   }, [])
 
   const toggleTask = useCallback((id: string) => {
@@ -126,8 +140,8 @@ export function ProductivityTree() {
       let parentId: string | null = null
       let order = 0
 
-      if (selectedId) {
-        const selected = blocks.find(b => b.id === selectedId)
+      if (lastSelectedId) {
+        const selected = blocks.find(b => b.id === lastSelectedId)
         if (selected) {
           if (type === 'section') {
             parentId = null
@@ -138,7 +152,7 @@ export function ProductivityTree() {
           } else {
             parentId = selected.parentId
             const siblings = blocks.filter(b => b.parentId === selected.parentId)
-            order = siblings.findIndex(b => b.id === selectedId) + 1
+            order = siblings.findIndex(b => b.id === lastSelectedId) + 1
           }
         }
       } else {
@@ -162,9 +176,10 @@ export function ProductivityTree() {
       }
 
       setBlocks([...blocks, newBlock])
-      setSelectedId(newBlock.id)
+      setSelectedIds(new Set([newBlock.id]))
+      setLastSelectedId(newBlock.id)
     },
-    [blocks, selectedId, setBlocks]
+    [blocks, lastSelectedId, setBlocks]
   )
 
   const addSection = useCallback(() => addItem('section'), [addItem])
@@ -172,10 +187,10 @@ export function ProductivityTree() {
   const addNote = useCallback(() => addItem('note'), [addItem])
 
   const deleteSelected = useCallback(() => {
-    if (!selectedId) return
+    if (selectedIds.size === 0) return
 
     const toDelete = new Set<string>()
-    const stack = [selectedId]
+    const stack = [...selectedIds]
 
     while (stack.length > 0) {
       const id = stack.pop()!
@@ -184,12 +199,14 @@ export function ProductivityTree() {
     }
 
     setBlocks(blocks.filter(b => !toDelete.has(b.id)))
-    setSelectedId(null)
-  }, [blocks, selectedId, setBlocks])
+    setSelectedIds(new Set())
+    setLastSelectedId(null)
+  }, [blocks, selectedIds, setBlocks])
 
   const reset = useCallback(() => {
     setBlocks(initialBlocksRef.current)
-    setSelectedId(null)
+    setSelectedIds(new Set())
+    setLastSelectedId(null)
     setTreeKey(k => k + 1)
   }, [setBlocks])
 
@@ -220,7 +237,7 @@ export function ProductivityTree() {
       section: (props) => (
         <SelectableBlock
           id={props.block.id}
-          isSelected={selectedId === props.block.id}
+          isSelected={selectedIds.has(props.block.id)}
           onSelect={handleSelect}
           variant="section"
         >
@@ -230,7 +247,7 @@ export function ProductivityTree() {
       task: (props) => (
         <SelectableBlock
           id={props.block.id}
-          isSelected={selectedId === props.block.id}
+          isSelected={selectedIds.has(props.block.id)}
           onSelect={handleSelect}
           variant="item"
         >
@@ -240,7 +257,7 @@ export function ProductivityTree() {
       note: (props) => (
         <SelectableBlock
           id={props.block.id}
-          isSelected={selectedId === props.block.id}
+          isSelected={selectedIds.has(props.block.id)}
           onSelect={handleSelect}
           variant="item"
         >
@@ -248,7 +265,7 @@ export function ProductivityTree() {
         </SelectableBlock>
       ),
     }),
-    [selectedId, handleSelect, toggleTask]
+    [selectedIds, handleSelect, toggleTask]
   )
 
   // maxDepth 0 means unlimited
@@ -336,7 +353,7 @@ export function ProductivityTree() {
             variant="outline"
             size="sm"
             onClick={deleteSelected}
-            disabled={!selectedId}
+            disabled={selectedIds.size === 0}
             className="gap-1"
           >
             <Trash2 className="h-3 w-3" />
@@ -393,6 +410,8 @@ export function ProductivityTree() {
             maxDepth={effectiveMaxDepth}
             keyboardNavigation={settings.keyboardNavigation}
             multiSelect={settings.multiSelect}
+            selectedIds={selectedIds}
+            onSelectionChange={handleSelectionChange}
             initialExpanded={settings.initialExpanded}
             animation={animationConfig}
             sensors={sensorConfig}

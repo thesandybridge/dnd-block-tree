@@ -11,6 +11,7 @@ interface Props extends BlockTreeCallbacks<BaseBlock>, BlockTreeCustomization<Ba
             isDragging: boolean;
             depth: number;
             isExpanded: boolean;
+            isSelected: boolean;
             onToggleExpand: (() => void) | null;
             children: Snippet | null;
         }
